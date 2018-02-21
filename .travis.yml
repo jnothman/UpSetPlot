@@ -26,7 +26,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -C conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
+  - conda create -c conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
   - source activate test-environment
   - python setup.py install
 after_success:
