@@ -1,9 +1,13 @@
+import io
+
 import pytest
 from pandas.util.testing import assert_series_equal
 import numpy as np
+import matplotlib.figure
 
+from upsetplot import plot
+from upsetplot import generate_data
 from upsetplot.plotting import _process_data
-from upsetplot.data import generate_data
 
 
 def is_ascending(seq):
@@ -53,3 +57,10 @@ def test_not_aggregated(order, order_categories):
     assert_series_equal(intersections1, intersections2,
                         check_dtype=False)
     assert_series_equal(totals1, totals2, check_dtype=False)
+
+
+@pytest.mark.parametrize('kw', [{}])
+def test_plot_smoke_test(kw):
+    fig = matplotlib.figure.Figure()
+    plot(generate_data(n_samples=100), fig)
+    fig.savefig(io.BytesIO(), format='png')

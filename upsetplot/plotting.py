@@ -1,10 +1,10 @@
-import warnings
 import itertools
 
 import numpy as np
 import pandas as pd
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib.tight_layout import get_renderer
 
 
 def _process_data(data, order, order_categories):
@@ -119,11 +119,7 @@ class UpSetPlot:
     def _calculate_text_ncols(self, fig):
         if fig is None:
             fig = plt.gcf()
-        try:
-            r = fig.canvas.get_renderer()
-        except Exception:
-            warnings.warn('Could not get current renderer')
-            r = None
+        r = get_renderer(fig)
         t = fig.text(0, 0, '\n'.join(self.totals.index.values))
         textw = t.get_window_extent(renderer=r).width
         figw = fig.get_window_extent(renderer=r).width
