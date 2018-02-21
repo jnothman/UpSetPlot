@@ -55,7 +55,7 @@ class UpSetPlot:
 
     Parameters
     ----------
-    data : pd.Series
+    data : pandas.Series
         Values for each set to plot.
         Should have multi-index where each level is binary,
         corresponding to set membership.
@@ -193,7 +193,15 @@ class UpSetPlot:
     def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure
 
+        Parameters
+        ----------
+        fig : matplotlib.figure.Figure, optional
+            Defaults to a new figure.
 
+        Returns
+        -------
+        subplots : dict of matplotlib.axes.Axes
+            Keys are 'matrix', 'intersections', 'totals'
         """
         if fig is None:
             fig = plt.figure(figsize=(10, 6))
@@ -211,5 +219,21 @@ class UpSetPlot:
 
 def plot(data, fig=None, **kwargs):
     """Make an UpSet plot of data on fig
+
+    Parameters
+    ----------
+    data : pandas.Series
+        Values for each set to plot.
+        Should have multi-index where each level is binary,
+        corresponding to set membership.
+    fig : matplotlib.figure.Figure, optional
+        Defaults to a new figure.
+    kwargs
+        Other arguments for :class:`UpSetPlot`
+
+    Returns
+    -------
+    subplots : dict of matplotlib.axes.Axes
+        Keys are 'matrix', 'intersections', 'totals'
     """
     return UpSetPlot(data, **kwargs).plot(fig)
