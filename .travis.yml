@@ -11,7 +11,7 @@ env:
 matrix:
   include:
     - env: CONDA_DEPS="python=2.7 pandas matplotlib"
-    - env: CONDA_DEPS="python=3.4 pandas=0.15.2 matplotlib=1.4.3 numpy=1.9.3"
+    - env: CONDA_DEPS="python=3.4 pandas=0.17 matplotlib=1.4.3 numpy=1.9.3"
     - env: CONDA_DEPS="python=3.6 pandas matplotlib"
 install:
   - sudo apt-get update
@@ -31,3 +31,7 @@ install:
   - python setup.py install
 after_success:
   - coveralls
+cache:
+   pip: true
+   directories:
+       - $HOME/miniconda
