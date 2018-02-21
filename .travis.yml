@@ -7,6 +7,7 @@ python:
 #  - "3.6"
 # command to install dependencies
 install:
+  - pip install -Ur test_requirements.txt
   - pip install .
 # command to run tests
 script:
