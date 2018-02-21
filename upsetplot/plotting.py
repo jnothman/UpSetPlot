@@ -48,7 +48,7 @@ def _process_data(data, order, order_categories):
     return data, totals
 
 
-class UpSetPlot:
+class UpSet:
     """Manage the data and drawing for a basic UpSet plot
 
     Primary public method is :meth:`plot`.
@@ -229,11 +229,11 @@ def plot(data, fig=None, **kwargs):
     fig : matplotlib.figure.Figure, optional
         Defaults to a new figure.
     kwargs
-        Other arguments for :class:`UpSetPlot`
+        Other arguments for :class:`UpSet`
 
     Returns
     -------
     subplots : dict of matplotlib.axes.Axes
         Keys are 'matrix', 'intersections', 'totals'
     """
-    return UpSetPlot(data, **kwargs).plot(fig)
+    return UpSet(data, **kwargs).plot(fig)
