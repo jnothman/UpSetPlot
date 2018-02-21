@@ -2,4 +2,4 @@ setuptools
 flake8
 pytest
 pytest-cov
-pytest-coveralls
+python-coveralls
