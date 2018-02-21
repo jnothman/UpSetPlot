@@ -1,3 +1,4 @@
+language: generic
 # command to run tests
 script:
   - pytest
