@@ -1,17 +1,33 @@
 language: python
 
-language: python
-python:
-  - "2.7"
-  - "3.4"
-#  - "3.6"
-# command to install dependencies
-install:
-  - pip install -Ur test_requirements.txt
-  - pip install .
 # command to run tests
 script:
   - pytest
   - flake8
+env:
+  global:
+    - FIXED_CONDA_DEPS="flake8 pytest pytest-cov python-coveralls"
+# command to install dependencies
+matrix:
+  include:
+    - env: CONDA_DEPS="python=2.7 pandas matplotlib"
+    - env: CONDA_DEPS="python=3.4 pandas=0.15.2 matplotlib=1.4.3 numpy=1.9.3"
+    - env: CONDA_DEPS="python=3.6 pandas matplotlib"
+install:
+  - sudo apt-get update
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  - conda create -C conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
+  - source activate test-environment
+  - python setup.py install
 after_success:
   - coveralls
