@@ -34,7 +34,7 @@ def _process_data(data, order, order_categories):
                           for names in comb(data.index.names, i)],
                          columns=data.index.names)
         o.fillna(False, inplace=True)
-        o.astype(bool, inplace=True)
+        o = o.astype(bool)
         o.set_index(data.index.names, inplace=True)
         # FIXME: should use reindex(index=...) ??
         data = data.loc[o.index]
