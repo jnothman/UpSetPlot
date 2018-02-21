@@ -1,0 +1,17 @@
+language: python
+
+language: python
+python:
+  - "2.7"
+  - "3.4"
+#  - "3.6"
+# command to install dependencies
+install:
+  - pip install -Ur test_requirements.txt
+  - pip install .
+# command to run tests
+script:
+  - pytest
+  - flake8
+after_success:
+  - coveralls
