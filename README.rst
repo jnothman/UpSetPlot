@@ -34,6 +34,10 @@ Then::
     >>> from upsetplot import plot
     >>> plot(example)  # doctest: +SKIP
 
+makes:
+
+.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_generated_001.png
+
 Why an alternative to py-upset?
 -------------------------------
 
