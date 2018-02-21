@@ -137,8 +137,10 @@ class UpSetPlot:
         n_categories = data.index.nlevels
 
         # alternating row shading (XXX: use add_patch(Rectangle)?)
-        ax.barh(np.arange(0, n_categories, 2), len(data) + 1, left=-1,
-                color='#f5f5f5', zorder=0, width=0.8)
+        alternating = np.arange(0, n_categories, 2)
+        ax.barh(alternating, np.full(len(alternating), len(data) + 1),
+                left=-1, color='#f5f5f5', zorder=0, linewidth=0,
+                align='center')
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         c = np.array(['lightgrey'] * len(data) * n_categories, dtype='O')
@@ -146,7 +148,7 @@ class UpSetPlot:
         x = np.repeat(np.arange(len(data)), n_categories)
         y = np.tile(np.arange(n_categories), len(data))
         # TODO: make s relative to colw
-        ax.scatter(x, y, c=c, s=200)
+        ax.scatter(x, y, c=c.tolist(), linewidth=0, s=200)
 
         if self._with_lines:
             line_data = (pd.Series(y[idx], index=x[idx])
@@ -166,7 +168,7 @@ class UpSetPlot:
         """Plot bars indicating intersection size
         """
         ax.bar(np.arange(len(self.intersections)), self.intersections,
-               width=.5, color=self._forecolor, zorder=10)
+               width=.5, color=self._forecolor, zorder=10, align='center')
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
             ax.spines[x].set_visible(False)
@@ -178,12 +180,13 @@ class UpSetPlot:
         """Plot bars indicating total set size
         """
         ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                height=.5, color=self._forecolor)
+                height=.5, color=self._forecolor, align='center')
         max_total = self.totals.max()
         ax.set_xlim(max_total, 0)
         for x in ['top', 'left', 'right']:
             ax.spines[x].set_visible(False)
         ax.yaxis.set_visible(False)
+        ax.xaxis.grid(True)
         ax.ticklabel_format(axis='x')
 
     def plot(self, fig=None):
