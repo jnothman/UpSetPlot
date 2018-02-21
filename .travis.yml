@@ -25,7 +25,8 @@ install:
   - source activate test-environment
   - python setup.py install
 after_success:
-  - coveralls -v
+  - coveralls debug
+  - coveralls
 ### cache:
 ###    pip: true
 ###    directories:
