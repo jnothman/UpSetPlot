@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+from pandas.util.testing import assert_series_equal
 import numpy as np
 
 from upsetplot.plotting import _process_data
@@ -24,8 +25,8 @@ def test_process_data(X, order, order_categories):
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
                    .reindex(index=intersections.index))
-    pd.testing.assert_series_equal(X_reordered, intersections,
-                                   check_dtype=False)
+    assert_series_equal(X_reordered, intersections,
+                        check_dtype=False)
 
     if order == 'size':
         assert is_ascending(intersections.values[::-1])
@@ -50,6 +51,6 @@ def test_not_aggregated(order, order_categories):
     Xunagg = generate_data()
     Xunagg.loc[:] = 1
     intersections2, totals2 = _process_data(Xunagg, **kw)
-    pd.testing.assert_series_equal(intersections1, intersections2,
-                                   check_dtype=False)
-    pd.testing.assert_series_equal(totals1, totals2, check_dtype=False)
+    assert_series_equal(intersections1, intersections2,
+                        check_dtype=False)
+    assert_series_equal(totals1, totals2, check_dtype=False)
