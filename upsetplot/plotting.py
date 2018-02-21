@@ -138,7 +138,7 @@ class UpSetPlot:
 
         # alternating row shading (XXX: use add_patch(Rectangle)?)
         ax.barh(np.arange(0, n_categories, 2), len(data) + 1, left=-1,
-                color='#f5f5f5', zorder=0)
+                color='#f5f5f5', zorder=0, width=0.8)
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         c = np.array(['lightgrey'] * len(data) * n_categories, dtype='O')
