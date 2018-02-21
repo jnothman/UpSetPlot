@@ -21,8 +21,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - ENV_NAME=`cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9'  | head -c20`
-  - conda create -c conda-forge -q -n $ENV_NAME $CONDA_DEPS $FIXED_CONDA_DEPS
+  - conda create -c conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
   - source activate test-environment
   - python setup.py install
 after_success:
