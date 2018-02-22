@@ -46,8 +46,8 @@ Probably for petty reasons. It appeared `py-upset
 input format was undocumented, inefficient and, IMO, inappropriate.  It did not
 facilitate showing plots of each set intersection distribution as in Lex et
 al's work introducing UpSet plots. Nor did it include the horizontal bar plots
-illustrated there. I decided it would be easier to construct a cleaner version
-than to fix it.
+illustrated there. It did not support Python 2. I decided it would be easier to
+construct a cleaner version than to fix it.
 
 References
 ----------
