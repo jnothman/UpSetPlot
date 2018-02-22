@@ -238,12 +238,13 @@ class UpSet:
     def plot_totals(self, ax):
         """Plot bars indicating total set size
         """
+        orig_ax = ax
         ax = self._reorient(ax)
         ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                 .5, color=self._forecolor, align='center')
         max_total = self.totals.max()
         if self._horizontal:
-            ax.set_ylim(max_total, 0)
+            orig_ax.set_xlim(max_total, 0)
         for x in ['top', 'left', 'right']:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
