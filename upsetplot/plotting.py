@@ -92,7 +92,7 @@ class UpSet:
     def __init__(self, data, vert=True, sort_by='degree',
                  sort_sets_by='cardinality', forecolor='black',
                  with_lines=True, element_size=32,
-                 intersection_plot_elements=6, totals_plot_elements=5):
+                 intersection_plot_elements=6, totals_plot_elements=2):
 
         self._vert = vert
         if not vert:
