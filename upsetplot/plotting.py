@@ -74,7 +74,7 @@ class UpSet:
     sort_sets_by : {'cardinality', None}
         Whether to sort the overall sets by total cardinality, or leave them
         in the provided order.
-    forecolor : str
+    facecolor : str
         Color for bar charts and dots.
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple sets
@@ -90,14 +90,14 @@ class UpSet:
     """
 
     def __init__(self, data, vert=True, sort_by='degree',
-                 sort_sets_by='cardinality', forecolor='black',
+                 sort_sets_by='cardinality', facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2):
 
         self._vert = vert
         if not vert:
             raise NotImplementedError()
-        self._forecolor = forecolor
+        self._facecolor = facecolor
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
@@ -165,7 +165,7 @@ class UpSet:
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
-        c[idx] = self._forecolor
+        c[idx] = self._facecolor
         x = np.repeat(np.arange(len(data)), n_sets)
         y = np.tile(np.arange(n_sets), len(data))
         if self._element_size is not None:
@@ -181,7 +181,7 @@ class UpSet:
                          .aggregate(['min', 'max']))
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
-                      lw=2, colors=self._forecolor)
+                      lw=2, colors=self._facecolor)
 
         ax.set_yticks(np.arange(n_sets))
         ax.set_yticklabels(data.index.names)
@@ -193,7 +193,7 @@ class UpSet:
         """Plot bars indicating intersection size
         """
         ax.bar(np.arange(len(self.intersections)), self.intersections,
-               width=.5, color=self._forecolor, zorder=10, align='center')
+               width=.5, color=self._facecolor, zorder=10, align='center')
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
             ax.spines[x].set_visible(False)
@@ -205,7 +205,7 @@ class UpSet:
         """Plot bars indicating total set size
         """
         ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                height=.5, color=self._forecolor, align='center')
+                height=.5, color=self._facecolor, align='center')
         max_total = self.totals.max()
         ax.set_xlim(max_total, 0)
         for x in ['top', 'left', 'right']:
