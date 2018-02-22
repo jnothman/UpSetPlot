@@ -10,7 +10,7 @@ This is another Python implementation of UpSet plots by Lex et al. [Lex2014]_.
 It tries to provide a simple, interface backed by an extensible,
 object-oriented design.
 
-The basic input format is a :class:`pandas.Series` containing counts
+The basic input format is a `pandas.Series` containing counts
 corresponding to set intersection sizes.  The index indicates which rows
 pertain to which sets, by having multiple boolean indices, like ``example``
 in the following::

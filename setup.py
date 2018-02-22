@@ -4,6 +4,8 @@ import os
 import sys
 from setuptools import setup
 
+from upsetplot import __version__ as version
+
 
 def setup_package():
     src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -14,8 +16,8 @@ def setup_package():
     try:
         # See setup.cfg
         setup(name='UpSetPlot',
-              version='0.1a',
-              py_modules=['upsetplot'],
+              version=version,
+              packages=["upsetplot"],
               setup_requires=['pytest-runner'],
               tests_require=['pytest>=2.7', 'pytest-cov~=2.4'],
               # TODO: check versions

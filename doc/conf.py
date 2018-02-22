@@ -14,9 +14,12 @@
 
 import sys
 import os
+import re
+
+sys.path.append('../')  # noqa
 
 import sphinx_rtd_theme
-
+from upsetplot import __version__ as release
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -68,8 +71,7 @@ copyright = u'2018, Joel Nothman'
 #
 # The short X.Y version.
 
-version = '0.1a'
-release = '0.1a'
+version = re.match(r'^\d+(\.\d+)*', release).group()
 
 # version = upsetplot.__version__
 # The full version, including alpha/beta/rc tags.
