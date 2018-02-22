@@ -4,6 +4,7 @@ import pytest
 from pandas.util.testing import assert_series_equal
 import numpy as np
 import matplotlib.figure
+import matplotlib.pyplot as plt
 
 from upsetplot import plot
 from upsetplot import generate_data
@@ -62,5 +63,12 @@ def test_not_aggregated(order, order_categories):
 @pytest.mark.parametrize('kw', [{}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
-    plot(generate_data(n_samples=100), fig)
+    X = generate_data(n_samples=100)
+    plot(X, fig)
     fig.savefig(io.BytesIO(), format='png')
+
+    # Also check fig is optional
+    n_nums = len(plt.get_fignums())
+    plot(X)
+    assert len(plt.get_fignums()) - n_nums == 1
+    assert plt.gcf().axes
