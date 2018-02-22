@@ -13,7 +13,17 @@ matrix:
     - env: CONDA_DEPS="python=3.4 pandas=0.20 matplotlib=1.4.3 numpy=1.9.3"
     - env: CONDA_DEPS="python=3.6 pandas matplotlib"
 install:
-  - test -x $HOME/miniconda/bin/conda || (sudo apt-get update; wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -u -b -p $HOME/miniconda)
+  - if test -e $HOME/miniconda/bin; then
+      echo "miniconda already installed.";
+    else
+      echo "Installing miniconda.";
+      rm -rf $HOME/miniconda;
+      mkdir -p $HOME/download;
+      if [[ -d $HOME/download/miniconda.sh ]]; then rm -rf $HOME/download/miniconda.sh; fi;
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/download/miniconda.sh;
+      fi;
+      bash $HOME/download/miniconda.sh -b -p $HOME/miniconda;
+    fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
@@ -26,7 +36,14 @@ install:
   - python setup.py install
 after_success:
   - coveralls
-### cache:
-###    pip: true
-###    directories:
-###        - $HOME/miniconda/pkgs
+cache:
+  directories:
+    - $HOME/download
+    - $HOME/miniconda
+before_cache:
+  - if ! [[ $TRAVIS_TAG ]]; then rm -rf $HOME/miniconda/conda-bld; fi
+  - rm -rf $HOME/miniconda/locks $HOME/miniconda/pkgs $HOME/miniconda/var $HOME/miniconda/conda-meta/history
+branches:
+  only:
+    - master
+    - /^[0-9]+\.[0-9]+(\.[0-9]+)?([ab][0-9]+)?$/
