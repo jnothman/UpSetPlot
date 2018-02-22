@@ -72,7 +72,7 @@ def test_param_validation(kw):
         UpSet(X, **kw)
 
 
-@pytest.mark.parametrize('kw', [{}])
+@pytest.mark.parametrize('kw', [{}, {'element_size': None}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
