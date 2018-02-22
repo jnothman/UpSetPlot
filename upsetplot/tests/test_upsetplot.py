@@ -89,7 +89,21 @@ def test_plot_smoke_test(kw):
 
 
 def test_vertical():
-    # TODO
+    X = generate_data(n_samples=100)
+
+    fig = matplotlib.figure.Figure()
+    UpSet(X, orientation='horizontal').make_grid(fig)
+    horz_height = fig.get_figheight()
+    horz_width = fig.get_figwidth()
+    assert horz_height < horz_width
+
+    fig = matplotlib.figure.Figure()
+    UpSet(X, orientation='vertical').make_grid(fig)
+    vert_height = fig.get_figheight()
+    vert_width = fig.get_figwidth()
+    assert horz_width / horz_height > vert_width / vert_height
+
+    # TODO: test axes positions, plot order, bar orientation
     pass
 
 
