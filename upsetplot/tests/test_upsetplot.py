@@ -60,7 +60,7 @@ def test_not_aggregated(sort_by, sort_sets_by):
     assert_series_equal(totals1, totals2, check_dtype=False)
 
 
-@pytest.mark.parametrize('kw', [{}])
+@pytest.mark.parametrize('kw', [{}, {'orientation': 'vertical'}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
@@ -72,3 +72,8 @@ def test_plot_smoke_test(kw):
     plot(X)
     assert len(plt.get_fignums()) - n_nums == 1
     assert plt.gcf().axes
+
+
+def test_vertical():
+    # TODO
+    pass
