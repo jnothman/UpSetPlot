@@ -64,7 +64,7 @@ def test_not_aggregated(sort_by, sort_sets_by):
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
-    plot(X, fig)
+    plot(X, fig, **kw)
     fig.savefig(io.BytesIO(), format='png')
 
     # Also check fig is optional
