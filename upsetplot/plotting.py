@@ -74,26 +74,29 @@ class UpSet:
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple sets
         being intersected.
-    intersections_plot_size : float
+    element_size : float or None
+        Side length in pt. If None, size is estimated to fit figure
+    intersections_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
-        dots.
-    totals_plot_size : float
+        elements.
+    totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         dots.
     """
 
     def __init__(self, data, vert=True, order='degree',
                  order_categories=True, forecolor='black',
-                 with_lines=True, intersection_plot_size=6,
-                 totals_plot_size=5):
+                 with_lines=True, element_size=32,
+                 intersection_plot_elements=6, totals_plot_elements=5):
 
         self._vert = vert
         if not vert:
             raise NotImplementedError()
         self._forecolor = forecolor
         self._with_lines = with_lines
-        self._totals_plot_size = totals_plot_size
-        self._intersection_plot_size = intersection_plot_size
+        self._element_size = element_size
+        self._totals_plot_elements = totals_plot_elements
+        self._intersection_plot_elements = intersection_plot_elements
 
         (self.intersections,
          self.totals) = _process_data(data,
@@ -106,29 +109,42 @@ class UpSet:
         n_cats = len(self.totals)
         n_inters = len(self.intersections)
 
-        text_space = self._calculate_text_ncols(fig)
-        GS = matplotlib.gridspec.GridSpec
-        gridspec = GS(n_cats + self._intersection_plot_size,
-                      n_inters + text_space + self._totals_plot_size,
-                      hspace=1)
-        return {'intersections': gridspec[:-n_cats, -n_inters:],
-                'matrix': gridspec[-n_cats:, -n_inters:],
-                'totals': gridspec[-n_cats:, :self._totals_plot_size],
-                'gs': gridspec}
-
-    def _calculate_text_ncols(self, fig):
         if fig is None:
             fig = plt.gcf()
+
+        # Determine text size to determine figure size / spacing
         r = get_renderer(fig)
         t = fig.text(0, 0, '\n'.join(self.totals.index.values))
         textw = t.get_window_extent(renderer=r).width
-        figw = fig.get_window_extent(renderer=r).width
-        MAGIC_MARGIN = 20  # FIXME
-        colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
-                                                self._totals_plot_size)
         t.remove()
-        return int(np.ceil(figw / colw - (len(self.intersections) +
-                                          self._totals_plot_size)))
+
+        MAGIC_MARGIN = 10  # FIXME
+        figw = fig.get_window_extent(renderer=r).width
+        if self._element_size is None:
+            colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
+                                                    self._totals_plot_elements)
+        else:
+            render_ratio = figw / fig.get_figwidth()
+            colw = self._element_size / 72 * render_ratio
+            figw = (colw * (len(self.intersections) +
+                            self._totals_plot_elements) +
+                    MAGIC_MARGIN + textw)
+            fig.set_figwidth(figw / render_ratio)
+            fig.set_figheight((colw * (n_cats +
+                                       self._intersection_plot_elements)) /
+                              render_ratio)
+
+        text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
+                                                 self._totals_plot_elements)))
+
+        GS = matplotlib.gridspec.GridSpec
+        gridspec = GS(n_cats + self._intersection_plot_elements,
+                      n_inters + text_nelems + self._totals_plot_elements,
+                      hspace=1)
+        return {'intersections': gridspec[:-n_cats, -n_inters:],
+                'matrix': gridspec[-n_cats:, -n_inters:],
+                'totals': gridspec[-n_cats:, :self._totals_plot_elements],
+                'gs': gridspec}
 
     def plot_matrix(self, ax):
         """Plot the matrix of intersection indicators onto ax
@@ -147,8 +163,12 @@ class UpSet:
         c[idx] = self._forecolor
         x = np.repeat(np.arange(len(data)), n_categories)
         y = np.tile(np.arange(n_categories), len(data))
-        # TODO: make s relative to colw
-        ax.scatter(x, y, c=c.tolist(), linewidth=0, s=200)
+        if self._element_size is not None:
+            s = (self._element_size * .35) ** 2
+        else:
+            # TODO: make s relative to colw
+            s = 200
+        ax.scatter(x, y, c=c.tolist(), linewidth=0, s=s)
 
         if self._with_lines:
             line_data = (pd.Series(y[idx], index=x[idx])
