@@ -83,8 +83,6 @@ class _Transposed:
         'barh': 'bar',
         'xaxis': 'yaxis',
         'yaxis': 'xaxis',
-        'xticks': 'yticks',
-        'yticks': 'xticks',
         'left': 'bottom',
         'right': 'top',
         'top': 'right',
@@ -254,9 +252,12 @@ class UpSet:
                       line_data['min'], line_data['max'],
                       lw=2, colors=self._forecolor)
 
-        ax.yticks(np.arange(n_sets), data.index.names,
-                  rotation=0 if self._horizontal else -90)
+        tick_axis = ax.yaxis
+        tick_axis.set_ticks(np.arange(n_sets))
+        tick_axis.set_ticklabels(data.index.names)
         ax.xaxis.set_visible(False)
+        ax.tick_params(axis='both', which='both', length=0,
+                       labelrotation=0 if self._horizontal else -90)
         if not self._horizontal:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
