@@ -18,17 +18,6 @@ def setup_package():
         setup(name='UpSetPlot',
               version=version,
               packages=["upsetplot"],
-              classifiers=[
-                  'Development Status :: 3 - Alpha',
-                  'Intended Audience :: Science/Research',
-                  'Topic :: Scientific/Engineering :: Visualization',
-                  'Programming Language :: Python :: 3'
-                  'Programming Language :: Python :: 3.4'
-                  'Programming Language :: Python :: 3.5'
-                  'Programming Language :: Python :: 3.6'
-                  'Programming Language :: Python :: 2.7'
-              ],
-              license="BSD",
               setup_requires=['pytest-runner'],
               tests_require=['pytest>=2.7', 'pytest-cov~=2.4'],
               # TODO: check versions
