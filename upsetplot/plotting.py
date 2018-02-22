@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(data, order, order_categories):
+def _process_data(data, sort_by, sort_sets_by):
     # check all indices are vertical
     assert all(set([True, False]) >= set(level) for level in data.index.levels)
     if not data.index.is_unique:
@@ -23,13 +23,13 @@ def _process_data(data, order, order_categories):
         # FIXME: can get IndexingError if level only contains False
         totals.append(data.loc[idxslice].sum())
     totals = pd.Series(totals, index=data.index.names)
-    if order_categories:
+    if sort_sets_by:
         totals.sort_values(ascending=False, inplace=True)
     data = data.reorder_levels(totals.index.values)
 
-    if order == 'size':
+    if sort_by == 'cardinality':
         data = data.sort_values(ascending=False)
-    elif order == 'degree':
+    elif sort_by == 'degree':
         comb = itertools.combinations
         o = pd.DataFrame([{name: True for name in names}
                           for i in range(data.index.nlevels)
@@ -41,7 +41,7 @@ def _process_data(data, order, order_categories):
         # FIXME: should use reindex(index=...) ??
         data = data.loc[o.index]
     else:
-        raise ValueError('Unknown order: %r' % order)
+        raise ValueError('Unknown sort_by: %r' % sort_by)
 
     min_value = 0
     max_value = np.inf
@@ -64,13 +64,14 @@ class UpSet:
     vert : bool
         If True, the primary plot (bar chart of intersections) will
         be vertical.
-    order : {'size', 'degree'}
-        If 'size', set intersections are listed from largest to smallest value.
-        If 'degree', they are listed in order of the number of sets
+    sort_by : {'cardinality', 'degree'}
+        If 'cardinality', set intersections are listed from largest to
+        smallest value.
+        If 'degree', they are listed in sort_by of the number of sets
         intersected.
-    order_categories : bool
-        Whether to order the categories by total value, or leave them
-        in the provided order.
+    sort_sets_by : bool
+        Whether to sort_by the overall sets by total value, or leave them
+        in the provided sort_by.
     forecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -84,8 +85,8 @@ class UpSet:
         dots.
     """
 
-    def __init__(self, data, vert=True, order='degree',
-                 order_categories=True, forecolor='black',
+    def __init__(self, data, vert=True, sort_by='degree',
+                 sort_sets_by=True, forecolor='black',
                  with_lines=True, intersection_plot_size=6,
                  totals_plot_size=5):
 
@@ -99,8 +100,8 @@ class UpSet:
 
         (self.intersections,
          self.totals) = _process_data(data,
-                                      order=order,
-                                      order_categories=order_categories)
+                                      sort_by=sort_by,
+                                      sort_sets_by=sort_sets_by)
 
     def make_grid(self, fig=None):
         """Get a SubplotSpec for each Axes, accounting for label text width
@@ -136,19 +137,19 @@ class UpSet:
         """Plot the matrix of intersection indicators onto ax
         """
         data = self.intersections
-        n_categories = data.index.nlevels
+        n_sets = data.index.nlevels
 
         # alternating row shading (XXX: use add_patch(Rectangle)?)
-        alternating = np.arange(0, n_categories, 2)
+        alternating = np.arange(0, n_sets, 2)
         ax.barh(alternating, np.full(len(alternating), len(data) + 1),
                 left=-1, color='#f5f5f5', zorder=0, linewidth=0,
                 align='center')
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array(['lightgrey'] * len(data) * n_categories, dtype='O')
+        c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
         c[idx] = self._forecolor
-        x = np.repeat(np.arange(len(data)), n_categories)
-        y = np.tile(np.arange(n_categories), len(data))
+        x = np.repeat(np.arange(len(data)), n_sets)
+        y = np.tile(np.arange(n_sets), len(data))
         # TODO: make s relative to colw
         ax.scatter(x, y, c=c.tolist(), linewidth=0, s=200)
 
@@ -160,7 +161,7 @@ class UpSet:
                       line_data['min'], line_data['max'],
                       lw=2, colors=self._forecolor)
 
-        ax.set_yticks(np.arange(n_categories))
+        ax.set_yticks(np.arange(n_sets))
         ax.set_yticklabels(data.index.names)
         ax.xaxis.set_visible(False)
         ax.tick_params(axis='both', which='both', length=0)

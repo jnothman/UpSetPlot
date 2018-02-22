@@ -15,5 +15,5 @@ print(example)
 plot(example)
 plt.show()
 
-plot(example, order='size')
+plot(example, sort_by='cardinality')
 plt.show()
