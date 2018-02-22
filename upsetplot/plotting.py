@@ -48,6 +48,32 @@ def _process_data(data, order, order_categories):
     return data, totals
 
 
+def _aggregate_data(data, sum_over=None, by=None, min_value=0,
+                    max_value=np.inf, **kwargs):
+        if sum_over is True and data.ndim > 1:
+            raise ValueError('sum_over is True and data is not a Series')
+        elif sum_over is not None and data.ndim != 1:
+            raise ValueError('sum_over is not True or None and data is a Series')
+
+        if by is not None:
+            grouped = data.groupby(by)
+        else:
+            grouped = data.groupby(level=list(range(len(data.index.names))))
+
+        if data.ndim > 1:
+            grouped_series = grouped[data.columns[0] if sum_over is None
+                                          else sum_over]
+        else:
+            grouped_series = grouped
+        if sum_over is None:
+            aggregated = grouped_series.count()
+        else:
+            aggregated = grouped_series.sum()
+        aggregated = aggregated[np.logical_and(aggregated >= min_value, aggregated <= max_value)]
+
+        return grouped, aggregated
+
+
 class UpSet:
     """Manage the data and drawing for a basic UpSet plot
 
