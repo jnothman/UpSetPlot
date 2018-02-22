@@ -65,18 +65,18 @@ References
     :alt: Latest version on PyPi
     :target: https://badge.fury.io/py/upsetplot
 
-.. |build| image:: https://travis-ci.org/jnothman/upsetplot.svg?branch=master
+.. |build| image:: https://travis-ci.org/jnothman/UpSetPlot.svg?branch=master
     :alt: Travis CI build status
     :scale: 100%
-    :target: https://travis-ci.org/jnothman/upsetplot
+    :target: https://travis-ci.org/jnothman/UpSetPlot
 
-.. |issues| image:: https://img.shields.io/github/issues/jnothman/upsetplot.svg
+.. |issues| image:: https://img.shields.io/github/issues/jnothman/UpSetPlot.svg
     :alt: Issue tracker
-    :target: https://github.com/jnothman/upsetplot
+    :target: https://github.com/jnothman/UpSetPlot
 
-.. |coverage| image:: https://coveralls.io/repos/github/jnothman/upsetplot/badge.svg
+.. |coverage| image:: https://coveralls.io/repos/github/jnothman/UpSetPlot/badge.svg
     :alt: Test coverage
-    :target: https://coveralls.io/github/jnothman/upsetplot
+    :target: https://coveralls.io/github/jnothman/UpSetPlot
 
 .. |docs| image:: https://readthedocs.org/projects/upsetplot/badge/?version=latest
      :alt: Documentation Status

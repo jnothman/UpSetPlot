@@ -13,7 +13,7 @@ def setup_package():
 
     try:
         # See setup.cfg
-        setup(name='upsetplot',
+        setup(name='UpSetPlot',
               version='0.1a',
               py_modules=['upsetplot'],
               setup_requires=['pytest-runner'],
