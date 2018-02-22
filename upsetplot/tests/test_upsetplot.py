@@ -20,36 +20,36 @@ def is_ascending(seq):
     generate_data(aggregated=True),
     generate_data(aggregated=True).iloc[1:-2],
 ])
-@pytest.mark.parametrize('order', ['size', 'degree'])
-@pytest.mark.parametrize('order_categories', [False, True])
-def test_process_data(X, order, order_categories):
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_sets_by', [False, True])
+def test_process_data(X, sort_by, sort_sets_by):
     intersections, totals = _process_data(X,
-                                          order=order,
-                                          order_categories=order_categories)
+                                          sort_by=sort_by,
+                                          sort_sets_by=sort_sets_by)
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
                    .reindex(index=intersections.index))
     assert_series_equal(X_reordered, intersections,
                         check_dtype=False)
 
-    if order == 'size':
+    if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
     else:
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
-    if order_categories:
+    if sort_sets_by:
         assert is_ascending(totals.values[::-1])
 
     assert np.all(totals.index.values == intersections.index.names)
 
 
-@pytest.mark.parametrize('order', ['size', 'degree'])
-@pytest.mark.parametrize('order_categories', [False, True])
-def test_not_aggregated(order, order_categories):
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_sets_by', [False, True])
+def test_not_aggregated(sort_by, sort_sets_by):
     # FIXME: this is not testing if aggregation used is count or sum
-    kw = {'order': order, 'order_categories': order_categories}
+    kw = {'sort_by': sort_by, 'sort_sets_by': sort_sets_by}
     Xagg = generate_data(aggregated=True)
     intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_data()
