@@ -72,7 +72,7 @@ def test_param_validation(kw):
         UpSet(X, **kw)
 
 
-@pytest.mark.parametrize('kw', [{}])
+@pytest.mark.parametrize('kw', [{}, {'element_size': None}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
@@ -81,6 +81,32 @@ def test_plot_smoke_test(kw):
 
     # Also check fig is optional
     n_nums = len(plt.get_fignums())
-    plot(X)
+    plot(X, **kw)
     assert len(plt.get_fignums()) - n_nums == 1
     assert plt.gcf().axes
+
+
+def test_element_size():
+    X = generate_data(n_samples=100)
+    figsizes = []
+    for element_size in range(10, 50, 5):
+        fig = matplotlib.figure.Figure()
+        UpSet(X, element_size=element_size).make_grid(fig)
+        figsizes.append((fig.get_figwidth(), fig.get_figheight()))
+
+    figwidths, figheights = zip(*figsizes)
+    # Absolute width increases
+    assert np.all(np.diff(figwidths) > 0)
+    aspect = np.divide(figwidths, figheights)
+    # Font size stays constant, so aspect ratio decreases
+    assert np.all(np.diff(aspect) < 0)
+    # But doesn't decrease by much
+    assert np.all(aspect[:-1] / aspect[1:] < 1.1)
+
+    fig = matplotlib.figure.Figure()
+    figsize_before = fig.get_figwidth(), fig.get_figheight()
+    UpSet(X, element_size=None).make_grid(fig)
+    figsize_after = fig.get_figwidth(), fig.get_figheight()
+    assert figsize_before == figsize_after
+
+    # TODO: make sure axes are all within figure
