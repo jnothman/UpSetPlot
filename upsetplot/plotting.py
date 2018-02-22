@@ -127,7 +127,7 @@ class UpSet:
     sort_sets_by : {'cardinality', None}
         Whether to sort the overall sets by total cardinality, or leave them
         in the provided order.
-    forecolor : str
+    facecolor : str
         Color for bar charts and dots.
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple sets
@@ -143,13 +143,13 @@ class UpSet:
     """
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_sets_by='cardinality', forecolor='black',
+                 sort_sets_by='cardinality', facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
-        self._forecolor = forecolor
+        self._facecolor = facecolor
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
@@ -234,7 +234,7 @@ class UpSet:
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
-        c[idx] = self._forecolor
+        c[idx] = self._facecolor
         x = np.repeat(np.arange(len(data)), n_sets)
         y = np.tile(np.arange(n_sets), len(data))
         if self._element_size is not None:
@@ -250,7 +250,7 @@ class UpSet:
                          .aggregate(['min', 'max']))
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
-                      lw=2, colors=self._forecolor)
+                      lw=2, colors=self._facecolor)
 
         tick_axis = ax.yaxis
         tick_axis.set_ticks(np.arange(n_sets))
@@ -267,7 +267,7 @@ class UpSet:
         """
         ax = self._reorient(ax)
         ax.bar(np.arange(len(self.intersections)), self.intersections,
-               .5, color=self._forecolor, zorder=10, align='center')
+               .5, color=self._facecolor, zorder=10, align='center')
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
             ax.spines[self._reorient(x)].set_visible(False)
@@ -283,7 +283,7 @@ class UpSet:
         orig_ax = ax
         ax = self._reorient(ax)
         ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                .5, color=self._forecolor, align='center')
+                .5, color=self._facecolor, align='center')
         max_total = self.totals.max()
         if self._horizontal:
             orig_ax.set_xlim(max_total, 0)
