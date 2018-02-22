@@ -19,9 +19,13 @@ import re
 # project root
 sys.path.insert(0, os.path.abspath('..'))  # noqa
 
-import sphinx_gallery  # noqa
+import matplotlib
+
+matplotlib.use('agg')  # noqa
+
 import sphinx_rtd_theme
 from upsetplot import __version__ as release
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
