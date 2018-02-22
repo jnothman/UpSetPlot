@@ -24,6 +24,7 @@ install:
   - conda create -c conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
   - source activate test-environment
   - python setup.py install
+  - echo 'backend : Agg' > matplotlibrc
 after_success:
   - coveralls
 ### cache:
