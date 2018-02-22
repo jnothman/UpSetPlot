@@ -81,7 +81,7 @@ def test_plot_smoke_test(kw):
 
     # Also check fig is optional
     n_nums = len(plt.get_fignums())
-    plot(X)
+    plot(X, **kw)
     assert len(plt.get_fignums()) - n_nums == 1
     assert plt.gcf().axes
 
