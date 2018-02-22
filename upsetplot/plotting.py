@@ -23,8 +23,10 @@ def _process_data(data, sort_by, sort_sets_by):
         # FIXME: can get IndexingError if level only contains False
         totals.append(data.loc[idxslice].sum())
     totals = pd.Series(totals, index=data.index.names)
-    if sort_sets_by:
+    if sort_sets_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
+    elif sort_sets_by is not None:
+        raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
     data = data.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
@@ -67,11 +69,11 @@ class UpSet:
     sort_by : {'cardinality', 'degree'}
         If 'cardinality', set intersections are listed from largest to
         smallest value.
-        If 'degree', they are listed in sort_by of the number of sets
+        If 'degree', they are listed in order of the number of sets
         intersected.
-    sort_sets_by : bool
-        Whether to sort_by the overall sets by total value, or leave them
-        in the provided sort_by.
+    sort_sets_by : {'cardinality', None}
+        Whether to sort the overall sets by total cardinality, or leave them
+        in the provided order.
     forecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -88,7 +90,7 @@ class UpSet:
     """
 
     def __init__(self, data, vert=True, sort_by='degree',
-                 sort_sets_by=True, forecolor='black',
+                 sort_sets_by='cardinality', forecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=5):
 

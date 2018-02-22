@@ -22,7 +22,7 @@ def is_ascending(seq):
     generate_data(aggregated=True).iloc[1:-2],
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
-@pytest.mark.parametrize('sort_sets_by', [False, True])
+@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
 def test_process_data(X, sort_by, sort_sets_by):
     intersections, totals = _process_data(X,
                                           sort_by=sort_by,
@@ -47,7 +47,7 @@ def test_process_data(X, sort_by, sort_sets_by):
 
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
-@pytest.mark.parametrize('sort_sets_by', [False, True])
+@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
 def test_not_aggregated(sort_by, sort_sets_by):
     # FIXME: this is not testing if aggregation used is count or sum
     kw = {'sort_by': sort_by, 'sort_sets_by': sort_sets_by}
@@ -61,11 +61,22 @@ def test_not_aggregated(sort_by, sort_sets_by):
     assert_series_equal(totals1, totals2, check_dtype=False)
 
 
+@pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
+                                {'sort_by': True},
+                                {'sort_by': None},
+                                {'sort_sets_by': 'blah'},
+                                {'sort_sets_by': True}])
+def test_param_validation(kw):
+    X = generate_data(n_samples=100)
+    with pytest.raises(ValueError):
+        UpSet(X, **kw)
+
+
 @pytest.mark.parametrize('kw', [{}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
-    plot(X, fig)
+    plot(X, fig, **kw)
     fig.savefig(io.BytesIO(), format='png')
 
     # Also check fig is optional
