@@ -16,7 +16,7 @@ import sys
 import os
 import re
 
-sys.path.append('../')  # noqa
+sys.path.insert(0, '../')  # noqa
 
 import sphinx_rtd_theme
 from upsetplot import __version__ as release
