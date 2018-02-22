@@ -72,7 +72,9 @@ def test_param_validation(kw):
         UpSet(X, **kw)
 
 
-@pytest.mark.parametrize('kw', [{}, {'element_size': None}])
+@pytest.mark.parametrize('kw', [{},
+                                {'element_size': None},
+                                {'orientation': 'vertical'}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_data(n_samples=100)
@@ -84,6 +86,25 @@ def test_plot_smoke_test(kw):
     plot(X, **kw)
     assert len(plt.get_fignums()) - n_nums == 1
     assert plt.gcf().axes
+
+
+def test_vertical():
+    X = generate_data(n_samples=100)
+
+    fig = matplotlib.figure.Figure()
+    UpSet(X, orientation='horizontal').make_grid(fig)
+    horz_height = fig.get_figheight()
+    horz_width = fig.get_figwidth()
+    assert horz_height < horz_width
+
+    fig = matplotlib.figure.Figure()
+    UpSet(X, orientation='vertical').make_grid(fig)
+    vert_height = fig.get_figheight()
+    vert_width = fig.get_figwidth()
+    assert horz_width / horz_height > vert_width / vert_height
+
+    # TODO: test axes positions, plot order, bar orientation
+    pass
 
 
 def test_element_size():
