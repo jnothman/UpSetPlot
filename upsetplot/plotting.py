@@ -51,6 +51,15 @@ def _process_data(data, sort_by, sort_sets_by):
 
 
 class _Transposed:
+    """Wrap an object in order to transpose some plotting operations
+
+    Attributes of obj will be mapped.
+    Keyword arguments when calling obj will be mapped.
+
+    The mapping is not recursive: callable attributes need to be _Transposed
+    again.
+    """
+
     def __init__(self, obj):
         self.__obj = obj
 
@@ -141,6 +150,8 @@ class UpSet:
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_sets_by=sort_sets_by)
+        if not self._horizontal:
+            self.intersections = self.intersections[::-1]
 
     def _swapaxes(self, x, y):
         if self._horizontal:
