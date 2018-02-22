@@ -1,4 +1,4 @@
-upsetplot documentation
+UpSetPlot documentation
 ============================
 
 |version| |licence| |py-versions|
