@@ -211,11 +211,13 @@ class UpSet:
         if self._horizontal:
             return {'intersections': gridspec[:-n_cats, -n_inters:],
                     'matrix': gridspec[-n_cats:, -n_inters:],
+                    'shading': gridspec[-n_cats:, :],
                     'totals': gridspec[-n_cats:, :self._totals_plot_elements],
                     'gs': gridspec}
         else:
             return {'intersections': gridspec[-n_inters:, n_cats:],
                     'matrix': gridspec[-n_inters:, :n_cats],
+                    'shading': gridspec[:, :n_cats],
                     'totals': gridspec[:self._totals_plot_elements, :n_cats],
                     'gs': gridspec}
 
@@ -225,12 +227,6 @@ class UpSet:
         ax = self._reorient(ax)
         data = self.intersections
         n_sets = data.index.nlevels
-
-        # alternating row shading (XXX: use add_patch(Rectangle)?)
-        alternating = np.arange(0, n_sets, 2)
-        ax.barh(alternating, np.full(len(alternating), len(data) + 1),
-                color='#f5f5f5', zorder=0, linewidth=0, align='center',
-                **{'left' if self._horizontal else 'bottom': -1})
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
@@ -292,6 +288,31 @@ class UpSet:
         ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
 
+    def plot_shading(self, ax, gs):
+        # alternating row shading (XXX: use add_patch(Rectangle)?)
+        n_inters = len(self.intersections)
+        for i in range(0, len(self.totals), 2):
+            xy = (n_inters - gs.get_geometry()[self._horizontal] +
+                  self._totals_plot_elements + self._horizontal,
+                  i - .4)
+            rect = plt.Rectangle(self._swapaxes(*xy),
+                                 *self._swapaxes(*(n_inters, .8)),
+                                 facecolor='#f5f5f5', lw=0, zorder=0)
+            ax.add_patch(rect)
+        ax.set_frame_on(False)
+        ax.tick_params(
+            axis='both',
+            which='both',
+            left='off',
+            right='off',
+            bottom='off',
+            top='off',
+            labelbottom='off')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+
     def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure
 
@@ -303,21 +324,25 @@ class UpSet:
         Returns
         -------
         subplots : dict of matplotlib.axes.Axes
-            Keys are 'matrix', 'intersections', 'totals'
+            Keys are 'matrix', 'intersections', 'totals', 'shading'
         """
         if fig is None:
             fig = plt.figure(figsize=(10, 6))
         specs = self.make_grid(fig)
-        matrix_ax = fig.add_subplot(specs['matrix'])
+        shading_ax = fig.add_subplot(specs['shading'])
+        self.plot_shading(shading_ax, specs['gs'])
+        matrix_ax = fig.add_subplot(specs['matrix'], sharex=shading_ax,
+                                    sharey=shading_ax)
         self.plot_matrix(matrix_ax)
         inters_ax = self._reorient(fig.add_subplot)(specs['intersections'],
                                                     sharex=matrix_ax)
-        self.plot_intersections(inters_ax, )
+        self.plot_intersections(inters_ax)
         totals_ax = self._reorient(fig.add_subplot)(specs['totals'],
                                                     sharey=matrix_ax)
         self.plot_totals(totals_ax)
         return {'matrix': matrix_ax,
                 'intersections': inters_ax,
+                'shading': shading_ax,
                 'totals': totals_ax}
 
 
@@ -338,6 +363,6 @@ def plot(data, fig=None, **kwargs):
     Returns
     -------
     subplots : dict of matplotlib.axes.Axes
-        Keys are 'matrix', 'intersections', 'totals'
+        Keys are 'matrix', 'intersections', 'totals', 'shading'
     """
     return UpSet(data, **kwargs).plot(fig)
