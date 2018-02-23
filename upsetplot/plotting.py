@@ -288,15 +288,11 @@ class UpSet:
         ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
 
-    def plot_shading(self, ax, gs):
+    def plot_shading(self, ax):
         # alternating row shading (XXX: use add_patch(Rectangle)?)
-        n_inters = len(self.intersections)
         for i in range(0, len(self.totals), 2):
-            xy = (n_inters - gs.get_geometry()[self._horizontal] +
-                  self._totals_plot_elements + self._horizontal,
-                  i - .4)
-            rect = plt.Rectangle(self._swapaxes(*xy),
-                                 *self._swapaxes(*(n_inters, .8)),
+            rect = plt.Rectangle(self._swapaxes(0, i - .4),
+                                 *self._swapaxes(*(1, .8)),
                                  facecolor='#f5f5f5', lw=0, zorder=0)
             ax.add_patch(rect)
         ax.set_frame_on(False)
@@ -307,7 +303,8 @@ class UpSet:
             right='off',
             bottom='off',
             top='off',
-            labelbottom='off')
+            labelbottom='off',
+            labelleft='off')
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_xticklabels([])
@@ -330,9 +327,9 @@ class UpSet:
             fig = plt.figure(figsize=(10, 6))
         specs = self.make_grid(fig)
         shading_ax = fig.add_subplot(specs['shading'])
-        self.plot_shading(shading_ax, specs['gs'])
-        matrix_ax = fig.add_subplot(specs['matrix'], sharex=shading_ax,
-                                    sharey=shading_ax)
+        self.plot_shading(shading_ax)
+        matrix_ax = self._reorient(fig.add_subplot)(specs['matrix'],
+                                                    sharey=shading_ax)
         self.plot_matrix(matrix_ax)
         inters_ax = self._reorient(fig.add_subplot)(specs['intersections'],
                                                     sharex=matrix_ax)
