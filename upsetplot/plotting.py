@@ -34,7 +34,7 @@ def _process_data(data, sort_by, sort_sets_by):
     elif sort_by == 'degree':
         comb = itertools.combinations
         o = pd.DataFrame([{name: True for name in names}
-                          for i in range(data.index.nlevels)
+                          for i in range(data.index.nlevels + 1)
                           for names in comb(data.index.names, i)],
                          columns=data.index.names)
         o.fillna(False, inplace=True)

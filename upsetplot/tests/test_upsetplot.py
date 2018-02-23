@@ -30,6 +30,8 @@ def test_process_data(X, sort_by, sort_sets_by):
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
                    .reindex(index=intersections.index))
+    assert len(X) == len(X_reordered)
+    assert X_reordered.index.is_unique
     assert_series_equal(X_reordered, intersections,
                         check_dtype=False)
 
