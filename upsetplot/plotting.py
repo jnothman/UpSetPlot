@@ -287,6 +287,7 @@ class UpSet:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
+        ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
         # alternating row shading (XXX: use add_patch(Rectangle)?)
