@@ -6,8 +6,10 @@ UpSetPlot documentation
 |issues| |build| |docs| |coverage|
 
 This is another Python implementation of UpSet plots by Lex et al. [Lex2014]_.
+UpSet plots are used to visualise set overlaps; like Venn diagrams but
+more readable.
 
-It tries to provide a simple, interface backed by an extensible,
+It tries to provide a simple interface backed by an extensible,
 object-oriented design.
 
 The basic input format is a `pandas.Series` containing counts
