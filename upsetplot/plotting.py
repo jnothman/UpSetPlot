@@ -10,6 +10,7 @@ from matplotlib.tight_layout import get_renderer
 
 
 def _process_data(data, sort_by, sort_sets_by):
+    assert data.ndim == 1
     # check all indices are vertical
     assert all(set([True, False]) >= set(level) for level in data.index.levels)
     if not data.index.is_unique:
@@ -17,16 +18,26 @@ def _process_data(data, sort_by, sort_sets_by):
                 .groupby(level=list(range(data.index.nlevels)))
                 .sum())
 
+    # FIXME: aggregate more efficiently but test the code better
+    """
     totals = []
     for i in range(data.index.nlevels):
         idxslice = pd.IndexSlice[(slice(None),) * i + (True,)]
         # FIXME: can get IndexingError if level only contains False
         totals.append(data.loc[idxslice].sum())
     totals = pd.Series(totals, index=data.index.names)
+    """
+
+    totals = data.reset_index()
+    totals = pd.Series({c: totals[totals[c]][data.name].sum()
+                        for c in data.index.names})
+
     if sort_sets_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_sets_by is not None:
         raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
+    else:
+        totals = totals.loc[data.index.names]
     data = data.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
