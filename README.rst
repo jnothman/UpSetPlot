@@ -36,7 +36,7 @@ Then::
     >>> from upsetplot import plot
     >>> plot(example)  # doctest: +SKIP
     >>> from matplotlib import pyplot
-    >>> pyplot.show()
+    >>> pyplot.show()  # doctest: +SKIP
 
 makes:
 
