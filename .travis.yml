@@ -5,7 +5,7 @@ script:
   - flake8
 env:
   global:
-    - FIXED_CONDA_DEPS="flake8 pytest pytest-cov coveralls"
+    - FIXED_CONDA_DEPS="flake8 pytest pytest-cov<2.6 coveralls"
 # command to install dependencies
 matrix:
   include:
