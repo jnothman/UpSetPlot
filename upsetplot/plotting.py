@@ -145,6 +145,7 @@ class UpSet:
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
     """
+    _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
                  sort_sets_by='cardinality', facecolor='black',
@@ -366,7 +367,7 @@ class UpSet:
             Keys are 'matrix', 'intersections', 'totals', 'shading'
         """
         if fig is None:
-            fig = plt.figure(figsize=(10, 6))
+            fig = plt.figure(figsize=self._default_figsize)
         specs = self.make_grid(fig)
         shading_ax = fig.add_subplot(specs['shading'])
         self.plot_shading(shading_ax)
@@ -383,6 +384,11 @@ class UpSet:
                 'intersections': inters_ax,
                 'shading': shading_ax,
                 'totals': totals_ax}
+
+    def _repr_html_(self):
+        fig = plt.figure(figsize=self._default_figsize)
+        self.plot(fig=fig)
+        return fig._repr_html_()
 
 
 def plot(data, fig=None, **kwargs):
