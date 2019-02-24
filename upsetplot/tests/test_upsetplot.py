@@ -1,7 +1,9 @@
 import io
+import itertools
 
 import pytest
 from pandas.util.testing import assert_series_equal
+import pandas as pd
 import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
@@ -90,6 +92,28 @@ def test_plot_smoke_test(kw):
     assert plt.gcf().axes
 
 
+@pytest.mark.parametrize('set1',
+                         itertools.product([False, True], repeat=2))
+@pytest.mark.parametrize('set2',
+                         itertools.product([False, True], repeat=2))
+def test_two_sets(set1, set2):
+    # we had a bug where processing failed if no items were in some set
+    fig = matplotlib.figure.Figure()
+    plot(pd.DataFrame({'val': [5, 7],
+                       'set1': set1,
+                       'set2': set2}).set_index(['set1', 'set2'])['val'],
+         fig)
+
+
+def test_dataframe_raises():
+    fig = matplotlib.figure.Figure()
+    df = pd.DataFrame({'val': [5, 7],
+                       'set1': [False, True],
+                       'set2': [True, True]}).set_index(['set1', 'set2'])
+    with pytest.raises(ValueError, match='must be a pandas.Series'):
+        plot(df, fig)
+
+
 def test_vertical():
     X = generate_data(n_samples=100)
 
@@ -133,7 +157,6 @@ def test_element_size():
     assert figsize_before == figsize_after
 
     # TODO: make sure axes are all within figure
-
 
 
 def _walk_artists(el):
