@@ -133,7 +133,7 @@ class UpSet:
         being intersected.
     element_size : float or None
         Side length in pt. If None, size is estimated to fit figure
-    intersections_plot_elements : int
+    intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
         elements.
     totals_plot_elements : int
