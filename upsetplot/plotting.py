@@ -9,16 +9,19 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(data, sort_by, sort_sets_by):
-    # check all indices are vertical
+def _process_data(df, sort_by, sort_sets_by):
+    if df.ndim == 1:
+        data = df
+    else:
+        data = df.groupby(level=list(range(data.index.nlevels))).size()
+
+    # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in data.index.levels)
     if not data.index.is_unique:
         data = (data
                 .groupby(level=list(range(data.index.nlevels)))
                 .sum())
 
-    if data.ndim != 1:
-        raise ValueError('data must be a pandas.Series')
     totals = [data[data.index.get_level_values(name)].sum()
               for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
@@ -26,6 +29,7 @@ def _process_data(data, sort_by, sort_sets_by):
         totals.sort_values(ascending=False, inplace=True)
     elif sort_sets_by is not None:
         raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
+    df = df.reorder_levels(totals.index.values)
     data = data.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
@@ -48,7 +52,23 @@ def _process_data(data, sort_by, sort_sets_by):
     max_value = np.inf
     data = data[np.logical_and(data >= min_value, data <= max_value)]
 
-    return data, totals
+    # add '_bin' to df indicating index in data
+    # XXX: ugly!
+    def _pack_binary(X):
+        X = np.asarray(X)
+        out = 0
+        for i, col in enumerate(X.transpose()):
+            out *= 2
+            out += col
+        return out
+
+    df_packed = _pack_binary(df.index)
+    data_packed = _pack_binary(data.index)
+    df['_bin'] = pd.Series(df_packed).map(
+        pd.Series(np.arange(len(data_packed)),
+                  index=data_packed))
+
+    return df, data, totals
 
 
 class _Transposed:
@@ -163,7 +183,7 @@ class UpSet:
                                'elements': intersection_plot_elements}]
         self._show_counts = show_counts
 
-        (self.intersections,
+        (self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_sets_by=sort_sets_by)
