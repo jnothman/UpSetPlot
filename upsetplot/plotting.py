@@ -140,12 +140,17 @@ class UpSet:
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
+    show_counts : bool or str, default=False
+        Whether to label the intersection size bars with the cardinality
+        of the intersection. When a string, this formats the number.
+        For example, '%d' is equivalent to True.
     """
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
                  sort_sets_by='cardinality', facecolor='black',
                  with_lines=True, element_size=32,
-                 intersection_plot_elements=6, totals_plot_elements=2):
+                 intersection_plot_elements=6, totals_plot_elements=2,
+                 show_counts=''):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -154,6 +159,7 @@ class UpSet:
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
         self._intersection_plot_elements = intersection_plot_elements
+        self._show_counts = show_counts
 
         (self.intersections,
          self.totals) = _process_data(data,
@@ -262,8 +268,11 @@ class UpSet:
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
-        ax.bar(np.arange(len(self.intersections)), self.intersections,
-               .5, color=self._facecolor, zorder=10, align='center')
+        rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
+                       .5, color=self._facecolor, zorder=10, align='center')
+
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
             ax.spines[self._reorient(x)].set_visible(False)
@@ -273,13 +282,45 @@ class UpSet:
         tick_axis.set_label('Intersection size')
         # tick_axis.set_tick_params(direction='in')
 
+    def _label_sizes(self, ax, rects, where):
+        if not self._show_counts:
+            return
+        fmt = '%d' if self._show_counts is True else self._show_counts
+        if where == 'right':
+            margin = 0.01 * abs(np.diff(ax.get_xlim()))
+            for rect in rects:
+                width = rect.get_width()
+                ax.text(width + margin,
+                        rect.get_y() + rect.get_height() * .5,
+                        fmt % width,
+                        ha='left', va='center')
+        elif where == 'left':
+            margin = 0.01 * abs(np.diff(ax.get_xlim()))
+            for rect in rects:
+                width = rect.get_width()
+                ax.text(width + margin,
+                        rect.get_y() + rect.get_height() * .5,
+                        fmt % width,
+                        ha='right', va='center')
+        elif where == 'top':
+            margin = 0.01 * abs(np.diff(ax.get_ylim()))
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() * .5,
+                        height + margin, fmt % height,
+                        ha='center', va='bottom')
+        else:
+            raise NotImplementedError('unhandled where: %r' % where)
+
     def plot_totals(self, ax):
         """Plot bars indicating total set size
         """
         orig_ax = ax
         ax = self._reorient(ax)
-        ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                .5, color=self._facecolor, align='center')
+        rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
+                        .5, color=self._facecolor, align='center')
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
+
         max_total = self.totals.max()
         if self._horizontal:
             orig_ax.set_xlim(max_total, 0)

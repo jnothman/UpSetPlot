@@ -133,3 +133,37 @@ def test_element_size():
     assert figsize_before == figsize_after
 
     # TODO: make sure axes are all within figure
+
+
+
+def _walk_artists(el):
+    children = el.get_children()
+    yield el, children
+    for ch in children:
+        for x in _walk_artists(ch):
+            yield x
+
+
+def _count_descendants(el):
+    return sum(len(children) for x, children in _walk_artists(el))
+
+
+@pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
+def test_show_counts(orientation):
+    fig = matplotlib.figure.Figure()
+    X = generate_data(n_samples=100)
+    plot(X, fig)
+    n_artists_no_sizes = _count_descendants(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, show_counts=True)
+    n_artists_yes_sizes = _count_descendants(fig)
+    assert n_artists_yes_sizes - n_artists_no_sizes > 6
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, show_counts='%0.2g')
+    assert n_artists_yes_sizes == _count_descendants(fig)
+
+    with pytest.raises(ValueError):
+        fig = matplotlib.figure.Figure()
+        plot(X, fig, show_counts='%0.2h')
