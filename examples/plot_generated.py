@@ -20,6 +20,6 @@ plot(example, sort_by='cardinality')
 plt.title('Ordered by cardinality')
 plt.show()
 
-plot(example, size_fmt='%d')
-plt.title('With size shown')
+plot(example, show_counts='%d')
+plt.title('With counts shown')
 plt.show()
