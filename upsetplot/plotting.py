@@ -158,7 +158,9 @@ class UpSet:
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
-        self._intersection_plot_elements = intersection_plot_elements
+        self._subset_plots = [{'type': 'default',
+                               'id': 'intersections',
+                               'elements': intersection_plot_elements}]
         self._show_counts = show_counts
 
         (self.intersections,
@@ -172,6 +174,14 @@ class UpSet:
         if self._horizontal:
             return x, y
         return y, x
+
+    def add_catplot(self, value, elements=3, **kw):
+        assert 'orient' not in kw
+        self._subset_plots.append({'type': 'catplot',
+                                   'value': value,
+                                   'id': 'extra%d' % len(self._subset_plots),
+                                   'elements': elements,
+                                   'kw': kw})
 
     def make_grid(self, fig=None):
         """Get a SubplotSpec for each Axes, accounting for label text width
@@ -190,6 +200,9 @@ class UpSet:
 
         MAGIC_MARGIN = 10  # FIXME
         figw = self._reorient(fig.get_window_extent(renderer=r)).width
+
+        sizes = np.asarray([p['elements'] for p in self._subset_plots])
+
         if self._element_size is None:
             colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
                                                     self._totals_plot_elements)
@@ -201,31 +214,37 @@ class UpSet:
                             self._totals_plot_elements) +
                     MAGIC_MARGIN + textw)
             fig.set_figwidth(figw / render_ratio)
-            fig.set_figheight((colw * (n_cats +
-                                       self._intersection_plot_elements)) /
+            fig.set_figheight((colw * (n_cats + sizes.sum())) /
                               render_ratio)
 
         text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
                                                  self._totals_plot_elements)))
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
-        gridspec = GS(*self._swapaxes(n_cats +
-                                      self._intersection_plot_elements,
+        gridspec = GS(*self._swapaxes(n_cats + sizes.sum(),
                                       n_inters + text_nelems +
                                       self._totals_plot_elements),
                       hspace=1)
         if self._horizontal:
-            return {'intersections': gridspec[:-n_cats, -n_inters:],
-                    'matrix': gridspec[-n_cats:, -n_inters:],
-                    'shading': gridspec[-n_cats:, :],
-                    'totals': gridspec[-n_cats:, :self._totals_plot_elements],
-                    'gs': gridspec}
+            out = {'matrix': gridspec[-n_cats:, -n_inters:],
+                   'shading': gridspec[-n_cats:, :],
+                   'totals': gridspec[-n_cats:, :self._totals_plot_elements],
+                   'gs': gridspec}
+            cumsizes = np.cumsum(sizes[::-1])
+            for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
+                                         self._subset_plots):
+                out[plot['id']] = gridspec[start:stop, -n_inters:]
         else:
-            return {'intersections': gridspec[-n_inters:, n_cats:],
-                    'matrix': gridspec[-n_inters:, :n_cats],
-                    'shading': gridspec[:, :n_cats],
-                    'totals': gridspec[:self._totals_plot_elements, :n_cats],
-                    'gs': gridspec}
+            out = {'matrix': gridspec[-n_inters:, :n_cats],
+                   'shading': gridspec[:, :n_cats],
+                   'totals': gridspec[:self._totals_plot_elements, :n_cats],
+                   'gs': gridspec}
+            cumsizes = np.cumsum(sizes)
+            for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
+                                         self._subset_plots):
+                out[plot['id']] = gridspec[-n_inters:,
+                                           start + n_cats:stop + n_cats]
+        return out
 
     def plot_matrix(self, ax):
         """Plot the matrix of intersection indicators onto ax
@@ -373,16 +392,29 @@ class UpSet:
         matrix_ax = self._reorient(fig.add_subplot)(specs['matrix'],
                                                     sharey=shading_ax)
         self.plot_matrix(matrix_ax)
-        inters_ax = self._reorient(fig.add_subplot)(specs['intersections'],
-                                                    sharex=matrix_ax)
-        self.plot_intersections(inters_ax)
         totals_ax = self._reorient(fig.add_subplot)(specs['totals'],
                                                     sharey=matrix_ax)
         self.plot_totals(totals_ax)
-        return {'matrix': matrix_ax,
-                'intersections': inters_ax,
-                'shading': shading_ax,
-                'totals': totals_ax}
+        out = {'matrix': matrix_ax,
+               'shading': shading_ax,
+               'totals': totals_ax}
+
+        for plot in self._subset_plots:
+            ax = self._reorient(fig.add_subplot)(specs[plot['id']],
+                                                 sharex=matrix_ax)
+            if plot['type'] == 'default':
+                self.plot_intersections(ax)
+            elif plot['type'] == 'catplot':
+                self.plot_catplot(ax, value, kw)
+            else:
+                raise ValueError('Unknown subset plot type: %r' % plot['type'])
+            out[plot['id']] = ax
+        return out
+
+    def plot_catplot(self, value, kw):
+        orient = 'v' if self._horizontal else 'h'
+        import seaborn
+        seaborn.catplot()
 
     def _repr_html_(self):
         fig = plt.figure(figsize=self._default_figsize)
