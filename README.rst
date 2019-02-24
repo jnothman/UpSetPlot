@@ -7,10 +7,10 @@ UpSetPlot documentation
 
 This is another Python implementation of UpSet plots by Lex et al. [Lex2014]_.
 UpSet plots are used to visualise set overlaps; like Venn diagrams but
-more readable.
+more readable. Documentation is at https://upsetplot.readthedocs.io.
 
-It tries to provide a simple interface backed by an extensible,
-object-oriented design.
+This ``upsetplot`` library tries to provide a simple interface backed by an
+extensible, object-oriented design.
 
 The basic input format is a `pandas.Series` containing counts
 corresponding to set intersection sizes.  The index indicates which rows
@@ -41,6 +41,32 @@ Then::
 makes:
 
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_generated_001.png
+   :target: ../auto_examples/plot_generated.html
+
+This plot shows the cardinality of every set combination seen in our data.  The
+leftmost column counts items absent from any set. The next three columns count
+items only in ``set1``, ``set2`` and ``set3``` respectively, with following
+columns showing cardinalities for items in each combination of exactly two
+named sets. The rightmost column counts items in all three sets.
+
+We call the above plot style "horizontal" because the set intersections are
+presented from left to right.  Vertical plots are also supported!
+
+.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_vertical_001.png
+   :target: ../auto_examples/plot_vertical.html
+
+Installation
+------------
+
+To install the library, you can use `pip`::
+
+    $ pip install upsetplot
+
+It should then be possible to::
+
+    >>> import upsetplot
+
+in Python.
 
 Why an alternative to py-upset?
 -------------------------------
