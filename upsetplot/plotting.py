@@ -12,6 +12,7 @@ from matplotlib.tight_layout import get_renderer
 def _process_data(df, sort_by, sort_sets_by):
     if df.ndim == 1:
         data = df
+        df = pd.DataFrame({'_value': df})
     else:
         data = df.groupby(level=list(range(data.index.nlevels))).size()
 
@@ -55,15 +56,15 @@ def _process_data(df, sort_by, sort_sets_by):
     # add '_bin' to df indicating index in data
     # XXX: ugly!
     def _pack_binary(X):
-        X = np.asarray(X)
+        X = pd.DataFrame(X)
         out = 0
-        for i, col in enumerate(X.transpose()):
+        for i, (_, col) in enumerate(X.items()):
             out *= 2
             out += col
         return out
 
-    df_packed = _pack_binary(df.index)
-    data_packed = _pack_binary(data.index)
+    df_packed = _pack_binary(df.index.to_frame())
+    data_packed = _pack_binary(data.index.to_frame())
     df['_bin'] = pd.Series(df_packed).map(
         pd.Series(np.arange(len(data_packed)),
                   index=data_packed))
@@ -112,6 +113,8 @@ class _Transposed:
         'get_figheight': 'get_figwidth',
         'set_figwidth': 'set_figheight',
         'set_figheight': 'set_figwidth',
+        'set_xlabel': 'set_ylabel',
+        'set_ylabel': 'set_xlabel',
     }
 
 
@@ -195,13 +198,15 @@ class UpSet:
             return x, y
         return y, x
 
-    def add_catplot(self, value, elements=3, **kw):
+    def add_catplot(self, value, kind, elements=3, **kw):
         """Add a seaborn.catplot over subsets when :func:`plot` is called.
 
         Parameters
         ----------
         value : str
             Column name for the value (i.e. y if orientation='horizontal')
+        kind : str
+            One of {"point", "bar", "strip", "swarm", "box", "violin", "boxen"}
         elements : int
             Size of the axes counted in number of matrix elements.
         **kw : dict
@@ -217,11 +222,15 @@ class UpSet:
         assert not set(kw.keys()) & {'ax', 'data', 'x', 'y', 'orient'}
         self._subset_plots.append({'type': 'catplot',
                                    'value': value,
+                                   'kind': kind,
                                    'id': 'extra%d' % len(self._subset_plots),
                                    'elements': elements,
                                    'kw': kw})
 
-    def _plot_catplot(self, ax, value, kw):
+    def _plot_catplot(self, ax, value, kind, kw):
+        df = self._df
+        if value is None and '_value' in df.columns:
+            value = '_value'
         kw = kw.copy()
         if self._horizontal:
             kw['orient'] = 'v'
@@ -232,7 +241,19 @@ class UpSet:
             kw['x'] = value
             kw['y'] = '_bin'
         import seaborn
-        seaborn.catplot(ax=ax, data=self.intersections, **kw)
+        kw['ax'] = ax
+        getattr(seaborn, kind + 'plot')(data=df, **kw)
+
+        ax = self._reorient(ax)
+        if value == '_value':
+            ax.set_ylabel('')
+
+        ax.xaxis.set_visible(False)
+        for x in ['top', 'bottom', 'right']:
+            ax.spines[self._reorient(x)].set_visible(False)
+
+        tick_axis = ax.yaxis
+        tick_axis.grid(True)
 
     def make_grid(self, fig=None):
         """Get a SubplotSpec for each Axes, accounting for label text width
@@ -283,7 +304,7 @@ class UpSet:
                    'gs': gridspec}
             cumsizes = np.cumsum(sizes[::-1])
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
-                                         self._subset_plots):
+                                         self._subset_plots[::-1]):
                 out[plot['id']] = gridspec[start:stop, -n_inters:]
         else:
             out = {'matrix': gridspec[-n_inters:, :n_cats],
@@ -456,7 +477,7 @@ class UpSet:
             if plot['type'] == 'default':
                 self.plot_intersections(ax)
             elif plot['type'] == 'catplot':
-                self._plot_catplot(ax, plot['value'], plot['kw'])
+                self._plot_catplot(ax, plot['value'], plot['kind'], plot['kw'])
             else:
                 raise ValueError('Unknown subset plot type: %r' % plot['type'])
             out[plot['id']] = ax
