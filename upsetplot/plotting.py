@@ -140,8 +140,8 @@ class UpSet:
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
-    show_sizes : bool or str, default=False
-        Whether to label the intersection size bars with the size (cardinality)
+    show_counts : bool or str, default=False
+        Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
     """
@@ -150,7 +150,7 @@ class UpSet:
                  sort_sets_by='cardinality', facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_sizes=''):
+                 show_counts=''):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -159,7 +159,7 @@ class UpSet:
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
         self._intersection_plot_elements = intersection_plot_elements
-        self._show_sizes = show_sizes
+        self._show_counts = show_counts
 
         (self.intersections,
          self.totals) = _process_data(data,
@@ -283,9 +283,9 @@ class UpSet:
         # tick_axis.set_tick_params(direction='in')
 
     def _label_sizes(self, ax, rects, where):
-        if not self._show_sizes:
+        if not self._show_counts:
             return
-        fmt = '%d' if self._show_sizes is True else self._show_sizes
+        fmt = '%d' if self._show_counts is True else self._show_counts
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
