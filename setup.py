@@ -21,7 +21,7 @@ def setup_package():
               setup_requires=['pytest-runner'],
               tests_require=['pytest>=2.7', 'pytest-cov<2.6'],
               # TODO: check versions
-              install_requires=['pandas', 'matplotlib'])
+              install_requires=['pandas', 'matplotlib>=2.0'])
     finally:
         del sys.path[0]
         os.chdir(old_path)
