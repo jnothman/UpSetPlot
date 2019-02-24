@@ -62,6 +62,11 @@ To install the library, you can use `pip`::
 
     $ pip install upsetplot
 
+Installation requires:
+
+* pandas
+* matplotlib >= 2.0
+
 It should then be possible to::
 
     >>> import upsetplot
