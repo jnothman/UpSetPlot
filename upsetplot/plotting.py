@@ -17,11 +17,10 @@ def _process_data(data, sort_by, sort_sets_by):
                 .groupby(level=list(range(data.index.nlevels)))
                 .sum())
 
-    totals = []
-    for i in range(data.index.nlevels):
-        idxslice = pd.IndexSlice[(slice(None),) * i + (True,)]
-        # FIXME: can get IndexingError if level only contains False
-        totals.append(data.loc[idxslice].sum())
+    if data.ndim != 1:
+        raise ValueError('data must be a pandas.Series')
+    totals = [data[data.index.get_level_values(name)].sum()
+              for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
     if sort_sets_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
