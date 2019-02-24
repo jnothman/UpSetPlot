@@ -176,12 +176,43 @@ class UpSet:
         return y, x
 
     def add_catplot(self, value, elements=3, **kw):
-        assert 'orient' not in kw
+        """Add a seaborn.catplot over subsets when :func:`plot` is called.
+
+        Parameters
+        ----------
+        value : str
+            Column name for the value (i.e. y if orientation='horizontal')
+        elements : int
+            Size of the axes counted in number of matrix elements.
+        **kw : dict
+            Additional keywords to pass to :func:`seaborn.catplot`.
+
+            Our implementation automatically determines 'ax', 'data', 'x', 'y'
+            and 'orient', so these are prohibited keys in `kw`.
+
+        Returns
+        -------
+        None
+        """
+        assert not set(kw.keys()) & {'ax', 'data', 'x', 'y', 'orient'}
         self._subset_plots.append({'type': 'catplot',
                                    'value': value,
                                    'id': 'extra%d' % len(self._subset_plots),
                                    'elements': elements,
                                    'kw': kw})
+
+    def _plot_catplot(self, ax, value, kw):
+        kw = kw.copy()
+        if self._horizontal:
+            kw['orient'] = 'v'
+            kw['x'] = '_bin'
+            kw['y'] = value
+        else:
+            kw['orient'] = 'h'
+            kw['x'] = value
+            kw['y'] = '_bin'
+        import seaborn
+        seaborn.catplot(ax=ax, data=self.intersections, **kw)
 
     def make_grid(self, fig=None):
         """Get a SubplotSpec for each Axes, accounting for label text width
@@ -405,16 +436,11 @@ class UpSet:
             if plot['type'] == 'default':
                 self.plot_intersections(ax)
             elif plot['type'] == 'catplot':
-                self.plot_catplot(ax, value, kw)
+                self._plot_catplot(ax, plot['value'], plot['kw'])
             else:
                 raise ValueError('Unknown subset plot type: %r' % plot['type'])
             out[plot['id']] = ax
         return out
-
-    def plot_catplot(self, value, kw):
-        orient = 'v' if self._horizontal else 'h'
-        import seaborn
-        seaborn.catplot()
 
     def _repr_html_(self):
         fig = plt.figure(figsize=self._default_figsize)
