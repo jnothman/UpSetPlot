@@ -5,3 +5,4 @@ matplotlib
 numpydoc
 sphinx-gallery
 sphinx-issues
+seaborn

@@ -66,6 +66,7 @@ Installation requires:
 
 * pandas
 * matplotlib >= 2.0
+* seaborn to use `UpSet.add_catplot`
 
 It should then be possible to::
 

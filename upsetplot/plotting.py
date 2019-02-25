@@ -9,19 +9,29 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(df, sort_by, sort_sets_by):
+def _process_data(df, sort_by, sort_sets_by, sum_over):
     if df.ndim == 1:
         data = df
         df = pd.DataFrame({'_value': df})
+
+        if not data.index.is_unique:
+            data = (data
+                    .groupby(level=list(range(data.index.nlevels)))
+                    .sum())
+    elif sum_over is None:
+        raise ValueError('sum_over must be False or a column name when a '
+                         'DataFrame is input')
     else:
-        data = df.groupby(level=list(range(data.index.nlevels))).size()
+        gb = df.groupby(level=list(range(df.index.nlevels)))
+        if sum_over is False:
+            data = gb.size()
+        elif hasattr(sum_over, 'lower'):
+            data = gb[sum_over].sum()
+        else:
+            raise ValueError('Unsupported value for sum_over: %r' % sum_over)
 
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in data.index.levels)
-    if not data.index.is_unique:
-        data = (data
-                .groupby(level=list(range(data.index.nlevels)))
-                .sum())
 
     totals = [data[data.index.get_level_values(name)].sum()
               for name in data.index.names]
@@ -149,6 +159,10 @@ class UpSet:
     sort_sets_by : {'cardinality', None}
         Whether to sort the overall sets by total cardinality, or leave them
         in the provided order.
+    sum_over : str, False or None (default)
+        Must be specified when `data` is a DataFrame. If False, the
+        intersection plot will show the count of each subset. Otherwise, it
+        shows the sum of the specified field.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -170,7 +184,7 @@ class UpSet:
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_sets_by='cardinality', facecolor='black',
+                 sort_sets_by='cardinality', sum_over=None, facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts=''):
@@ -189,7 +203,8 @@ class UpSet:
         (self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
-                                      sort_sets_by=sort_sets_by)
+                                      sort_sets_by=sort_sets_by,
+                                      sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
@@ -198,16 +213,17 @@ class UpSet:
             return x, y
         return y, x
 
-    def add_catplot(self, value, kind, elements=3, **kw):
-        """Add a seaborn.catplot over subsets when :func:`plot` is called.
+    def add_catplot(self, kind, value=None, elements=3, **kw):
+        """Add a seaborn catplot over subsets when :func:`plot` is called.
 
         Parameters
         ----------
-        value : str
-            Column name for the value (i.e. y if orientation='horizontal')
         kind : str
             One of {"point", "bar", "strip", "swarm", "box", "violin", "boxen"}
-        elements : int
+        value : str, optional
+            Column name for the value to plot (i.e. y if
+            orientation='horizontal'), required if `data` is a DataFrame.
+        elements : int, default=3
             Size of the axes counted in number of matrix elements.
         **kw : dict
             Additional keywords to pass to :func:`seaborn.catplot`.
@@ -220,6 +236,13 @@ class UpSet:
         None
         """
         assert not set(kw.keys()) & {'ax', 'data', 'x', 'y', 'orient'}
+        if value is None:
+            if '_value' not in self._df.columns:
+                raise ValueError('value cannot be set if data is a Series. '
+                                 'Got %r' % value)
+        else:
+            if value not in self._df.columns:
+                raise ValueError('value %r is not a column in data' % value)
         self._subset_plots.append({'type': 'catplot',
                                    'value': value,
                                    'kind': kind,
@@ -231,6 +254,8 @@ class UpSet:
         df = self._df
         if value is None and '_value' in df.columns:
             value = '_value'
+        elif value is None:
+            raise ValueError('value can only be None when data is a Series')
         kw = kw.copy()
         if self._horizontal:
             kw['orient'] = 'v'
