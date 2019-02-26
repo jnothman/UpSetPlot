@@ -19,7 +19,8 @@ def _process_data(data, sort_by, sort_sets_by):
 
     if data.ndim != 1:
         raise ValueError('data must be a pandas.Series')
-    totals = [data[data.index.get_level_values(name)].sum()
+    # XXX: .values.astype(bool) not required for recent Pandas
+    totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
               for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
     if sort_sets_by == 'cardinality':
