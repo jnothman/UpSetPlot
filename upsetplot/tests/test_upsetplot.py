@@ -2,7 +2,8 @@ import io
 import itertools
 
 import pytest
-from pandas.util.testing import assert_series_equal, assert_index_equal
+from pandas.util.testing import (
+    assert_series_equal, assert_frame_equal, assert_index_equal)
 from numpy.testing import assert_array_equal
 import pandas as pd
 import numpy as np
@@ -26,11 +27,16 @@ def is_ascending(seq):
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-def test_process_data(X, sort_by, sort_sets_by):
+def test_process_data_series(X, sort_by, sort_sets_by):
+    with pytest.raises(ValueError, match='sum_over is not applicable'):
+        _process_data(X, sort_by=sort_by, sort_sets_by=sort_sets_by,
+                      sum_over=False)
+
     df, intersections, totals = _process_data(X,
                                               sort_by=sort_by,
                                               sort_sets_by=sort_sets_by,
                                               sum_over=None)
+    assert intersections.name == 'value'
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
                    .reindex(index=intersections.index))
@@ -59,6 +65,35 @@ def test_process_data(X, sort_by, sort_sets_by):
     assert_index_equal(intersections.iloc[df['_bin']].index,
                        df.index)
     assert len(df) == len(X)
+
+
+@pytest.mark.parametrize('x', [
+    generate_data(aggregated=False),
+])
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
+def test_process_data_frame(x, sort_by, sort_sets_by):
+    X = pd.DataFrame({'a': x})
+
+    with pytest.raises(ValueError, match='sum_over must be False or '):
+        _process_data(X, sort_by=sort_by, sort_sets_by=sort_sets_by,
+                      sum_over=None)
+
+    df, intersections, totals = _process_data(X,
+                                              sort_by=sort_by,
+                                              sort_sets_by=sort_sets_by,
+                                              sum_over='a')
+
+    # check equivalence to Series
+    df1d, intersections1d, totals1d = _process_data(x,
+                                                    sort_by=sort_by,
+                                                    sort_sets_by=sort_sets_by,
+                                                    sum_over=None)
+
+    assert intersections.name == 'a'
+    assert_frame_equal(df, df1d.rename(columns={'_value': 'a'}))
+    assert_series_equal(intersections, intersections1d, check_names=False)
+    assert_series_equal(totals, totals1d)
 
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
