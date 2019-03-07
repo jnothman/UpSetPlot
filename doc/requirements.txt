@@ -6,3 +6,4 @@ numpydoc
 sphinx-gallery
 sphinx-issues
 seaborn
+sckikit-learn
