@@ -9,17 +9,34 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(data, sort_by, sort_sets_by):
-    # check all indices are vertical
-    assert all(set([True, False]) >= set(level) for level in data.index.levels)
-    if not data.index.is_unique:
-        data = (data
-                .groupby(level=list(range(data.index.nlevels)))
-                .sum())
+def _process_data(df, sort_by, sort_sets_by, sum_over):
+    if df.ndim == 1:
+        data = df
+        df = pd.DataFrame({'_value': df})
 
-    if data.ndim != 1:
-        raise ValueError('data must be a pandas.Series')
-    # XXX: .values.astype(bool) not required for recent Pandas
+        if not data.index.is_unique:
+            data = (data
+                    .groupby(level=list(range(data.index.nlevels)))
+                    .sum())
+        if sum_over is not None:
+            raise ValueError('sum_over is not applicable when the input is a '
+                             'Series')
+    elif sum_over is None:
+        raise ValueError('sum_over must be False or a column name when a '
+                         'DataFrame is input')
+    else:
+        gb = df.groupby(level=list(range(df.index.nlevels)))
+        if sum_over is False:
+            data = gb.size()
+            data.name = 'size'
+        elif hasattr(sum_over, 'lower'):
+            data = gb[sum_over].sum()
+        else:
+            raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+
+    # check all indices are boolean
+    assert all(set([True, False]) >= set(level) for level in data.index.levels)
+
     totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
               for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
@@ -27,6 +44,7 @@ def _process_data(data, sort_by, sort_sets_by):
         totals.sort_values(ascending=False, inplace=True)
     elif sort_sets_by is not None:
         raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
+    df = df.reorder_levels(totals.index.values)
     data = data.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
@@ -48,7 +66,23 @@ def _process_data(data, sort_by, sort_sets_by):
     max_value = np.inf
     data = data[np.logical_and(data >= min_value, data <= max_value)]
 
-    return data, totals
+    # add '_bin' to df indicating index in data
+    # XXX: ugly!
+    def _pack_binary(X):
+        X = pd.DataFrame(X)
+        out = 0
+        for i, (_, col) in enumerate(X.items()):
+            out *= 2
+            out += col
+        return out
+
+    df_packed = _pack_binary(df.index.to_frame())
+    data_packed = _pack_binary(data.index.to_frame())
+    df['_bin'] = pd.Series(df_packed).map(
+        pd.Series(np.arange(len(data_packed)),
+                  index=data_packed))
+
+    return df, data, totals
 
 
 class _Transposed:
@@ -92,6 +126,8 @@ class _Transposed:
         'get_figheight': 'get_figwidth',
         'set_figwidth': 'set_figheight',
         'set_figheight': 'set_figwidth',
+        'set_xlabel': 'set_ylabel',
+        'set_ylabel': 'set_xlabel',
     }
 
 
@@ -112,10 +148,11 @@ class UpSet:
 
     Parameters
     ----------
-    data : pandas.Series
+    data : pandas.Series or pandas.DataFrame
         Values for each set to plot.
         Should have multi-index where each level is binary,
         corresponding to set membership.
+        If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
     sort_by : {'cardinality', 'degree'}
@@ -126,6 +163,10 @@ class UpSet:
     sort_sets_by : {'cardinality', None}
         Whether to sort the overall sets by total cardinality, or leave them
         in the provided order.
+    sum_over : str, False or None (default)
+        Must be specified when `data` is a DataFrame. If False, the
+        intersection plot will show the count of each subset. Otherwise, it
+        shows the sum of the specified field.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -147,7 +188,7 @@ class UpSet:
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_sets_by='cardinality', facecolor='black',
+                 sort_sets_by='cardinality', sum_over=None, facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts=''):
@@ -158,13 +199,16 @@ class UpSet:
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
-        self._intersection_plot_elements = intersection_plot_elements
+        self._subset_plots = [{'type': 'default',
+                               'id': 'intersections',
+                               'elements': intersection_plot_elements}]
         self._show_counts = show_counts
 
-        (self.intersections,
+        (self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
-                                      sort_sets_by=sort_sets_by)
+                                      sort_sets_by=sort_sets_by,
+                                      sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
@@ -172,6 +216,73 @@ class UpSet:
         if self._horizontal:
             return x, y
         return y, x
+
+    def add_catplot(self, kind, value=None, elements=3, **kw):
+        """Add a seaborn catplot over subsets when :func:`plot` is called.
+
+        Parameters
+        ----------
+        kind : str
+            One of {"point", "bar", "strip", "swarm", "box", "violin", "boxen"}
+        value : str, optional
+            Column name for the value to plot (i.e. y if
+            orientation='horizontal'), required if `data` is a DataFrame.
+        elements : int, default=3
+            Size of the axes counted in number of matrix elements.
+        **kw : dict
+            Additional keywords to pass to :func:`seaborn.catplot`.
+
+            Our implementation automatically determines 'ax', 'data', 'x', 'y'
+            and 'orient', so these are prohibited keys in `kw`.
+
+        Returns
+        -------
+        None
+        """
+        assert not set(kw.keys()) & {'ax', 'data', 'x', 'y', 'orient'}
+        if value is None:
+            if '_value' not in self._df.columns:
+                raise ValueError('value cannot be set if data is a Series. '
+                                 'Got %r' % value)
+        else:
+            if value not in self._df.columns:
+                raise ValueError('value %r is not a column in data' % value)
+        self._subset_plots.append({'type': 'catplot',
+                                   'value': value,
+                                   'kind': kind,
+                                   'id': 'extra%d' % len(self._subset_plots),
+                                   'elements': elements,
+                                   'kw': kw})
+
+    def _plot_catplot(self, ax, value, kind, kw):
+        df = self._df
+        if value is None and '_value' in df.columns:
+            value = '_value'
+        elif value is None:
+            raise ValueError('value can only be None when data is a Series')
+        kw = kw.copy()
+        if self._horizontal:
+            kw['orient'] = 'v'
+            kw['x'] = '_bin'
+            kw['y'] = value
+        else:
+            kw['orient'] = 'h'
+            kw['x'] = value
+            kw['y'] = '_bin'
+        import seaborn
+        kw['ax'] = ax
+        getattr(seaborn, kind + 'plot')(data=df, **kw)
+
+        ax = self._reorient(ax)
+        if value == '_value':
+            ax.set_ylabel('')
+
+        ax.xaxis.set_visible(False)
+        for x in ['top', 'bottom', 'right']:
+            ax.spines[self._reorient(x)].set_visible(False)
+
+        tick_axis = ax.yaxis
+        tick_axis.grid(True)
 
     def make_grid(self, fig=None):
         """Get a SubplotSpec for each Axes, accounting for label text width
@@ -190,6 +301,9 @@ class UpSet:
 
         MAGIC_MARGIN = 10  # FIXME
         figw = self._reorient(fig.get_window_extent(renderer=r)).width
+
+        sizes = np.asarray([p['elements'] for p in self._subset_plots])
+
         if self._element_size is None:
             colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
                                                     self._totals_plot_elements)
@@ -201,31 +315,37 @@ class UpSet:
                             self._totals_plot_elements) +
                     MAGIC_MARGIN + textw)
             fig.set_figwidth(figw / render_ratio)
-            fig.set_figheight((colw * (n_cats +
-                                       self._intersection_plot_elements)) /
+            fig.set_figheight((colw * (n_cats + sizes.sum())) /
                               render_ratio)
 
         text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
                                                  self._totals_plot_elements)))
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
-        gridspec = GS(*self._swapaxes(n_cats +
-                                      self._intersection_plot_elements,
+        gridspec = GS(*self._swapaxes(n_cats + sizes.sum(),
                                       n_inters + text_nelems +
                                       self._totals_plot_elements),
                       hspace=1)
         if self._horizontal:
-            return {'intersections': gridspec[:-n_cats, -n_inters:],
-                    'matrix': gridspec[-n_cats:, -n_inters:],
-                    'shading': gridspec[-n_cats:, :],
-                    'totals': gridspec[-n_cats:, :self._totals_plot_elements],
-                    'gs': gridspec}
+            out = {'matrix': gridspec[-n_cats:, -n_inters:],
+                   'shading': gridspec[-n_cats:, :],
+                   'totals': gridspec[-n_cats:, :self._totals_plot_elements],
+                   'gs': gridspec}
+            cumsizes = np.cumsum(sizes[::-1])
+            for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
+                                         self._subset_plots[::-1]):
+                out[plot['id']] = gridspec[start:stop, -n_inters:]
         else:
-            return {'intersections': gridspec[-n_inters:, n_cats:],
-                    'matrix': gridspec[-n_inters:, :n_cats],
-                    'shading': gridspec[:, :n_cats],
-                    'totals': gridspec[:self._totals_plot_elements, :n_cats],
-                    'gs': gridspec}
+            out = {'matrix': gridspec[-n_inters:, :n_cats],
+                   'shading': gridspec[:, :n_cats],
+                   'totals': gridspec[:self._totals_plot_elements, :n_cats],
+                   'gs': gridspec}
+            cumsizes = np.cumsum(sizes)
+            for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
+                                         self._subset_plots):
+                out[plot['id']] = gridspec[-n_inters:,
+                                           start + n_cats:stop + n_cats]
+        return out
 
     def plot_matrix(self, ax):
         """Plot the matrix of intersection indicators onto ax
@@ -279,6 +399,7 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(True)
+        # FIXME: doesn't seem to display
         tick_axis.set_label('Intersection size')
         # tick_axis.set_tick_params(direction='in')
 
@@ -373,16 +494,24 @@ class UpSet:
         matrix_ax = self._reorient(fig.add_subplot)(specs['matrix'],
                                                     sharey=shading_ax)
         self.plot_matrix(matrix_ax)
-        inters_ax = self._reorient(fig.add_subplot)(specs['intersections'],
-                                                    sharex=matrix_ax)
-        self.plot_intersections(inters_ax)
         totals_ax = self._reorient(fig.add_subplot)(specs['totals'],
                                                     sharey=matrix_ax)
         self.plot_totals(totals_ax)
-        return {'matrix': matrix_ax,
-                'intersections': inters_ax,
-                'shading': shading_ax,
-                'totals': totals_ax}
+        out = {'matrix': matrix_ax,
+               'shading': shading_ax,
+               'totals': totals_ax}
+
+        for plot in self._subset_plots:
+            ax = self._reorient(fig.add_subplot)(specs[plot['id']],
+                                                 sharex=matrix_ax)
+            if plot['type'] == 'default':
+                self.plot_intersections(ax)
+            elif plot['type'] == 'catplot':
+                self._plot_catplot(ax, plot['value'], plot['kind'], plot['kw'])
+            else:
+                raise ValueError('Unknown subset plot type: %r' % plot['type'])
+            out[plot['id']] = ax
+        return out
 
     def _repr_html_(self):
         fig = plt.figure(figsize=self._default_figsize)
@@ -395,10 +524,11 @@ def plot(data, fig=None, **kwargs):
 
     Parameters
     ----------
-    data : pandas.Series
+    data : pandas.Series or pandas.DataFrame
         Values for each set to plot.
         Should have multi-index where each level is binary,
         corresponding to set membership.
+        If a DataFrame, `sum_over` must be a string or False.
     fig : matplotlib.figure.Figure, optional
         Defaults to a new figure.
     kwargs

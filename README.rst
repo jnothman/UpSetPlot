@@ -49,11 +49,28 @@ items only in ``set1``, ``set2`` and ``set3``` respectively, with following
 columns showing cardinalities for items in each combination of exactly two
 named sets. The rightmost column counts items in all three sets.
 
+Rotation
+........
+
 We call the above plot style "horizontal" because the set intersections are
-presented from left to right.  Vertical plots are also supported!
+presented from left to right.  `Vertical plots
+<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_vertical.html>`__
+are also supported!
 
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_vertical_001.png
-   :target: ../auto_examples/plot_vertical.html
+   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_vertical.html
+
+Distributions
+.............
+
+Providing a DataFrame rather than a Series as input allows us to expressively
+`plot the distribution of variables
+<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html>`__
+in each subset.
+
+.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_boston_001.png
+   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html
+
 
 Loading datasets
 ................
@@ -99,6 +116,7 @@ Installation requires:
 
 * pandas
 * matplotlib >= 2.0
+* seaborn to use `UpSet.add_catplot`
 
 It should then be possible to::
 
