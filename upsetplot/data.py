@@ -71,6 +71,11 @@ def from_memberships(memberships, data=None):
     """
     df = pd.DataFrame([{name: True for name in names}
                        for names in memberships])
+    for set_name in df.columns:
+        if not hasattr(set_name, 'lower'):
+            raise ValueError('Set names should be strings')
+    if df.shape[1] == 0:
+        raise ValueError('Require at least one set. None were found.')
     df.sort_index(axis=1, inplace=True)
     df.fillna(False, inplace=True)
     df = df.astype(bool)
@@ -82,5 +87,9 @@ def from_memberships(memberships, data=None):
         data = data.copy(deep=False)
     else:
         data = pd.DataFrame(data)
+    if len(data) != len(df):
+        raise ValueError('memberships and data must have the same length. '
+                         'Got len(memberships) == %d, len(data) == %d'
+                         % (len(memberships), len(data)))
     data.index = df.index
     return data
