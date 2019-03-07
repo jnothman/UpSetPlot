@@ -58,8 +58,7 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
         o.fillna(False, inplace=True)
         o = o.astype(bool)
         o.set_index(data.index.names, inplace=True)
-        # FIXME: should use reindex(index=...) ??
-        data = data.loc[o.index]
+        data = data.reindex(index=o.index)
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 
@@ -463,12 +462,12 @@ class UpSet:
         ax.tick_params(
             axis='both',
             which='both',
-            left='off',
-            right='off',
-            bottom='off',
-            top='off',
-            labelbottom='off',
-            labelleft='off')
+            left=False,
+            right=False,
+            bottom=False,
+            top=False,
+            labelbottom=False,
+            labelleft=False)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_xticklabels([])
