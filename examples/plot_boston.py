@@ -26,10 +26,8 @@ This kind of dataset analysis may not be a practical use of UpSet, but helps
 to illustrate the :meth:`UpSet.add_catplot` feature.
 """
 
-import numpy as np
 import pandas as pd
 from sklearn.datasets import load_boston
-from sklearn.linear_model import LinearRegression
 from matplotlib import pyplot as plt
 from upsetplot import UpSet
 
