@@ -55,6 +55,36 @@ presented from left to right.  Vertical plots are also supported!
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_vertical_001.png
    :target: ../auto_examples/plot_vertical.html
 
+While the dataset above is randomly generated, you can prepare your own dataset
+for input to upsetplot.  A helpful tool is `from_memberships`, which allows
+us to reconstruct the example above by indicating each data point's set
+membership::
+
+    >>> from upsetplot import from_memberships
+    >>> example = from_memberships(
+    ...     [[],
+    ...      ['set2'],
+    ...      ['set1'],
+    ...      ['set1', 'set2'],
+    ...      ['set0'],
+    ...      ['set0', 'set2'],
+    ...      ['set0', 'set1'],
+    ...      ['set0', 'set1', 'set2'],
+    ...      ],
+    ...      data=[56, 283, 1279, 5882, 24, 90, 429, 1957]
+    ... )
+    >>> example  # doctest: +NORMALIZE_WHITESPACE
+                              0
+    set0   set1   set2
+    False  False  False      56
+                  True      283
+           True   False    1279
+                  True     5882
+    True   False  False      24
+                  True       90
+           True   False     429
+                  True     1957
+
 Installation
 ------------
 
