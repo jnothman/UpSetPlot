@@ -37,7 +37,7 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in data.index.levels)
 
-    totals = [data[data.index.get_level_values(name)].sum()
+    totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
               for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
     if sort_sets_by == 'cardinality':
