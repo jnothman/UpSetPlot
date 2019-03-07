@@ -149,10 +149,11 @@ class UpSet:
 
     Parameters
     ----------
-    data : pandas.Series
+    data : pandas.Series or pandas.DataFrame
         Values for each set to plot.
         Should have multi-index where each level is binary,
         corresponding to set membership.
+        If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
     sort_by : {'cardinality', 'degree'}
@@ -524,10 +525,11 @@ def plot(data, fig=None, **kwargs):
 
     Parameters
     ----------
-    data : pandas.Series
+    data : pandas.Series or pandas.DataFrame
         Values for each set to plot.
         Should have multi-index where each level is binary,
         corresponding to set membership.
+        If a DataFrame, `sum_over` must be a string or False.
     fig : matplotlib.figure.Figure, optional
         Defaults to a new figure.
     kwargs
