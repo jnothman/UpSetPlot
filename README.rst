@@ -55,6 +55,9 @@ presented from left to right.  Vertical plots are also supported!
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_vertical_001.png
    :target: ../auto_examples/plot_vertical.html
 
+Loading datasets
+................
+
 While the dataset above is randomly generated, you can prepare your own dataset
 for input to upsetplot.  A helpful tool is `from_memberships`, which allows
 us to reconstruct the example above by indicating each data point's set
