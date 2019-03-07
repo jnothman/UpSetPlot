@@ -18,6 +18,9 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
             data = (data
                     .groupby(level=list(range(data.index.nlevels)))
                     .sum())
+        if sum_over is not None:
+            raise ValueError('sum_over is not applicable when the input is a '
+                             'Series')
     elif sum_over is None:
         raise ValueError('sum_over must be False or a column name when a '
                          'DataFrame is input')
@@ -25,6 +28,7 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
         gb = df.groupby(level=list(range(df.index.nlevels)))
         if sum_over is False:
             data = gb.size()
+            data.name = 'size'
         elif hasattr(sum_over, 'lower'):
             data = gb[sum_over].sum()
         else:
@@ -395,7 +399,8 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(True)
-        tick_axis.set_label('Intersection size')  # FIXME: doesn't seem to display
+        # FIXME: doesn't seem to display
+        tick_axis.set_label('Intersection size')
         # tick_axis.set_tick_params(direction='in')
 
     def _label_sizes(self, ax, rects, where):

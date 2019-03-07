@@ -83,17 +83,58 @@ def test_process_data_frame(x, sort_by, sort_sets_by):
                                               sort_by=sort_by,
                                               sort_sets_by=sort_sets_by,
                                               sum_over='a')
+    assert df is not X
 
     # check equivalence to Series
-    df1d, intersections1d, totals1d = _process_data(x,
-                                                    sort_by=sort_by,
-                                                    sort_sets_by=sort_sets_by,
-                                                    sum_over=None)
+    df1, intersections1, totals1 = _process_data(x,
+                                                 sort_by=sort_by,
+                                                 sort_sets_by=sort_sets_by,
+                                                 sum_over=None)
 
     assert intersections.name == 'a'
-    assert_frame_equal(df, df1d.rename(columns={'_value': 'a'}))
-    assert_series_equal(intersections, intersections1d, check_names=False)
-    assert_series_equal(totals, totals1d)
+    assert_frame_equal(df, df1.rename(columns={'_value': 'a'}))
+    assert_series_equal(intersections, intersections1, check_names=False)
+    assert_series_equal(totals, totals1)
+
+    # check effect of extra column
+    X = pd.DataFrame({'a': x, 'b': np.arange(len(x))})
+    df2, intersections2, totals2 = _process_data(X,
+                                                 sort_by=sort_by,
+                                                 sort_sets_by=sort_sets_by,
+                                                 sum_over='a')
+    assert_series_equal(intersections, intersections2)
+    assert_series_equal(totals, totals2)
+    assert_frame_equal(df, df2.drop('b', axis=1))
+    assert_array_equal(df2['b'], X['b'])  # disregard levels, tested above
+
+    # check effect not dependent on order/name
+    X = pd.DataFrame({'b': np.arange(len(x)), 'c': x})
+    df3, intersections3, totals3 = _process_data(X,
+                                                 sort_by=sort_by,
+                                                 sort_sets_by=sort_sets_by,
+                                                 sum_over='c')
+    assert_series_equal(intersections, intersections3, check_names=False)
+    assert intersections.name == 'a'
+    assert intersections3.name == 'c'
+    assert_series_equal(totals, totals3)
+    assert_frame_equal(df.rename(columns={'a': 'c'}), df3.drop('b', axis=1))
+    assert_array_equal(df3['b'], X['b'])
+
+    # check sum_over=False
+    X = pd.DataFrame({'b': np.ones(len(x), dtype=int), 'c': x})
+    df4, intersections4, totals4 = _process_data(X,
+                                                 sort_by=sort_by,
+                                                 sort_sets_by=sort_sets_by,
+                                                 sum_over='b')
+    df5, intersections5, totals5 = _process_data(X,
+                                                 sort_by=sort_by,
+                                                 sort_sets_by=sort_sets_by,
+                                                 sum_over=False)
+    assert_series_equal(intersections4, intersections5, check_names=False)
+    assert intersections4.name == 'b'
+    assert intersections5.name == 'size'
+    assert_series_equal(totals4, totals5)
+    assert_frame_equal(df4, df5)
 
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
