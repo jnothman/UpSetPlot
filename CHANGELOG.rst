@@ -1,3 +1,9 @@
+What's new in version 0.2.1
+---------------------------
+
+- Return a Series (not a DataFrame) from `from_memberships` if data is
+  1-dimensional.
+
 What's new in version 0.2
 -------------------------
 
