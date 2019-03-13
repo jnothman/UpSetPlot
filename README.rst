@@ -94,7 +94,6 @@ membership::
     ...      data=[56, 283, 1279, 5882, 24, 90, 429, 1957]
     ... )
     >>> example  # doctest: +NORMALIZE_WHITESPACE
-                              0
     set0   set1   set2
     False  False  False      56
                   True      283
@@ -104,6 +103,7 @@ membership::
                   True       90
            True   False     429
                   True     1957
+    dtype: int64
 
 Installation
 ------------

@@ -51,16 +51,16 @@ def test_from_memberships_no_data(typ):
     assert_series_equal(exp, out)
 
 
-@pytest.mark.parametrize('data', [
-    [1, 2, 3, 4],
-    np.array([1, 2, 3, 4]),
-    pd.Series([1, 2, 3, 4], name='foo'),
-    [[1, 'a'], [2, 'b'], [3, 'c'], [4, 'd']],
-    pd.DataFrame([[1, 'a'], [2, 'b'], [3, 'c'], [4, 'd']],
-                 columns=['foo', 'bar'],
-                 index=['q', 'r', 's', 't']),
+@pytest.mark.parametrize('data,ndim', [
+    ([1, 2, 3, 4], 1),
+    (np.array([1, 2, 3, 4]), 1),
+    (pd.Series([1, 2, 3, 4], name='foo'), 1),
+    ([[1, 'a'], [2, 'b'], [3, 'c'], [4, 'd']], 2),
+    (pd.DataFrame([[1, 'a'], [2, 'b'], [3, 'c'], [4, 'd']],
+                  columns=['foo', 'bar'],
+                  index=['q', 'r', 's', 't']), 2),
 ])
-def test_from_memberships_with_data(data):
+def test_from_memberships_with_data(data, ndim):
     memberships = [[],
                    ['hello'],
                    ['world'],
@@ -71,7 +71,7 @@ def test_from_memberships_with_data(data):
         # but not deepcopied when possible
         if LooseVersion(pd.__version__) > LooseVersion('0.35'):
             assert out.values.base is np.asarray(data).base
-    if isinstance(data, pd.Series):
+    if ndim == 1:
         assert isinstance(out, pd.Series)
     else:
         assert isinstance(out, pd.DataFrame)

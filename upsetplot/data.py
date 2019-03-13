@@ -1,4 +1,5 @@
 from __future__ import print_function, division, absolute_import
+from numbers import Number
 
 import pandas as pd
 import numpy as np
@@ -28,7 +29,7 @@ def from_memberships(memberships, data=None):
     memberships : sequence of collections of strings
         Each element corresponds to a data point, indicating the sets it is a
         member of.  Each set is named by a string.
-    data : Series or DataFrame-like, optional
+    data : Series-like or DataFrame-like, optional
         If given, the index of set memberships is attached to this data.
         It must have the same length as `memberships`.
         If not given, the series will contain the value 1.
@@ -37,6 +38,7 @@ def from_memberships(memberships, data=None):
     -------
     DataFrame or Series
         `data` is returned with its index indicating set membership.
+        It will be a Series if `data` is a Series or 1d numeric array.
         The index will have levels ordered by set names.
 
     Examples
@@ -85,6 +87,8 @@ def from_memberships(memberships, data=None):
 
     if hasattr(data, 'loc'):
         data = data.copy(deep=False)
+    elif len(data) and isinstance(data[0], Number):
+        data = pd.Series(data)
     else:
         data = pd.DataFrame(data)
     if len(data) != len(df):
