@@ -399,9 +399,7 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(True)
-        # FIXME: doesn't seem to display
-        tick_axis.set_label('Intersection size')
-        # tick_axis.set_tick_params(direction='in')
+        ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts:
