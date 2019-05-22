@@ -22,8 +22,7 @@ install:
   - conda info -a
 
   - conda create -c conda-forge -q -n test-environment $CONDA_DEPS $FIXED_CONDA_DEPS
-  - source activate test-environment
-  - python setup.py install
+  - source activate test-environment && python setup.py install
   - cp ci/matplotlibrc matplotlibrc
 after_success:
   - coveralls
