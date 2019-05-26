@@ -125,3 +125,89 @@ def from_contents(contents, data=None):
 
         df = pd.concat([df, data], axis=1, sort=False)
     return df.reset_index().set_index(set_names)
+
+
+### SPEC
+
+
+# Could also be "CategorizedData"
+class VennData:
+    def __init__(self, df, key_fields=None, category_fields=None):
+        self._df = self._check_df(df)
+
+    def _check_df(self, df):
+        # TODO
+        return df
+
+    @classmethod
+    def from_memberships(cls, memberships, data=None):
+        """Build data from the category membership of each element
+
+        Parameters
+        ----------
+        memberships : sequence of collections of strings
+            Each element corresponds to a data point, indicating the sets it is
+            a member of.  Each set is named by a string.
+        data : Series-like or DataFrame-like, optional
+            If given, the index of set memberships is attached to this data.
+            It must have the same length as `memberships`.
+            If not given, the series will contain the value 1.
+
+        Returns
+        -------
+        VennData
+        """
+        return cls(from_memberships(memberships, data))
+
+    @classmethod
+    def from_contents(cls, contents, data=None):
+        """Build data from category listings
+
+        Parameters
+        ----------
+        contents : Mapping of strings to sets
+            Map values be sets of identifiers (int or string).
+        data : DataFrame, optional
+            If provided, this should be indexed by the identifiers used in
+            `contents`.
+
+        Returns
+        -------
+        VennData
+        """
+        return cls(from_contents(contents, data))
+
+    def _get_cat_mask(self):
+        return self._df.index.to_frame(index=False)
+
+    def _get_data(self):
+        return self._df.reset_index()
+
+    def get_intersection(self, categories, inclusive=False):
+        """Retrieve elements that are in all the given categories
+
+        Parameters
+        ----------
+        categories : collection of strings
+        inclusive : bool
+            If False (default), do not include elements that are in additional
+            categories.
+        """
+        categories = list(categories)
+        cat_mask = self._get_cat_mask()
+        # XXX: More efficient with a groupby?
+        mask = cat_mask[categories].all(axis=1)
+        if not inclusive:
+            mask &= ~cat_mask.drop(categories, axis=1).any(axis=1)
+        return self._get_data()[mask]
+
+    def count_intersection(self, categories, inclusive=False):
+        """Count the number of elements in all the given categories
+
+        Parameters
+        ----------
+        categories : collection of strings
+        inclusive : bool
+            If False (default), do not include elements that are in additional
+            categories.
+        """
