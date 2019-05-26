@@ -97,3 +97,31 @@ def from_memberships(memberships, data=None):
                          % (len(memberships), len(data)))
     data.index = df.index
     return data
+
+
+def from_contents(contents, data=None):
+    """Build data from category listings
+
+    Parameters
+    ----------
+    contents : Mapping of strings to sets
+        Map values be sets of identifiers (int or string).
+    data : DataFrame, optional
+        If provided, this should be indexed by the identifiers used in
+        `contents`.
+
+    Returns
+    -------
+    DataFrame
+    """
+    cat_series = [pd.Series(True, index=list(elements), name=name)
+                  for name, elements in contents.items()]
+    df = pd.concat(cat_series, axis=1, sort=False)
+    df.fillna(False, inplace=True)
+    set_names = list(df.columns)
+    if data:
+        if set(df.columns).intersection(data.columns):
+            raise ValueError('Data columns overlap with category naems')
+
+        df = pd.concat([df, data], axis=1, sort=False)
+    return df.reset_index().set_index(set_names)
