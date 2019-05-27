@@ -99,29 +99,45 @@ def from_memberships(memberships, data=None):
     return data
 
 
-def from_contents(contents, data=None):
+def from_contents(contents, data=None, id_column='id'):
     """Build data from category listings
 
     Parameters
     ----------
     contents : Mapping of strings to sets
-        Map values be sets of identifiers (int or string).
+        Keys are cateogry names, values are sets of identifiers (int or
+        string).
     data : DataFrame, optional
         If provided, this should be indexed by the identifiers used in
         `contents`.
+    id_column : str, default='id'
+        The column name to use for the identifiers in the output.
 
     Returns
     -------
     DataFrame
+        `data` is returned with its index indicating set membership,
+        including a column named according to id_column.
+        If data is not given, the order of rows is not assured.
     """
     cat_series = [pd.Series(True, index=list(elements), name=name)
                   for name, elements in contents.items()]
     df = pd.concat(cat_series, axis=1, sort=False)
     df.fillna(False, inplace=True)
-    set_names = list(df.columns)
-    if data:
+    cat_names = list(df.columns)
+    if data is not None:
         if set(df.columns).intersection(data.columns):
-            raise ValueError('Data columns overlap with category naems')
-
-        df = pd.concat([df, data], axis=1, sort=False)
-    return df.reset_index().set_index(set_names)
+            raise ValueError('Data columns overlap with category names')
+        if id_column in df.columns:
+            raise ValueError('A category cannot be named %r' % id_column)
+        if id_column in data.columns:
+            raise ValueError('data cannot contain a coulumn named %r' %
+                             id_column)
+        not_in_data = df.drop(index=data.index, errors='ignore')
+        if len(not_in_data):
+            raise ValueError('Found identifiers in contents that are not in '
+                             'data: %r' % not_in_data.index.values)
+        df = df.reindex(index=data.index).fillna(False)
+        df = pd.concat([data, df], axis=1, sort=False)
+    df.index.name = id_column
+    return df.reset_index().set_index(cat_names)

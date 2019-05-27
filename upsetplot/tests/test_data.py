@@ -1,10 +1,11 @@
+from collections import OrderedDict
 import pytest
 import pandas as pd
 import numpy as np
 from distutils.version import LooseVersion
 from pandas.util.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
-from upsetplot import from_memberships
+from upsetplot import from_memberships, from_contents
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
@@ -82,3 +83,31 @@ def test_from_memberships_with_data(data, ndim):
 
     with pytest.raises(ValueError, match='length'):
         from_memberships(memberships[:-1], data=data)
+
+
+@pytest.mark.parametrize('typ', [set, list, tuple, iter])
+@pytest.mark.parametrize('id_column', ['id', 'blah'])
+def test_from_contents(typ, id_column):
+    contents = {'cat1': typ(['aa', 'bb', 'cc']),
+                'cat2': typ(['cc', 'dd']),
+                'cat3': typ(['ee']),
+                }
+    empty_data = pd.DataFrame(index=['aa', 'bb', 'cc', 'dd', 'ee', 'ff'])
+    out = from_contents(OrderedDict(contents), data=empty_data,
+                        id_column=id_column)
+    out2 = from_memberships(memberships=[{'cat1'},
+                                         {'cat1'},
+                                         {'cat1', 'cat2'},
+                                         {'cat2'},
+                                         {'cat3'},
+                                         []],
+                            data=empty_data)
+    assert_series_equal(out[id_column].reset_index(drop=True),
+                        pd.Series(['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
+                                  name=id_column))
+    assert_frame_equal(out.drop(columns=[id_column]), out2)
+
+    # TODO: empty category (can't be represented with from_memberships)
+    # TODO: unordered dict
+    # TODO: check that you can have entries in data that are not in contents.
+    # TODO: error cases

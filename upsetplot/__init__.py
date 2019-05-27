@@ -1,5 +1,5 @@
 from .plotting import UpSet, plot
-from .data import generate_data, from_memberships
+from .data import generate_data, from_memberships, from_contents
 
 __version__ = '0.3-dev'
 
