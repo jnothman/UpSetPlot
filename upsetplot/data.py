@@ -119,6 +119,10 @@ def from_contents(contents, data=None, id_column='id'):
         `data` is returned with its index indicating set membership,
         including a column named according to id_column.
         If data is not given, the order of rows is not assured.
+
+    Examples
+    --------
+    TODO
     """
     cat_series = [pd.Series(True, index=list(elements), name=name)
                   for name, elements in contents.items()]
