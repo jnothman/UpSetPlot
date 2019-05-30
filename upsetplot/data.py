@@ -126,16 +126,19 @@ def from_contents(contents, data=None, id_column='id'):
     """
     cat_series = [pd.Series(True, index=list(elements), name=name)
                   for name, elements in contents.items()]
+    if not all(s.index.is_unique for s in cat_series):
+        raise ValueError('Got duplicate ids in a category')
     df = pd.concat(cat_series, axis=1, sort=False)
+    if id_column in df.columns:
+        raise ValueError('A category cannot be named %r' % id_column)
     df.fillna(False, inplace=True)
     cat_names = list(df.columns)
+
     if data is not None:
         if set(df.columns).intersection(data.columns):
             raise ValueError('Data columns overlap with category names')
-        if id_column in df.columns:
-            raise ValueError('A category cannot be named %r' % id_column)
         if id_column in data.columns:
-            raise ValueError('data cannot contain a coulumn named %r' %
+            raise ValueError('data cannot contain a column named %r' %
                              id_column)
         not_in_data = df.drop(index=data.index, errors='ignore')
         if len(not_in_data):

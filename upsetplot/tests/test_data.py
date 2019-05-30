@@ -85,29 +85,93 @@ def test_from_memberships_with_data(data, ndim):
         from_memberships(memberships[:-1], data=data)
 
 
+@pytest.mark.parametrize('data', [None,
+                                  {'attr1': [3, 4, 5, 6, 7, 8],
+                                   'attr2': list('qrstuv')}])
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
 @pytest.mark.parametrize('id_column', ['id', 'blah'])
-def test_from_contents(typ, id_column):
+def test_from_contents_vs_memberships(data, typ, id_column):
     contents = {'cat1': typ(['aa', 'bb', 'cc']),
                 'cat2': typ(['cc', 'dd']),
                 'cat3': typ(['ee']),
                 }
-    empty_data = pd.DataFrame(index=['aa', 'bb', 'cc', 'dd', 'ee', 'ff'])
-    out = from_contents(OrderedDict(contents), data=empty_data,
-                        id_column=id_column)
-    out2 = from_memberships(memberships=[{'cat1'},
-                                         {'cat1'},
-                                         {'cat1', 'cat2'},
-                                         {'cat2'},
-                                         {'cat3'},
-                                         []],
-                            data=empty_data)
-    assert_series_equal(out[id_column].reset_index(drop=True),
+    # Note that ff is not present in contents
+    data_df = pd.DataFrame(data,
+                           index=['aa', 'bb', 'cc', 'dd', 'ee', 'ff'])
+    baseline = from_contents(OrderedDict(contents), data=data_df,
+                             id_column=id_column)
+    # compare from_contents to from_memberships
+    expected = from_memberships(memberships=[{'cat1'},
+                                             {'cat1'},
+                                             {'cat1', 'cat2'},
+                                             {'cat2'},
+                                             {'cat3'},
+                                             []],
+                                data=data_df)
+    assert_series_equal(baseline[id_column].reset_index(drop=True),
                         pd.Series(['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
                                   name=id_column))
-    assert_frame_equal(out.drop(columns=[id_column]), out2)
+    assert_frame_equal(baseline.drop(columns=[id_column]), expected)
 
-    # TODO: empty category (can't be represented with from_memberships)
-    # TODO: unordered dict
-    # TODO: check that you can have entries in data that are not in contents.
-    # TODO: error cases
+
+def test_from_contents(typ=set, id_column='id'):
+    contents = {'cat1': {'aa', 'bb', 'cc'},
+                'cat2': {'cc', 'dd'},
+                'cat3': {'ee'},
+                }
+    empty_data = pd.DataFrame(index=['aa', 'bb', 'cc', 'dd', 'ee'])
+    baseline = from_contents(OrderedDict(contents), data=empty_data,
+                             id_column=id_column)
+    # data=None
+    out = from_contents(OrderedDict(contents), id_column=id_column)
+    assert_frame_equal(out.sort_values(id_column), baseline)
+
+    # unordered contents dict
+    out = from_contents({'cat3': contents['cat3'],
+                         'cat2': contents['cat2'],
+                         'cat1': contents['cat1']},
+                        data=empty_data, id_column=id_column)
+    assert_frame_equal(out.reorder_levels(['cat1', 'cat2', 'cat3']),
+                       baseline)
+
+    # empty category
+    out = from_contents({'cat1': contents['cat1'],
+                         'cat2': contents['cat2'],
+                         'cat3': contents['cat3'],
+                         'cat4': []},
+                        data=empty_data,
+                        id_column=id_column)
+    assert not out.index.to_frame()['cat4'].any()  # cat4 should be all-false
+    assert len(out.index.names) == 4
+    out.index = out.index.to_frame().set_index(['cat1', 'cat2', 'cat3']).index
+    assert_frame_equal(out, baseline)
+
+
+@pytest.mark.parametrize('id_column', ['id', 'blah'])
+def test_from_contents_invalid(id_column):
+    contents = {'cat1': {'aa', 'bb', 'cc'},
+                'cat2': {'cc', 'dd'},
+                'cat3': {'ee'},
+                }
+    with pytest.raises(ValueError, match='columns overlap'):
+        from_contents(contents,
+                      data=pd.DataFrame({'cat1': [1, 2, 3, 4, 5]}),
+                      id_column=id_column)
+    with pytest.raises(ValueError, match='duplicate ids'):
+        from_contents({'cat1': ['aa', 'bb'],
+                       'cat2': ['dd', 'dd']}, id_column=id_column)
+    # category named id
+    with pytest.raises(ValueError, match='cannot be named'):
+        from_contents({id_column: {'aa', 'bb', 'cc'},
+                       'cat2': {'cc', 'dd'},
+                       }, id_column=id_column)
+    # category named id
+    with pytest.raises(ValueError, match='cannot contain'):
+        from_contents(contents,
+                      data=pd.DataFrame({id_column: [1, 2, 3, 4, 5]},
+                                        index=['aa', 'bb', 'cc', 'dd', 'ee']),
+                      id_column=id_column)
+    with pytest.raises(ValueError, match='identifiers in contents'):
+        from_contents({'cat1': ['aa']},
+                      data=pd.DataFrame([[1]]),
+                      id_column=id_column)
