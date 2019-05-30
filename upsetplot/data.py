@@ -126,9 +126,9 @@ def from_contents(contents, data=None, id_column='id'):
     >>> contents = {'cat1': ['a', 'b', 'c'],
     ...             'cat2': ['b', 'd'],
     ...             'cat3': ['e']}
-    >>> from_contents(contents)
+    >>> from_contents(contents)  # doctest: +NORMALIZE_WHITESPACE
                       id
-    cat1  cat2  cat3    
+    cat1  cat2  cat3
     True  False False  a
           True  False  b
           False False  c
@@ -140,9 +140,9 @@ def from_contents(contents, data=None, id_column='id'):
     ...             'cat3': [4]}
     >>> data = pd.DataFrame({'favourite': ['green', 'red', 'red',
     ...                                    'yellow', 'blue']})
-    >>> from_contents(contents, data=data)
+    >>> from_contents(contents, data=data)  # doctest: +NORMALIZE_WHITESPACE
                        id favourite
-    cat1  cat2  cat3               
+    cat1  cat2  cat3
     True  False False   0     green
           True  False   1       red
           False False   2       red
