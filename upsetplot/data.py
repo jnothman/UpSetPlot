@@ -122,7 +122,32 @@ def from_contents(contents, data=None, id_column='id'):
 
     Examples
     --------
-    TODO
+    >>> from upsetplot import from_contents
+    >>> contents = {'cat1': ['a', 'b', 'c'],
+    ...             'cat2': ['b', 'd'],
+    ...             'cat3': ['e']}
+    >>> from_contents(contents)
+                      id
+    cat1  cat2  cat3    
+    True  False False  a
+          True  False  b
+          False False  c
+    False True  False  d
+          False True   e
+    >>> import pandas as pd
+    >>> contents = {'cat1': [0, 1, 2],
+    ...             'cat2': [1, 3],
+    ...             'cat3': [4]}
+    >>> data = pd.DataFrame({'favourite': ['green', 'red', 'red',
+    ...                                    'yellow', 'blue']})
+    >>> from_contents(contents, data=data)
+                       id favourite
+    cat1  cat2  cat3               
+    True  False False   0     green
+          True  False   1       red
+          False False   2       red
+    False True  False   3    yellow
+          False True    4      blue
     """
     cat_series = [pd.Series(True, index=list(elements), name=name)
                   for name, elements in contents.items()]
