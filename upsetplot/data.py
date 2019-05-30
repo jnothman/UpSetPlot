@@ -97,3 +97,79 @@ def from_memberships(memberships, data=None):
                          % (len(memberships), len(data)))
     data.index = df.index
     return data
+
+
+def from_contents(contents, data=None, id_column='id'):
+    """Build data from category listings
+
+    Parameters
+    ----------
+    contents : Mapping of strings to sets
+        Keys are cateogry names, values are sets of identifiers (int or
+        string).
+    data : DataFrame, optional
+        If provided, this should be indexed by the identifiers used in
+        `contents`.
+    id_column : str, default='id'
+        The column name to use for the identifiers in the output.
+
+    Returns
+    -------
+    DataFrame
+        `data` is returned with its index indicating set membership,
+        including a column named according to id_column.
+        If data is not given, the order of rows is not assured.
+
+    Examples
+    --------
+    >>> from upsetplot import from_contents
+    >>> contents = {'cat1': ['a', 'b', 'c'],
+    ...             'cat2': ['b', 'd'],
+    ...             'cat3': ['e']}
+    >>> from_contents(contents)  # doctest: +NORMALIZE_WHITESPACE
+                      id
+    cat1  cat2  cat3
+    True  False False  a
+          True  False  b
+          False False  c
+    False True  False  d
+          False True   e
+    >>> import pandas as pd
+    >>> contents = {'cat1': [0, 1, 2],
+    ...             'cat2': [1, 3],
+    ...             'cat3': [4]}
+    >>> data = pd.DataFrame({'favourite': ['green', 'red', 'red',
+    ...                                    'yellow', 'blue']})
+    >>> from_contents(contents, data=data)  # doctest: +NORMALIZE_WHITESPACE
+                       id favourite
+    cat1  cat2  cat3
+    True  False False   0     green
+          True  False   1       red
+          False False   2       red
+    False True  False   3    yellow
+          False True    4      blue
+    """
+    cat_series = [pd.Series(True, index=list(elements), name=name)
+                  for name, elements in contents.items()]
+    if not all(s.index.is_unique for s in cat_series):
+        raise ValueError('Got duplicate ids in a category')
+    df = pd.concat(cat_series, axis=1, sort=False)
+    if id_column in df.columns:
+        raise ValueError('A category cannot be named %r' % id_column)
+    df.fillna(False, inplace=True)
+    cat_names = list(df.columns)
+
+    if data is not None:
+        if set(df.columns).intersection(data.columns):
+            raise ValueError('Data columns overlap with category names')
+        if id_column in data.columns:
+            raise ValueError('data cannot contain a column named %r' %
+                             id_column)
+        not_in_data = df.drop(index=data.index, errors='ignore')
+        if len(not_in_data):
+            raise ValueError('Found identifiers in contents that are not in '
+                             'data: %r' % not_in_data.index.values)
+        df = df.reindex(index=data.index).fillna(False)
+        df = pd.concat([data, df], axis=1, sort=False)
+    df.index.name = id_column
+    return df.reset_index().set_index(cat_names)
