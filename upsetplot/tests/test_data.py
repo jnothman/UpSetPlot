@@ -93,7 +93,7 @@ def test_from_memberships_with_data(data, ndim):
 def test_from_contents_vs_memberships(data, typ, id_column):
     contents = OrderedDict([('cat1', typ(['aa', 'bb', 'cc'])),
                             ('cat2', typ(['cc', 'dd'])),
-                            ('cat3', typ(['ee'])))]
+                            ('cat3', typ(['ee']))])
     # Note that ff is not present in contents
     data_df = pd.DataFrame(data,
                            index=['aa', 'bb', 'cc', 'dd', 'ee', 'ff'])
