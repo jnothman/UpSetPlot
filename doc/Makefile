@@ -48,7 +48,7 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
-	-rm -rf _examples/
+	-rm -rf auto_examples/
 	-rm -rf _modules/*
 
 html:
