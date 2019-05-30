@@ -10,17 +10,17 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
     df = pd.DataFrame({'value': np.zeros(n_samples)})
     for i in range(n_sets):
         r = rng.rand(n_samples)
-        df['set%d' % i] = r > rng.rand()
+        df['cat%d' % i] = r > rng.rand()
         df['value'] += r
 
-    df.set_index(['set%d' % i for i in range(n_sets)], inplace=True)
+    df.set_index(['cat%d' % i for i in range(n_sets)], inplace=True)
     if aggregated:
         return df.value.groupby(level=list(range(n_sets))).count()
     return df.value
 
 
 def from_memberships(memberships, data=None):
-    """Load data where each sample has a collection of set names
+    """Load data where each sample has a collection of category names
 
     The output should be suitable for passing to `UpSet` or `plot`.
 
@@ -28,18 +28,18 @@ def from_memberships(memberships, data=None):
     ----------
     memberships : sequence of collections of strings
         Each element corresponds to a data point, indicating the sets it is a
-        member of.  Each set is named by a string.
+        member of.  Each category is named by a string.
     data : Series-like or DataFrame-like, optional
-        If given, the index of set memberships is attached to this data.
+        If given, the index of category memberships is attached to this data.
         It must have the same length as `memberships`.
         If not given, the series will contain the value 1.
 
     Returns
     -------
     DataFrame or Series
-        `data` is returned with its index indicating set membership.
+        `data` is returned with its index indicating category membership.
         It will be a Series if `data` is a Series or 1d numeric array.
-        The index will have levels ordered by set names.
+        The index will have levels ordered by category names.
 
     Examples
     --------
@@ -75,9 +75,9 @@ def from_memberships(memberships, data=None):
                        for names in memberships])
     for set_name in df.columns:
         if not hasattr(set_name, 'lower'):
-            raise ValueError('Set names should be strings')
+            raise ValueError('Category names should be strings')
     if df.shape[1] == 0:
-        raise ValueError('Require at least one set. None were found.')
+        raise ValueError('Require at least one category. None were found.')
     df.sort_index(axis=1, inplace=True)
     df.fillna(False, inplace=True)
     df = df.astype(bool)
@@ -116,7 +116,7 @@ def from_contents(contents, data=None, id_column='id'):
     Returns
     -------
     DataFrame
-        `data` is returned with its index indicating set membership,
+        `data` is returned with its index indicating category membership,
         including a column named according to id_column.
         If data is not given, the order of rows is not assured.
 
