@@ -106,8 +106,8 @@ def from_contents(contents, data=None, id_column='id'):
 
     Parameters
     ----------
-    contents : Mapping of strings to sets
-        Keys are cateogry names, values are sets of identifiers (int or
+    contents : Mapping (or iterable over pairs) of strings to sets
+        Keys are category names, values are sets of identifiers (int or
         string).
     data : DataFrame, optional
         If provided, this should be indexed by the identifiers used in
@@ -121,6 +121,11 @@ def from_contents(contents, data=None, id_column='id'):
         `data` is returned with its index indicating set membership,
         including a column named according to id_column.
         If data is not given, the order of rows is not assured.
+
+    Notes
+    -----
+    The order of categories in the output DataFrame is determined from
+    `contents`, which may have non-deterministic iteration order.
 
     Examples
     --------
