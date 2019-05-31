@@ -173,7 +173,7 @@ def from_contents(contents, data=None, id_column='id'):
         if id_column in data.columns:
             raise ValueError('data cannot contain a column named %r' %
                              id_column)
-        not_in_data = df.drop(index=data.index, errors='ignore')
+        not_in_data = df.drop(data.index, axis=0, errors='ignore')
         if len(not_in_data):
             raise ValueError('Found identifiers in contents that are not in '
                              'data: %r' % not_in_data.index.values)

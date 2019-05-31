@@ -110,7 +110,7 @@ def test_from_contents_vs_memberships(data, typ, id_column):
     assert_series_equal(baseline[id_column].reset_index(drop=True),
                         pd.Series(['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
                                   name=id_column))
-    assert_frame_equal(baseline.drop(columns=[id_column]), expected)
+    assert_frame_equal(baseline.drop([id_column], axis=1), expected)
 
 
 def test_from_contents(typ=set, id_column='id'):
