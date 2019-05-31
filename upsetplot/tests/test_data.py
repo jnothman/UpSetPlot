@@ -91,14 +91,13 @@ def test_from_memberships_with_data(data, ndim):
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
 @pytest.mark.parametrize('id_column', ['id', 'blah'])
 def test_from_contents_vs_memberships(data, typ, id_column):
-    contents = {'cat1': typ(['aa', 'bb', 'cc']),
-                'cat2': typ(['cc', 'dd']),
-                'cat3': typ(['ee']),
-                }
+    contents = OrderedDict([('cat1', typ(['aa', 'bb', 'cc'])),
+                            ('cat2', typ(['cc', 'dd'])),
+                            ('cat3', typ(['ee']))])
     # Note that ff is not present in contents
     data_df = pd.DataFrame(data,
                            index=['aa', 'bb', 'cc', 'dd', 'ee', 'ff'])
-    baseline = from_contents(OrderedDict(contents), data=data_df,
+    baseline = from_contents(contents, data=data_df,
                              id_column=id_column)
     # compare from_contents to from_memberships
     expected = from_memberships(memberships=[{'cat1'},
@@ -111,19 +110,18 @@ def test_from_contents_vs_memberships(data, typ, id_column):
     assert_series_equal(baseline[id_column].reset_index(drop=True),
                         pd.Series(['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
                                   name=id_column))
-    assert_frame_equal(baseline.drop(columns=[id_column]), expected)
+    assert_frame_equal(baseline.drop([id_column], axis=1), expected)
 
 
 def test_from_contents(typ=set, id_column='id'):
-    contents = {'cat1': {'aa', 'bb', 'cc'},
-                'cat2': {'cc', 'dd'},
-                'cat3': {'ee'},
-                }
+    contents = OrderedDict([('cat1', {'aa', 'bb', 'cc'}),
+                            ('cat2', {'cc', 'dd'}),
+                            ('cat3', {'ee'})])
     empty_data = pd.DataFrame(index=['aa', 'bb', 'cc', 'dd', 'ee'])
-    baseline = from_contents(OrderedDict(contents), data=empty_data,
+    baseline = from_contents(contents, data=empty_data,
                              id_column=id_column)
     # data=None
-    out = from_contents(OrderedDict(contents), id_column=id_column)
+    out = from_contents(contents, id_column=id_column)
     assert_frame_equal(out.sort_values(id_column), baseline)
 
     # unordered contents dict
@@ -149,10 +147,9 @@ def test_from_contents(typ=set, id_column='id'):
 
 @pytest.mark.parametrize('id_column', ['id', 'blah'])
 def test_from_contents_invalid(id_column):
-    contents = {'cat1': {'aa', 'bb', 'cc'},
-                'cat2': {'cc', 'dd'},
-                'cat3': {'ee'},
-                }
+    contents = OrderedDict([('cat1', {'aa', 'bb', 'cc'}),
+                            ('cat2', {'cc', 'dd'}),
+                            ('cat3', {'ee'})])
     with pytest.raises(ValueError, match='columns overlap'):
         from_contents(contents,
                       data=pd.DataFrame({'cat1': [1, 2, 3, 4, 5]}),
