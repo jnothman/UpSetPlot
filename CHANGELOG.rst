@@ -9,6 +9,7 @@ What's new in version 0.3
   top-level sets, which are now to be known as "categories". This matches the
   intuition that categories are named, logical groupings, as opposed to
   "subsets". To this end:
+
   - `generate_data` now names its categories "cat1", "cat2" etc. rather than
     "set1", "set2", etc.
   - the `sort_sets_by` parameter has been renamed to `sort_categories_by` and
