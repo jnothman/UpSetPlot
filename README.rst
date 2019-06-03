@@ -14,8 +14,8 @@ extensible, object-oriented design.
 
 The basic input format is a `pandas.Series` containing counts corresponding to
 subset sizes, where each subset is an intersection of named categories.  The
-index indicates which rows pertain to which categories, by having multiple
-boolean indices, like ``example`` in the following::
+index of the Series indicates which rows pertain to which categories, by having
+multiple boolean indices, like ``example`` in the following::
 
     >>> from upsetplot import generate_data
     >>> example = generate_data(aggregated=True)

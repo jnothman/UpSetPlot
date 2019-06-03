@@ -26,16 +26,16 @@ def is_ascending(seq):
     generate_data(aggregated=True).iloc[1:-2],
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-def test_process_data_series(X, sort_by, sort_sets_by):
+@pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
+def test_process_data_series(X, sort_by, sort_categories_by):
     with pytest.raises(ValueError, match='sum_over is not applicable'):
-        _process_data(X, sort_by=sort_by, sort_sets_by=sort_sets_by,
+        _process_data(X, sort_by=sort_by,
+                      sort_categories_by=sort_categories_by,
                       sum_over=False)
 
-    df, intersections, totals = _process_data(X,
-                                              sort_by=sort_by,
-                                              sort_sets_by=sort_sets_by,
-                                              sum_over=None)
+    df, intersections, totals = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over=None)
     assert intersections.name == 'value'
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
@@ -52,7 +52,7 @@ def test_process_data_series(X, sort_by, sort_sets_by):
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
-    if sort_sets_by:
+    if sort_categories_by:
         assert is_ascending(totals.values[::-1])
 
     assert np.all(totals.index.values == intersections.index.names)
@@ -67,29 +67,51 @@ def test_process_data_series(X, sort_by, sort_sets_by):
     assert len(df) == len(X)
 
 
+@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
+@pytest.mark.parametrize('X', [
+    generate_data(aggregated=True),
+])
+def test_sort_sets_by_deprecation(X, sort_sets_by):
+    with pytest.warns(DeprecationWarning, match='sort_sets_by'):
+        upset1 = UpSet(X, sort_sets_by=sort_sets_by)
+    with pytest.warns(None):
+        upset2 = UpSet(X, sort_categories_by=sort_sets_by)
+
+    fig = matplotlib.figure.Figure()
+    upset1.plot(fig)
+    png1 = io.BytesIO()
+    fig.savefig(png1, format='raw')
+
+    fig = matplotlib.figure.Figure()
+    upset2.plot(fig)
+    png2 = io.BytesIO()
+    fig.savefig(png2, format='raw')
+
+    assert png1.getvalue() == png2.getvalue()
+
+
 @pytest.mark.parametrize('x', [
     generate_data(aggregated=False),
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-def test_process_data_frame(x, sort_by, sort_sets_by):
+@pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
+def test_process_data_frame(x, sort_by, sort_categories_by):
     X = pd.DataFrame({'a': x})
 
     with pytest.raises(ValueError, match='sum_over must be False or '):
-        _process_data(X, sort_by=sort_by, sort_sets_by=sort_sets_by,
+        _process_data(X, sort_by=sort_by,
+                      sort_categories_by=sort_categories_by,
                       sum_over=None)
 
-    df, intersections, totals = _process_data(X,
-                                              sort_by=sort_by,
-                                              sort_sets_by=sort_sets_by,
-                                              sum_over='a')
+    df, intersections, totals = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over='a')
     assert df is not X
 
     # check equivalence to Series
-    df1, intersections1, totals1 = _process_data(x,
-                                                 sort_by=sort_by,
-                                                 sort_sets_by=sort_sets_by,
-                                                 sum_over=None)
+    df1, intersections1, totals1 = _process_data(
+        x, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over=None)
 
     assert intersections.name == 'a'
     assert_frame_equal(df, df1.rename(columns={'_value': 'a'}))
@@ -98,10 +120,9 @@ def test_process_data_frame(x, sort_by, sort_sets_by):
 
     # check effect of extra column
     X = pd.DataFrame({'a': x, 'b': np.arange(len(x))})
-    df2, intersections2, totals2 = _process_data(X,
-                                                 sort_by=sort_by,
-                                                 sort_sets_by=sort_sets_by,
-                                                 sum_over='a')
+    df2, intersections2, totals2 = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over='a')
     assert_series_equal(intersections, intersections2)
     assert_series_equal(totals, totals2)
     assert_frame_equal(df, df2.drop('b', axis=1))
@@ -109,10 +130,9 @@ def test_process_data_frame(x, sort_by, sort_sets_by):
 
     # check effect not dependent on order/name
     X = pd.DataFrame({'b': np.arange(len(x)), 'c': x})
-    df3, intersections3, totals3 = _process_data(X,
-                                                 sort_by=sort_by,
-                                                 sort_sets_by=sort_sets_by,
-                                                 sum_over='c')
+    df3, intersections3, totals3 = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over='c')
     assert_series_equal(intersections, intersections3, check_names=False)
     assert intersections.name == 'a'
     assert intersections3.name == 'c'
@@ -122,14 +142,12 @@ def test_process_data_frame(x, sort_by, sort_sets_by):
 
     # check sum_over=False
     X = pd.DataFrame({'b': np.ones(len(x), dtype=int), 'c': x})
-    df4, intersections4, totals4 = _process_data(X,
-                                                 sort_by=sort_by,
-                                                 sort_sets_by=sort_sets_by,
-                                                 sum_over='b')
-    df5, intersections5, totals5 = _process_data(X,
-                                                 sort_by=sort_by,
-                                                 sort_sets_by=sort_sets_by,
-                                                 sum_over=False)
+    df4, intersections4, totals4 = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over='b')
+    df5, intersections5, totals5 = _process_data(
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
+        sum_over=False)
     assert_series_equal(intersections4, intersections5, check_names=False)
     assert intersections4.name == 'b'
     assert intersections5.name == 'size'
@@ -138,10 +156,12 @@ def test_process_data_frame(x, sort_by, sort_sets_by):
 
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-def test_not_aggregated(sort_by, sort_sets_by):
+@pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
+def test_not_aggregated(sort_by, sort_categories_by):
     # FIXME: this is not testing if aggregation used is count or sum
-    kw = {'sort_by': sort_by, 'sort_sets_by': sort_sets_by, 'sum_over': None}
+    kw = {'sort_by': sort_by,
+          'sort_categories_by': sort_categories_by,
+          'sum_over': None}
     Xagg = generate_data(aggregated=True)
     df1, intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_data()
@@ -159,8 +179,8 @@ def test_not_aggregated(sort_by, sort_sets_by):
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},
                                 {'sort_by': None},
-                                {'sort_sets_by': 'blah'},
-                                {'sort_sets_by': True}])
+                                {'sort_categories_by': 'blah'},
+                                {'sort_categories_by': True}])
 def test_param_validation(kw):
     X = generate_data(n_samples=100)
     with pytest.raises(ValueError):

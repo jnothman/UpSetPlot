@@ -10,9 +10,9 @@ from upsetplot import from_memberships, from_contents
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
 def test_from_memberships_no_data(typ):
-    with pytest.raises(ValueError, match='at least one set'):
+    with pytest.raises(ValueError, match='at least one category'):
         from_memberships([])
-    with pytest.raises(ValueError, match='at least one set'):
+    with pytest.raises(ValueError, match='at least one category'):
         from_memberships([[], []])
     with pytest.raises(ValueError, match='strings'):
         from_memberships([[1]])
