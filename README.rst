@@ -45,7 +45,7 @@ makes:
 
 This plot shows the cardinality of every set combination seen in our data.  The
 leftmost column counts items absent from any set. The next three columns count
-items only in ``set1``, ``set2`` and ``set3``` respectively, with following
+items only in ``set1``, ``set2`` and ``set3`` respectively, with following
 columns showing cardinalities for items in each combination of exactly two
 named sets. The rightmost column counts items in all three sets.
 
