@@ -45,7 +45,7 @@ makes:
 
 This plot shows the cardinality of every category combination seen in our data.
 The leftmost column counts items absent from any category. The next three
-columns count items only in ``cat1``, ``cat2`` and ``cat3``` respectively, with
+columns count items only in ``cat1``, ``cat2`` and ``cat3`` respectively, with
 following columns showing cardinalities for items in each combination of
 exactly two named sets. The rightmost column counts items in all three sets.
 

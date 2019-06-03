@@ -1,5 +1,7 @@
 from __future__ import print_function, division, absolute_import
 from numbers import Number
+import functools
+import distutils
 
 import pandas as pd
 import numpy as np
@@ -104,8 +106,8 @@ def from_contents(contents, data=None, id_column='id'):
 
     Parameters
     ----------
-    contents : Mapping of strings to sets
-        Keys are cateogry names, values are sets of identifiers (int or
+    contents : Mapping (or iterable over pairs) of strings to sets
+        Keys are category names, values are sets of identifiers (int or
         string).
     data : DataFrame, optional
         If provided, this should be indexed by the identifiers used in
@@ -119,6 +121,11 @@ def from_contents(contents, data=None, id_column='id'):
         `data` is returned with its index indicating category membership,
         including a column named according to id_column.
         If data is not given, the order of rows is not assured.
+
+    Notes
+    -----
+    The order of categories in the output DataFrame is determined from
+    `contents`, which may have non-deterministic iteration order.
 
     Examples
     --------
@@ -153,7 +160,13 @@ def from_contents(contents, data=None, id_column='id'):
                   for name, elements in contents.items()]
     if not all(s.index.is_unique for s in cat_series):
         raise ValueError('Got duplicate ids in a category')
-    df = pd.concat(cat_series, axis=1, sort=False)
+
+    concat = pd.concat
+    if distutils.version.LooseVersion(pd.__version__) >= '0.23.0':
+        # silence the warning
+        concat = functools.partial(concat, sort=False)
+
+    df = concat(cat_series, axis=1)
     if id_column in df.columns:
         raise ValueError('A category cannot be named %r' % id_column)
     df.fillna(False, inplace=True)
@@ -165,11 +178,11 @@ def from_contents(contents, data=None, id_column='id'):
         if id_column in data.columns:
             raise ValueError('data cannot contain a column named %r' %
                              id_column)
-        not_in_data = df.drop(index=data.index, errors='ignore')
+        not_in_data = df.drop(data.index, axis=0, errors='ignore')
         if len(not_in_data):
             raise ValueError('Found identifiers in contents that are not in '
                              'data: %r' % not_in_data.index.values)
         df = df.reindex(index=data.index).fillna(False)
-        df = pd.concat([data, df], axis=1, sort=False)
+        df = concat([data, df], axis=1)
     df.index.name = id_column
     return df.reset_index().set_index(cat_names)
