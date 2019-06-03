@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import warnings
 import itertools
 
 import numpy as np
@@ -9,7 +10,7 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(df, sort_by, sort_sets_by, sum_over):
+def _process_data(df, sort_by, sort_categories_by, sum_over):
     if df.ndim == 1:
         data = df
         df = pd.DataFrame({'_value': df})
@@ -40,10 +41,10 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
     totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
               for name in data.index.names]
     totals = pd.Series(totals, index=data.index.names)
-    if sort_sets_by == 'cardinality':
+    if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
-    elif sort_sets_by is not None:
-        raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
+    elif sort_categories_by is not None:
+        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     df = df.reorder_levels(totals.index.values)
     data = data.reorder_levels(totals.index.values)
 
@@ -149,20 +150,23 @@ class UpSet:
     Parameters
     ----------
     data : pandas.Series or pandas.DataFrame
-        Values for each set to plot.
-        Should have multi-index where each level is binary,
-        corresponding to set membership.
+        Elements associated with categories (a DataFrame), or the size of each
+        subset of categories (a Series).
+        Should have MultiIndex where each level is binary,
+        corresponding to category membership.
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
     sort_by : {'cardinality', 'degree'}
-        If 'cardinality', set intersections are listed from largest to
-        smallest value.
-        If 'degree', they are listed in order of the number of sets
+        If 'cardinality', subset are listed from largest to smallest.
+        If 'degree', they are listed in order of the number of categories
         intersected.
-    sort_sets_by : {'cardinality', None}
-        Whether to sort the overall sets by total cardinality, or leave them
+    sort_categories_by : {'cardinality', None}
+        Whether to sort the categories by total cardinality, or leave them
         in the provided order.
+
+        .. versionadded: 0.3
+            Replaces sort_sets_by
     sum_over : str, False or None (default)
         Must be specified when `data` is a DataFrame. If False, the
         intersection plot will show the count of each subset. Otherwise, it
@@ -170,8 +174,8 @@ class UpSet:
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
-        Whether to show lines joining dots in the matrix, to mark multiple sets
-        being intersected.
+        Whether to show lines joining dots in the matrix, to mark multiple
+        categories being intersected.
     element_size : float or None
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
@@ -184,14 +188,19 @@ class UpSet:
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.5.
     """
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_sets_by='cardinality', sum_over=None, facecolor='black',
+                 sort_categories_by='cardinality', sum_over=None,
+                 facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts=''):
+                 show_counts='', sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -204,10 +213,15 @@ class UpSet:
                                'elements': intersection_plot_elements}]
         self._show_counts = show_counts
 
+        if sort_sets_by != 'deprecated':
+            sort_categories_by = sort_sets_by
+            warnings.warn('sort_sets_by was deprecated in version 0.3 and '
+                          'will be removed in version 0.5', DeprecationWarning)
+
         (self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
-                                      sort_sets_by=sort_sets_by,
+                                      sort_categories_by=sort_categories_by,
                                       sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
@@ -352,13 +366,13 @@ class UpSet:
         """
         ax = self._reorient(ax)
         data = self.intersections
-        n_sets = data.index.nlevels
+        n_cats = data.index.nlevels
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
+        c = np.array(['lightgrey'] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
-        x = np.repeat(np.arange(len(data)), n_sets)
-        y = np.tile(np.arange(n_sets), len(data))
+        x = np.repeat(np.arange(len(data)), n_cats)
+        y = np.tile(np.arange(n_cats), len(data))
         if self._element_size is not None:
             s = (self._element_size * .35) ** 2
         else:
@@ -375,7 +389,7 @@ class UpSet:
                       lw=2, colors=self._facecolor)
 
         tick_axis = ax.yaxis
-        tick_axis.set_ticks(np.arange(n_sets))
+        tick_axis.set_ticks(np.arange(n_cats))
         tick_axis.set_ticklabels(data.index.names,
                                  rotation=0 if self._horizontal else -90)
         ax.xaxis.set_visible(False)
