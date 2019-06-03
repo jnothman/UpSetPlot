@@ -47,12 +47,12 @@ def from_memberships(memberships, data=None):
     --------
     >>> from upsetplot import from_memberships
     >>> from_memberships([
-    ...     ['set1', 'set3'],
-    ...     ['set2', 'set3'],
-    ...     ['set1'],
+    ...     ['cat1', 'cat3'],
+    ...     ['cat2', 'cat3'],
+    ...     ['cat1'],
     ...     []
     ... ])  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-    set1   set2   set3
+    cat1   cat2   cat3
     True   False  True     1
     False  True   True     1
     True   False  False    1
@@ -61,13 +61,13 @@ def from_memberships(memberships, data=None):
     >>> # now with data:
     >>> import numpy as np
     >>> from_memberships([
-    ...     ['set1', 'set3'],
-    ...     ['set2', 'set3'],
-    ...     ['set1'],
+    ...     ['cat1', 'cat3'],
+    ...     ['cat2', 'cat3'],
+    ...     ['cat1'],
     ...     []
     ... ], data=np.arange(12).reshape(4, 3))  # doctest: +NORMALIZE_WHITESPACE
                        0   1   2
-    set1  set2  set3
+    cat1  cat2  cat3
     True  False True   0   1   2
     False True  True   3   4   5
     True  False False  6   7   8
