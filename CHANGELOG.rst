@@ -13,7 +13,7 @@ What's new in version 0.3
   - `generate_data` now names its categories "cat1", "cat2" etc. rather than
     "set1", "set2", etc.
   - the `sort_sets_by` parameter has been renamed to `sort_categories_by` and
-    will be removed in version 0.5.
+    will be removed in version 0.4.
 
 What's new in version 0.2.1
 ---------------------------

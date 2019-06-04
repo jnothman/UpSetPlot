@@ -211,7 +211,7 @@ class UpSet:
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
-            version 0.5.
+            version 0.4.
     """
     _default_figsize = (10, 6)
 
@@ -236,7 +236,7 @@ class UpSet:
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
             warnings.warn('sort_sets_by was deprecated in version 0.3 and '
-                          'will be removed in version 0.5', DeprecationWarning)
+                          'will be removed in version 0.4', DeprecationWarning)
 
         (self._df, self.intersections,
          self.totals) = _process_data(data,
