@@ -29,6 +29,11 @@ def _aggregate_data(df, subset_size, sum_over):
         df = pd.DataFrame({'_value': df})
 
         if not aggregated.index.is_unique:
+            if subset_size == 'legacy':
+                warnings.warn('From version 0.5, passing a Series as data '
+                              'with non-unqiue groups will raise an error '
+                              'unless subset_size="sum" or "count".',
+                              FutureWarning)
             if subset_size in ('sum', 'legacy'):
                 aggregated = (aggregated
                               .groupby(level=list(range(
@@ -43,12 +48,12 @@ def _aggregate_data(df, subset_size, sum_over):
     else:
         # DataFrame
         if subset_size == 'legacy' and sum_over is None:
-            raise ValueError('sum_over must be False or a column name when a '
-                             'DataFrame is input and subset_size="legacy"')
+            raise ValueError('Please specify subset_size or sum_over for a '
+                             'DataFrame.')
         elif subset_size == 'legacy' and sum_over is False:
             warnings.warn('sum_over=False will not be supported from version '
                           '0.5. Use subset_size="auto" or "count" '
-                          'instead.')
+                          'instead.', DeprecationWarning)
         elif subset_size == 'sum' and sum_over is False:
             raise ValueError('sum_over=False is not supported when '
                              'subset_size="sum"')
@@ -221,7 +226,7 @@ class UpSet:
             specified by `sum_over`.
 
         Until version 0.4, the default is 'legacy' which uses `sum_over` to
-        control this behaviour. From version 0.4 'auto' will be default.
+        control this behaviour. From version 0.4, 'auto' will be default.
     sum_over : str or None
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
@@ -282,7 +287,7 @@ class UpSet:
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
-                                      subset_size=subset_size
+                                      subset_size=subset_size,
                                       sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
