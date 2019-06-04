@@ -49,6 +49,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
     assert_series_equal(x_reordered, intersections,
                         check_dtype=False)
 
+    # TODO: test subset_size='legacy' with unique/non-unique index
     # TODO: test subset_size='auto' with unique/non-unique index
     # TODO: test subset_size='count' with unique/non-unique index
     # TODO: test subset_size='sum' with unique/non-unique index
