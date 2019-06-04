@@ -167,10 +167,30 @@ class UpSet:
 
         .. versionadded: 0.3
             Replaces sort_sets_by
-    sum_over : str, False or None (default)
-        Must be specified when `data` is a DataFrame. If False, the
-        intersection plot will show the count of each subset. Otherwise, it
-        shows the sum of the specified field.
+    subset_size : {'frame-size', 'size', 'sum'}
+        Configures how to calculate the size of a subset. Choices are:
+
+        'frame-size'
+            If `data` is a DataFrame, count the number of rows in each group.
+            If `data` is a Series with at most one row for each group, use
+            the value of the Series. If `data` is a Series with more than one
+            row per group, raise a ValueError.
+        'size'
+            Count the number of rows in each group.
+        'sum'
+            Sum the value of the `data` Series, or the DataFrame field
+            specified by `sum_over`.
+
+        Until version 0.5, the default is 'compat' which uses `sum_over` to
+        control this behaviour. From version 0.5 'frame-size' will be default.
+    sum_over : str or None
+        If `subset_size='sum'`, then the intersection size is the sum of
+        the specified field in the `data` DataFrame. If a Series, only None is
+        supported and its value is summed.
+
+        If `subset_size='compat'`, `sum_over` must be specified when `data` is
+        a DataFrame. If False, the intersection plot will show the count of
+        each subset. Otherwise, it shows the sum of the specified field.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
