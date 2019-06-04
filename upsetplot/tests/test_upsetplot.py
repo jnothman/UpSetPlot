@@ -31,11 +31,10 @@ def test_process_data_series(X, sort_by, sort_categories_by):
     with pytest.raises(ValueError, match='sum_over is not applicable'):
         _process_data(X, sort_by=sort_by,
                       sort_categories_by=sort_categories_by,
-                      sum_over=False)
+                      subset_size='sum', sum_over='abc')
 
     df, intersections, totals = _process_data(
-        X, sort_by=sort_by, sort_categories_by=sort_categories_by,
-        sum_over=None)
+        X, sort_by=sort_by, sort_categories_by=sort_categories_by)
     assert intersections.name == 'value'
     X_reordered = (X
                    .reorder_levels(intersections.index.names)
@@ -101,7 +100,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     with pytest.raises(ValueError, match='sum_over must be False or '):
         _process_data(X, sort_by=sort_by,
                       sort_categories_by=sort_categories_by,
-                      sum_over=None)
+                      subset_size='legacy', sum_over=None)
 
     df, intersections, totals = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
