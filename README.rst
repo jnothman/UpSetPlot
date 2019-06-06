@@ -17,8 +17,8 @@ subset sizes, where each subset is an intersection of named categories.  The
 index of the Series indicates which rows pertain to which categories, by having
 multiple boolean indices, like ``example`` in the following::
 
-    >>> from upsetplot import generate_data
-    >>> example = generate_data(aggregated=True)
+    >>> from upsetplot import generate_counts
+    >>> example = generate_counts()
     >>> example  # doctest: +NORMALIZE_WHITESPACE
     cat0   cat1   cat2
     False  False  False      56

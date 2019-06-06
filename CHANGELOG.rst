@@ -6,7 +6,8 @@ What's new in version 0.3
 - To improve code legibility and intuitiveness, `sum_over=False` was deprecated
   and a `subset_size` parameter was added.  It will have better default
   handling of DataFrames after a short deprecation period.
-- `generate_data` has been replaced with `generate_counts`.
+- `generate_data` has been replaced with `generate_counts` and
+  `generate_samples`.
 - Fixed the display of the "intersection size" label on plots, which had been
   missing.
 - Trying to improve nomenclature, upsetplot now avoids "set" to refer to the

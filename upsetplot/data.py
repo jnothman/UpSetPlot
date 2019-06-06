@@ -8,28 +8,26 @@ import pandas as pd
 import numpy as np
 
 
-def generate_counts(seed=0, n_samples=10000, n_categories=3, aggregated=True):
-    """Generate artificial data corresponding to set intersections
+def generate_samples(seed=0, n_samples=10000, n_categories=3):
+    """Generate artificial samples assigned to set intersections
 
     Parameters
     ----------
     seed : int
         A seed for randomisation
     n_samples : int
-        Number of samples to generate (or the sum if aggregated=True)
+        Number of samples to generate
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
-    aggregated : bool
-        If True, return the count of samples associated with each intersection
-        of categories. If False, report a weight or score for each sample,
-        as well as its associated categories.
 
     Returns
     -------
-    Series
-        Value is counts if aggregated=True, or float "weights" if
-        aggregated=False. Index includes a boolean indicator mask for each
-        category.
+    DataFrame
+        Field 'value' is a weight or score for each element.
+        Field 'index' is a unique id for each element.
+        Index includes a boolean indicator mask for each category.
+
+        Note: Further fields may be added in future versions.
     """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame({'value': np.zeros(n_samples)})
@@ -38,18 +36,43 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, aggregated=True):
         df['cat%d' % i] = r > rng.rand()
         df['value'] += r
 
+    df.reset_index(inplace=True)
     df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
-    if aggregated:
-        return df.value.groupby(level=list(range(n_categories))).count()
-    return df.value
+    return df
+
+
+def generate_counts(seed=0, n_samples=10000, n_categories=3):
+    """Generate artificial counts corresponding to set intersections
+
+    Parameters
+    ----------
+    seed : int
+        A seed for randomisation
+    n_samples : int
+        Number of samples to generate statistics over
+    n_categories : int
+        Number of categories (named "cat0", "cat1", ...) to generate
+
+    Returns
+    -------
+    Series
+        Counts indexed by boolean indicator mask for each category.
+    """
+    df = generate_samples(seed=seed, n_samples=n_samples,
+                          n_categories=n_categories)
+    return df.value.groupby(level=list(range(n_categories))).count()
 
 
 def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
     warnings.warn('generate_data was replaced by generate_counts in version '
                   '0.3 and will be removed in version 0.4.',
                   DeprecationWarning)
-    return generate_counts(seed=seed, n_samples=n_samples, n_categories=n_sets,
-                           aggregated=aggregated)
+    if aggregated:
+        return generate_counts(seed=seed, n_samples=n_samples,
+                               n_categories=n_sets)
+    else:
+        return generate_samples(seed=seed, n_samples=n_samples,
+                                n_categories=n_sets)['value']
 
 
 def from_memberships(memberships, data=None):

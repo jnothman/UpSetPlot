@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from upsetplot import plot
 from upsetplot import UpSet
-from upsetplot import generate_counts
+from upsetplot import generate_counts, generate_samples
 from upsetplot.plotting import _process_data
 
 # TODO: warnings should raise errors
@@ -73,7 +73,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_counts(aggregated=False),
+    generate_samples()['value'],
     generate_counts(),
 ])
 def test_subset_size_series(x):
@@ -138,7 +138,7 @@ def test_sort_sets_by_deprecation(x, sort_sets_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_counts(aggregated=False),
+    generate_samples()['value'],
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
@@ -204,7 +204,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_counts(aggregated=False),
+    generate_samples()['value'],
     generate_counts(),
 ])
 def test_subset_size_frame(x):
@@ -260,15 +260,14 @@ def test_subset_size_frame(x):
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
-def test_not_aggregated(sort_by, sort_categories_by):
-    # FIXME: this is not testing if aggregation used is count or sum
+def test_not_unique(sort_by, sort_categories_by):
     kw = {'sort_by': sort_by,
           'sort_categories_by': sort_categories_by,
           'subset_size': 'sum',
           'sum_over': None}
     Xagg = generate_counts()
     df1, intersections1, totals1 = _process_data(Xagg, **kw)
-    Xunagg = generate_counts(aggregated=False)
+    Xunagg = generate_samples()['value']
     Xunagg.loc[:] = 1
     df2, intersections2, totals2 = _process_data(Xunagg, **kw)
     assert_series_equal(intersections1, intersections2,
