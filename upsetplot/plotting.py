@@ -30,21 +30,20 @@ def _aggregate_data(df, subset_size, sum_over):
 
         if not aggregated.index.is_unique:
             if subset_size == 'legacy':
-                warnings.warn('From version 0.5, passing a Series as data '
+                warnings.warn('From version 0.4, passing a Series as data '
                               'with non-unqiue groups will raise an error '
                               'unless subset_size="sum" or "count".',
                               FutureWarning)
-            if subset_size in ('sum', 'legacy'):
-                aggregated = (aggregated
-                              .groupby(level=list(range(
-                                  aggregated.index.nlevels)))
-                              .sum())
-            else:
-                raise ValueError('Series with non-unique groups requires '
-                                 'subset_size="sum"')
+            if subset_size == 'auto':
+                raise ValueError('subset_size="auto" cannot be used for a '
+                                 'Series with non-unique groups.')
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
+        if subset_size == 'count':
+            sum_over = False
+        else:
+            sum_over = '_value'
     else:
         # DataFrame
         if subset_size == 'legacy' and sum_over is None:
@@ -52,25 +51,33 @@ def _aggregate_data(df, subset_size, sum_over):
                              'DataFrame.')
         elif subset_size == 'legacy' and sum_over is False:
             warnings.warn('sum_over=False will not be supported from version '
-                          '0.5. Use subset_size="auto" or "count" '
+                          '0.4. Use subset_size="auto" or "count" '
                           'instead.', DeprecationWarning)
-        elif subset_size == 'sum' and sum_over is False:
+        elif subset_size in ('auto', 'sum') and sum_over is False:
+            # remove this after deprecation
             raise ValueError('sum_over=False is not supported when '
-                             'subset_size="sum"')
-        elif subset_size in 'count':
+                             'subset_size=%r' % subset_size)
+        elif subset_size == 'auto' and sum_over is None:
+            sum_over = False
+        elif subset_size == 'count':
             if sum_over is not None:
                 raise ValueError('sum_over cannot be set if subset_size=%r' %
                                  subset_size)
             sum_over = False
+        elif subset_size == 'sum':
+            if sum_over is None:
+                raise ValueError('sum_over should be a field name if '
+                                 'subset_size="sum" and a DataFrame is '
+                                 'provided.')
 
-        gb = df.groupby(level=list(range(df.index.nlevels)))
-        if sum_over is False:
-            aggregated = gb.size()
-            aggregated.name = 'size'
-        elif hasattr(sum_over, 'lower'):
-            aggregated = gb[sum_over].sum()
-        else:
-            raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+    gb = df.groupby(level=list(range(df.index.nlevels)))
+    if sum_over is False:
+        aggregated = gb.size()
+        aggregated.name = 'size'
+    elif hasattr(sum_over, 'lower'):
+        aggregated = gb[sum_over].sum()
+    else:
+        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
 
     return df, aggregated
 

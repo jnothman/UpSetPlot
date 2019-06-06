@@ -49,11 +49,6 @@ def test_process_data_series(x, sort_by, sort_categories_by):
     assert_series_equal(x_reordered, intersections,
                         check_dtype=False)
 
-    # TODO: test subset_size='legacy' with unique/non-unique index
-    # TODO: test subset_size='auto' with unique/non-unique index
-    # TODO: test subset_size='count' with unique/non-unique index
-    # TODO: test subset_size='sum' with unique/non-unique index
-
     if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
     else:
@@ -76,15 +71,57 @@ def test_process_data_series(x, sort_by, sort_categories_by):
     assert len(df) == len(x)
 
 
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-@pytest.mark.parametrize('X', [
+@pytest.mark.parametrize('x', [
+    generate_data(),
     generate_data(aggregated=True),
 ])
-def test_sort_sets_by_deprecation(X, sort_sets_by):
+def test_subset_size_series(x):
+    kw = {'sort_by': 'cardinality',
+          'sort_categories_by': 'cardinality',
+          'sum_over': None}
+    df_sum, intersections_sum, totals_sum = _process_data(
+        x, subset_size='sum', **kw)
+
+    if x.index.is_unique:
+        expected_warning = None
+    else:
+        expected_warning = FutureWarning
+    with pytest.warns(expected_warning):
+        df, intersections, totals = _process_data(
+            x, subset_size='legacy', **kw)
+    assert_frame_equal(df, df_sum)
+    assert_series_equal(intersections, intersections_sum)
+    assert_series_equal(totals, totals_sum)
+
+    if x.index.is_unique:
+        df, intersections, totals = _process_data(
+            x, subset_size='auto', **kw)
+        assert_frame_equal(df, df_sum)
+        assert_series_equal(intersections, intersections_sum)
+        assert_series_equal(totals, totals_sum)
+    else:
+        with pytest.raises(ValueError):
+            _process_data(
+                x, subset_size='auto', **kw)
+
+    df_count, intersections_count, totals_count = _process_data(
+        x, subset_size='count', **kw)
+    df, intersections, totals = _process_data(
+        x.groupby(level=range(len(x.index.levels))).count(),
+        subset_size='sum', **kw)
+    assert_series_equal(intersections, intersections_count, check_names=False)
+    assert_series_equal(totals, totals_count)
+
+
+@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
+@pytest.mark.parametrize('x', [
+    generate_data(aggregated=True),
+])
+def test_sort_sets_by_deprecation(x, sort_sets_by):
     with pytest.warns(DeprecationWarning, match='sort_sets_by'):
-        upset1 = UpSet(X, sort_sets_by=sort_sets_by)
+        upset1 = UpSet(x, sort_sets_by=sort_sets_by)
     with pytest.warns(None):
-        upset2 = UpSet(X, sort_categories_by=sort_sets_by)
+        upset2 = UpSet(x, sort_categories_by=sort_sets_by)
 
     fig = matplotlib.figure.Figure()
     upset1.plot(fig)
@@ -164,14 +201,60 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     assert_series_equal(totals4, totals5)
     assert_frame_equal(df4, df5)
 
-    # TODO: check subset_size='auto' with sum_over=False => error
-    # TODO: check subset_size='auto' with sum_over=str => sum
-    # TODO: check subset_size='sum' with sum_over=str => sum
-    # TODO: check subset_size='sum' with sum_over=None => error
-    # TODO: check subset_size='count' with sum_over=False => error
-    # TODO: check subset_size='count' with sum_over=str => error
-    # TODO: check subset_size='auto' with sum_over=None => count
-    # TODO: check subset_size='legacy' with sum_over=False => warning and count
+
+@pytest.mark.parametrize('x', [
+    generate_data(),
+    generate_data(aggregated=True),
+])
+def test_subset_size_frame(x):
+    kw = {'sort_by': 'cardinality',
+          'sort_categories_by': 'cardinality'}
+    X = pd.DataFrame({'x': x})
+    df_sum, intersections_sum, totals_sum = _process_data(
+        X, subset_size='sum', sum_over='x', **kw)
+    df_count, intersections_count, totals_count = _process_data(
+        X, subset_size='count', sum_over=None, **kw)
+
+    # error cases: sum_over=False
+    for subset_size in ['auto', 'sum', 'count']:
+        with pytest.raises(ValueError, match='sum_over'):
+            _process_data(
+                X, subset_size=subset_size, sum_over=False, **kw)
+
+    with pytest.raises(ValueError, match='sum_over'):
+        _process_data(
+            X, subset_size=subset_size, sum_over=False, **kw)
+
+    # error cases: sum_over incompatible with subset_size
+    with pytest.raises(ValueError, match='sum_over should be a field'):
+        _process_data(
+            X, subset_size='sum', sum_over=None, **kw)
+    with pytest.raises(ValueError, match='sum_over cannot be set'):
+        _process_data(
+            X, subset_size='count', sum_over='x', **kw)
+
+    # check subset_size='auto' or 'legacy' with sum_over=str => sum
+    for subset_size in ['auto', 'legacy']:
+        df, intersections, totals = _process_data(
+            X, subset_size=subset_size, sum_over='x', **kw)
+        assert_frame_equal(df, df_sum)
+        assert_series_equal(intersections, intersections_sum)
+        assert_series_equal(totals, totals_sum)
+
+    # check subset_size='auto' with sum_over=None => count
+    df, intersections, totals = _process_data(
+        X, subset_size='auto', sum_over=None, **kw)
+    assert_frame_equal(df, df_count)
+    assert_series_equal(intersections, intersections_count)
+    assert_series_equal(totals, totals_count)
+
+    # check legacy use of sum_over=False
+    with pytest.warns(DeprecationWarning, match='sum_over=False'):
+        df, intersections, totals = _process_data(
+            X, subset_size='legacy', sum_over=False, **kw)
+    assert_frame_equal(df, df_count)
+    assert_series_equal(intersections, intersections_count)
+    assert_series_equal(totals, totals_count)
 
 
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
