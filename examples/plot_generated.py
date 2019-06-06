@@ -7,9 +7,9 @@ This example illustrates basic plotting functionality using generated data.
 """
 
 from matplotlib import pyplot as plt
-from upsetplot import generate_data, plot
+from upsetplot import generate_counts, plot
 
-example = generate_data(aggregated=True)
+example = generate_counts()
 print(example)
 
 plot(example)

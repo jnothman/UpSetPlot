@@ -21,4 +21,4 @@ Dataset loading and generation
 
 .. autofunction:: from_memberships
 
-.. autofunction:: generate_data
+.. autofunction:: generate_counts

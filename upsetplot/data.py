@@ -2,23 +2,54 @@ from __future__ import print_function, division, absolute_import
 from numbers import Number
 import functools
 import distutils
+import warnings
 
 import pandas as pd
 import numpy as np
 
 
-def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
+def generate_counts(seed=0, n_samples=10000, n_categories=3, aggregated=True):
+    """Generate artificial data corresponding to set intersections
+
+    Parameters
+    ----------
+    seed : int
+        A seed for randomisation
+    n_samples : int
+        Number of samples to generate (or the sum if aggregated=True)
+    n_categories : int
+        Number of categories (named "cat0", "cat1", ...) to generate
+    aggregated : bool
+        If True, return the count of samples associated with each intersection
+        of categories. If False, report a weight or score for each sample,
+        as well as its associated categories.
+
+    Returns
+    -------
+    Series
+        Value is counts if aggregated=True, or float "weights" if
+        aggregated=False. Index includes a boolean indicator mask for each
+        category.
+    """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame({'value': np.zeros(n_samples)})
-    for i in range(n_sets):
+    for i in range(n_categories):
         r = rng.rand(n_samples)
         df['cat%d' % i] = r > rng.rand()
         df['value'] += r
 
-    df.set_index(['cat%d' % i for i in range(n_sets)], inplace=True)
+    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
     if aggregated:
-        return df.value.groupby(level=list(range(n_sets))).count()
+        return df.value.groupby(level=list(range(n_categories))).count()
     return df.value
+
+
+def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
+    warnings.warn('generate_data was replaced by generate_counts in version '
+                  '0.3 and will be removed in version 0.4.',
+                  DeprecationWarning)
+    return generate_counts(seed=seed, n_samples=n_samples, n_categories=n_sets,
+                           aggregated=aggregated)
 
 
 def from_memberships(memberships, data=None):

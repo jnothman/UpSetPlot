@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from upsetplot import plot
 from upsetplot import UpSet
-from upsetplot import generate_data
+from upsetplot import generate_counts
 from upsetplot.plotting import _process_data
 
 # TODO: warnings should raise errors
@@ -24,8 +24,8 @@ def is_ascending(seq):
 
 
 @pytest.mark.parametrize('x', [
-    generate_data(aggregated=True),
-    generate_data(aggregated=True).iloc[1:-2],
+    generate_counts(),
+    generate_counts().iloc[1:-2],
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
@@ -73,8 +73,8 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_data(),
-    generate_data(aggregated=True),
+    generate_counts(aggregated=False),
+    generate_counts(),
 ])
 def test_subset_size_series(x):
     kw = {'sort_by': 'cardinality',
@@ -116,7 +116,7 @@ def test_subset_size_series(x):
 
 @pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
 @pytest.mark.parametrize('x', [
-    generate_data(aggregated=True),
+    generate_counts(),
 ])
 def test_sort_sets_by_deprecation(x, sort_sets_by):
     with pytest.warns(DeprecationWarning, match='sort_sets_by'):
@@ -138,7 +138,7 @@ def test_sort_sets_by_deprecation(x, sort_sets_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_data(aggregated=False),
+    generate_counts(aggregated=False),
 ])
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
@@ -204,8 +204,8 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
 
 @pytest.mark.parametrize('x', [
-    generate_data(),
-    generate_data(aggregated=True),
+    generate_counts(aggregated=False),
+    generate_counts(),
 ])
 def test_subset_size_frame(x):
     kw = {'sort_by': 'cardinality',
@@ -266,9 +266,9 @@ def test_not_aggregated(sort_by, sort_categories_by):
           'sort_categories_by': sort_categories_by,
           'subset_size': 'sum',
           'sum_over': None}
-    Xagg = generate_data(aggregated=True)
+    Xagg = generate_counts()
     df1, intersections1, totals1 = _process_data(Xagg, **kw)
-    Xunagg = generate_data()
+    Xunagg = generate_counts(aggregated=False)
     Xunagg.loc[:] = 1
     df2, intersections2, totals2 = _process_data(Xunagg, **kw)
     assert_series_equal(intersections1, intersections2,
@@ -286,7 +286,7 @@ def test_not_aggregated(sort_by, sort_categories_by):
                                 {'sort_categories_by': 'blah'},
                                 {'sort_categories_by': True}])
 def test_param_validation(kw):
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
     with pytest.raises(ValueError):
         UpSet(X, **kw)
 
@@ -296,7 +296,7 @@ def test_param_validation(kw):
                                 {'orientation': 'vertical'}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
     plot(X, fig, **kw)
     fig.savefig(io.BytesIO(), format='png')
 
@@ -330,7 +330,7 @@ def test_dataframe_raises():
 
 
 def test_vertical():
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
 
     fig = matplotlib.figure.Figure()
     UpSet(X, orientation='horizontal').make_grid(fig)
@@ -349,7 +349,7 @@ def test_vertical():
 
 
 def test_element_size():
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
     figsizes = []
     for element_size in range(10, 50, 5):
         fig = matplotlib.figure.Figure()
@@ -389,7 +389,7 @@ def _count_descendants(el):
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
     plot(X, fig)
     n_artists_no_sizes = _count_descendants(fig)
 
@@ -409,7 +409,7 @@ def test_show_counts(orientation):
 
 def test_add_catplot():
     pytest.importorskip('seaborn')
-    X = generate_data(n_samples=100, aggregated=True)
+    X = generate_counts(n_samples=100)
     upset = UpSet(X)
     # smoke test
     upset.add_catplot('violin')
@@ -423,7 +423,7 @@ def test_add_catplot():
     # check the above add_catplot did not break the state
     upset.plot(fig)
 
-    X = generate_data(n_samples=100)
+    X = generate_counts(n_samples=100)
     X.name = 'foo'
     X = X.to_frame()
     upset = UpSet(X, subset_size='count')

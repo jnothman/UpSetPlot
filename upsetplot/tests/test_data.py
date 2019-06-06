@@ -5,7 +5,7 @@ import numpy as np
 from distutils.version import LooseVersion
 from pandas.util.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
-from upsetplot import from_memberships, from_contents
+from upsetplot import from_memberships, from_contents, generate_data
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
@@ -172,3 +172,8 @@ def test_from_contents_invalid(id_column):
         from_contents({'cat1': ['aa']},
                       data=pd.DataFrame([[1]]),
                       id_column=id_column)
+
+
+def test_generate_data_warning():
+    with pytest.warns(DeprecationWarning):
+        generate_data()
