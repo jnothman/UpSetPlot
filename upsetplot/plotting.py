@@ -12,12 +12,12 @@ from matplotlib.tight_layout import get_renderer
 
 def _process_data(df, sort_by, sort_categories_by, sum_over):
     if df.ndim == 1:
-        data = df
+        agg = df
         df = pd.DataFrame({'_value': df})
 
-        if not data.index.is_unique:
-            data = (data
-                    .groupby(level=list(range(data.index.nlevels)))
+        if not agg.index.is_unique:
+            agg = (agg
+                    .groupby(level=list(range(agg.index.nlevels)))
                     .sum())
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
@@ -28,46 +28,46 @@ def _process_data(df, sort_by, sort_categories_by, sum_over):
     else:
         gb = df.groupby(level=list(range(df.index.nlevels)))
         if sum_over is False:
-            data = gb.size()
-            data.name = 'size'
+            agg = gb.size()
+            agg.name = 'size'
         elif hasattr(sum_over, 'lower'):
-            data = gb[sum_over].sum()
+            agg = gb[sum_over].sum()
         else:
             raise ValueError('Unsupported value for sum_over: %r' % sum_over)
 
     # check all indices are boolean
-    assert all(set([True, False]) >= set(level) for level in data.index.levels)
+    assert all(set([True, False]) >= set(level) for level in agg.index.levels)
 
-    totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
-              for name in data.index.names]
-    totals = pd.Series(totals, index=data.index.names)
+    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
+              for name in agg.index.names]
+    totals = pd.Series(totals, index=agg.index.names)
     if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_categories_by is not None:
         raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     df = df.reorder_levels(totals.index.values)
-    data = data.reorder_levels(totals.index.values)
+    agg = agg.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
-        data = data.sort_values(ascending=False)
+        agg = agg.sort_values(ascending=False)
     elif sort_by == 'degree':
         comb = itertools.combinations
         o = pd.DataFrame([{name: True for name in names}
-                          for i in range(data.index.nlevels + 1)
-                          for names in comb(data.index.names, i)],
-                         columns=data.index.names)
+                          for i in range(agg.index.nlevels + 1)
+                          for names in comb(agg.index.names, i)],
+                         columns=agg.index.names)
         o.fillna(False, inplace=True)
         o = o.astype(bool)
-        o.set_index(data.index.names, inplace=True)
-        data = data.reindex(index=o.index)
+        o.set_index(agg.index.names, inplace=True)
+        agg = agg.reindex(index=o.index)
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 
     min_value = 0
     max_value = np.inf
-    data = data[np.logical_and(data >= min_value, data <= max_value)]
+    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
 
-    # add '_bin' to df indicating index in data
+    # add '_bin' to df indicating index in agg
     # XXX: ugly!
     def _pack_binary(X):
         X = pd.DataFrame(X)
@@ -78,12 +78,12 @@ def _process_data(df, sort_by, sort_categories_by, sum_over):
         return out
 
     df_packed = _pack_binary(df.index.to_frame())
-    data_packed = _pack_binary(data.index.to_frame())
+    data_packed = _pack_binary(agg.index.to_frame())
     df['_bin'] = pd.Series(df_packed).map(
         pd.Series(np.arange(len(data_packed)),
                   index=data_packed))
 
-    return df, data, totals
+    return df, agg, totals
 
 
 class _Transposed:
