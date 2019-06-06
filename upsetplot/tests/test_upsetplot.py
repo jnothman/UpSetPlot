@@ -30,6 +30,7 @@ def is_ascending(seq):
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
+    assert x.name == 'value'
     for subset_size in ['auto', 'legacy', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):
