@@ -54,7 +54,7 @@ boston_df = boston_df.set_index(list(boston_above_avg.columns))
 boston_df = boston_df.assign(median_value=boston.target)
 
 # UpSet plot it!
-upset = UpSet(boston_df, sum_over=False, intersection_plot_elements=3)
+upset = UpSet(boston_df, subset_size='count', intersection_plot_elements=3)
 upset.add_catplot(value='median_value', kind='strip', color='blue')
 upset.add_catplot(value='AGE', kind='strip', color='black')
 upset.plot()

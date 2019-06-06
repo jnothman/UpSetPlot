@@ -10,30 +10,83 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(df, sort_by, sort_categories_by, sum_over):
+def _aggregate_data(df, subset_size, sum_over):
+    """
+    Returns
+    -------
+    df : DataFrame
+        full data frame
+    aggregated : Series
+        aggregates
+    """
+    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum', 'legacy']
+    if subset_size not in _SUBSET_SIZE_VALUES:
+        raise ValueError('subset_size should be one of %s. Got %r'
+                         % (_SUBSET_SIZE_VALUES, subset_size))
     if df.ndim == 1:
-        agg = df
+        # Series
+        input_name = df.name
         df = pd.DataFrame({'_value': df})
 
-        if not agg.index.is_unique:
-            agg = (agg
-                   .groupby(level=list(range(agg.index.nlevels)))
-                   .sum())
+        if not df.index.is_unique:
+            if subset_size == 'legacy':
+                warnings.warn('From version 0.4, passing a Series as data '
+                              'with non-unqiue groups will raise an error '
+                              'unless subset_size="sum" or "count".',
+                              FutureWarning)
+            if subset_size == 'auto':
+                raise ValueError('subset_size="auto" cannot be used for a '
+                                 'Series with non-unique groups.')
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
-    elif sum_over is None:
-        raise ValueError('sum_over must be False or a column name when a '
-                         'DataFrame is input')
-    else:
-        gb = df.groupby(level=list(range(df.index.nlevels)))
-        if sum_over is False:
-            agg = gb.size()
-            agg.name = 'size'
-        elif hasattr(sum_over, 'lower'):
-            agg = gb[sum_over].sum()
+        if subset_size == 'count':
+            sum_over = False
         else:
-            raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+            sum_over = '_value'
+    else:
+        # DataFrame
+        if subset_size == 'legacy' and sum_over is None:
+            raise ValueError('Please specify subset_size or sum_over for a '
+                             'DataFrame.')
+        elif subset_size == 'legacy' and sum_over is False:
+            warnings.warn('sum_over=False will not be supported from version '
+                          '0.4. Use subset_size="auto" or "count" '
+                          'instead.', DeprecationWarning)
+        elif subset_size in ('auto', 'sum') and sum_over is False:
+            # remove this after deprecation
+            raise ValueError('sum_over=False is not supported when '
+                             'subset_size=%r' % subset_size)
+        elif subset_size == 'auto' and sum_over is None:
+            sum_over = False
+        elif subset_size == 'count':
+            if sum_over is not None:
+                raise ValueError('sum_over cannot be set if subset_size=%r' %
+                                 subset_size)
+            sum_over = False
+        elif subset_size == 'sum':
+            if sum_over is None:
+                raise ValueError('sum_over should be a field name if '
+                                 'subset_size="sum" and a DataFrame is '
+                                 'provided.')
+
+    gb = df.groupby(level=list(range(df.index.nlevels)))
+    if sum_over is False:
+        aggregated = gb.size()
+        aggregated.name = 'size'
+    elif hasattr(sum_over, 'lower'):
+        aggregated = gb[sum_over].sum()
+    else:
+        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+
+    if aggregated.name == '_value':
+        aggregated.name = input_name
+
+    return df, aggregated
+
+
+def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+    df, agg = _aggregate_data(df, subset_size, sum_over)
 
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in agg.index.levels)
@@ -167,10 +220,31 @@ class UpSet:
 
         .. versionadded: 0.3
             Replaces sort_sets_by
-    sum_over : str, False or None (default)
-        Must be specified when `data` is a DataFrame. If False, the
-        intersection plot will show the count of each subset. Otherwise, it
-        shows the sum of the specified field.
+    subset_size : {'auto', 'count', 'sum'}
+        Configures how to calculate the size of a subset. Choices are:
+
+        'auto'
+            If `data` is a DataFrame, count the number of rows in each group,
+            unless `sum_over` is specified.
+            If `data` is a Series with at most one row for each group, use
+            the value of the Series. If `data` is a Series with more than one
+            row per group, raise a ValueError.
+        'count'
+            Count the number of rows in each group.
+        'sum'
+            Sum the value of the `data` Series, or the DataFrame field
+            specified by `sum_over`.
+
+        Until version 0.4, the default is 'legacy' which uses `sum_over` to
+        control this behaviour. From version 0.4, 'auto' will be default.
+    sum_over : str or None
+        If `subset_size='sum'` or `'auto'`, then the intersection size is the
+        sum of the specified field in the `data` DataFrame. If a Series, only
+        None is supported and its value is summed.
+
+        If `subset_size='legacy'`, `sum_over` must be specified when `data` is
+        a DataFrame. If False, the intersection plot will show the count of
+        each subset. Otherwise, it shows the sum of the specified field.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -196,7 +270,8 @@ class UpSet:
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_categories_by='cardinality', sum_over=None,
+                 sort_categories_by='cardinality',
+                 subset_size='legacy', sum_over=None,
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
@@ -222,6 +297,7 @@ class UpSet:
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
+                                      subset_size=subset_size,
                                       sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]

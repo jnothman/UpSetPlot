@@ -1,6 +1,9 @@
 What's new in version 0.3
 -------------------------
 
+- To improve code legibility and intuitiveness, `sum_over=False` was deprecated
+  and a `subset_size` parameter was added.  It will have better default
+  handling of DataFrames after a short deprecation period.
 - Added `from_contents` to provide an alternative, intuitive way of specifying
   category membership of elements.
 - Fixed the display of the "intersection size" label on plots, which had been
