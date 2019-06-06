@@ -25,10 +25,10 @@ def _aggregate_data(df, subset_size, sum_over):
                          % (_SUBSET_SIZE_VALUES, subset_size))
     if df.ndim == 1:
         # Series
-        aggregated = df
+        input_name = df.name
         df = pd.DataFrame({'_value': df})
 
-        if not aggregated.index.is_unique:
+        if not df.index.is_unique:
             if subset_size == 'legacy':
                 warnings.warn('From version 0.4, passing a Series as data '
                               'with non-unqiue groups will raise an error '
@@ -78,6 +78,9 @@ def _aggregate_data(df, subset_size, sum_over):
         aggregated = gb[sum_over].sum()
     else:
         raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+
+    if aggregated.name == '_value':
+        aggregated.name = input_name
 
     return df, aggregated
 
