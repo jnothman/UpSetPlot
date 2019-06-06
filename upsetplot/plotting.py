@@ -38,7 +38,6 @@ def _aggregate_data(df, subset_size, sum_over):
                 raise ValueError('subset_size="auto" cannot be used for a '
                                  'Series with non-unique groups.')
         if sum_over is not None:
-            raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
         if subset_size == 'count':
             sum_over = False
