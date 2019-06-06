@@ -1,11 +1,13 @@
 What's new in version 0.3
 -------------------------
 
+- Added `from_contents` to provide an alternative, intuitive way of specifying
+  category membership of elements.
 - To improve code legibility and intuitiveness, `sum_over=False` was deprecated
   and a `subset_size` parameter was added.  It will have better default
   handling of DataFrames after a short deprecation period.
-- Added `from_contents` to provide an alternative, intuitive way of specifying
-  category membership of elements.
+- `generate_data` has been replaced with `generate_counts` and
+  `generate_samples`.
 - Fixed the display of the "intersection size" label on plots, which had been
   missing.
 - Trying to improve nomenclature, upsetplot now avoids "set" to refer to the
@@ -13,8 +15,8 @@ What's new in version 0.3
   intuition that categories are named, logical groupings, as opposed to
   "subsets". To this end:
 
-  - `generate_data` now names its categories "cat1", "cat2" etc. rather than
-    "set1", "set2", etc.
+  - `generate_counts` (formerly `generate_data`) now names its categories
+    "cat1", "cat2" etc. rather than "set1", "set2", etc.
   - the `sort_sets_by` parameter has been renamed to `sort_categories_by` and
     will be removed in version 0.4.
 

@@ -7,9 +7,9 @@ This illustrates the effect of orientation='vertical'.
 """
 
 from matplotlib import pyplot as plt
-from upsetplot import generate_data, plot
+from upsetplot import generate_counts, plot
 
-example = generate_data(aggregated=True)
+example = generate_counts()
 plot(example, orientation='vertical')
 plt.suptitle('A vertical plot')
 plt.show()

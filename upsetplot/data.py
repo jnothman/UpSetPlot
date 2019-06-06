@@ -2,23 +2,87 @@ from __future__ import print_function, division, absolute_import
 from numbers import Number
 import functools
 import distutils
+import warnings
 
 import pandas as pd
 import numpy as np
 
 
-def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
+def generate_samples(seed=0, n_samples=10000, n_categories=3):
+    """Generate artificial samples assigned to set intersections
+
+    Parameters
+    ----------
+    seed : int
+        A seed for randomisation
+    n_samples : int
+        Number of samples to generate
+    n_categories : int
+        Number of categories (named "cat0", "cat1", ...) to generate
+
+    Returns
+    -------
+    DataFrame
+        Field 'value' is a weight or score for each element.
+        Field 'index' is a unique id for each element.
+        Index includes a boolean indicator mask for each category.
+
+        Note: Further fields may be added in future versions.
+
+    See Also
+    --------
+    generate_counts : Generates the counts for each subset of categories
+        corresponding to these samples.
+    """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame({'value': np.zeros(n_samples)})
-    for i in range(n_sets):
+    for i in range(n_categories):
         r = rng.rand(n_samples)
         df['cat%d' % i] = r > rng.rand()
         df['value'] += r
 
-    df.set_index(['cat%d' % i for i in range(n_sets)], inplace=True)
+    df.reset_index(inplace=True)
+    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
+    return df
+
+
+def generate_counts(seed=0, n_samples=10000, n_categories=3):
+    """Generate artificial counts corresponding to set intersections
+
+    Parameters
+    ----------
+    seed : int
+        A seed for randomisation
+    n_samples : int
+        Number of samples to generate statistics over
+    n_categories : int
+        Number of categories (named "cat0", "cat1", ...) to generate
+
+    Returns
+    -------
+    Series
+        Counts indexed by boolean indicator mask for each category.
+
+    See Also
+    --------
+    generate_samples : Generates a DataFrame of samples that these counts are
+        derived from.
+    """
+    df = generate_samples(seed=seed, n_samples=n_samples,
+                          n_categories=n_categories)
+    return df.value.groupby(level=list(range(n_categories))).count()
+
+
+def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
+    warnings.warn('generate_data was replaced by generate_counts in version '
+                  '0.3 and will be removed in version 0.4.',
+                  DeprecationWarning)
     if aggregated:
-        return df.value.groupby(level=list(range(n_sets))).count()
-    return df.value
+        return generate_counts(seed=seed, n_samples=n_samples,
+                               n_categories=n_sets)
+    else:
+        return generate_samples(seed=seed, n_samples=n_samples,
+                                n_categories=n_sets)['value']
 
 
 def from_memberships(memberships, data=None):
