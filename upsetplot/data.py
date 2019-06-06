@@ -28,6 +28,11 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
         Index includes a boolean indicator mask for each category.
 
         Note: Further fields may be added in future versions.
+
+    See Also
+    --------
+    generate_counts : Generates the counts for each subset of categories
+        corresponding to these samples.
     """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame({'value': np.zeros(n_samples)})
@@ -57,6 +62,11 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3):
     -------
     Series
         Counts indexed by boolean indicator mask for each category.
+
+    See Also
+    --------
+    generate_samples : Generates a DataFrame of samples that these counts are
+        derived from.
     """
     df = generate_samples(seed=seed, n_samples=n_samples,
                           n_categories=n_categories)
