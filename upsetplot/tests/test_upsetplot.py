@@ -108,7 +108,7 @@ def test_subset_size_series(x):
     df_count, intersections_count, totals_count = _process_data(
         x, subset_size='count', **kw)
     df, intersections, totals = _process_data(
-        x.groupby(level=range(len(x.index.levels))).count(),
+        x.groupby(level=list(range(len(x.index.levels)))).count(),
         subset_size='sum', **kw)
     assert_series_equal(intersections, intersections_count, check_names=False)
     assert_series_equal(totals, totals_count)
