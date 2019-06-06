@@ -12,6 +12,7 @@ matrix:
     - env: CONDA_DEPS="python=2.7 pandas matplotlib"
     - env: CONDA_DEPS="python=3.5 pandas=0.20 matplotlib=2.0.2 numpy=1.9.3"
     - env: CONDA_DEPS="python=3.6 pandas matplotlib seaborn"
+    - env: CONDA_DEPS="python pandas matplotlib seaborn scikit-learn"  # extra deps to run examples
 install:
   - test -x $HOME/miniconda/bin/conda || (sudo apt-get update; wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -u -b -p $HOME/miniconda)
   - export PATH="$HOME/miniconda/bin:$PATH"
