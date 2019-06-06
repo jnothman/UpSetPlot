@@ -17,8 +17,8 @@ def _process_data(df, sort_by, sort_categories_by, sum_over):
 
         if not agg.index.is_unique:
             agg = (agg
-                    .groupby(level=list(range(agg.index.nlevels)))
-                    .sum())
+                   .groupby(level=list(range(agg.index.nlevels)))
+                   .sum())
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
