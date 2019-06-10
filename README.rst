@@ -148,9 +148,9 @@ References
 .. |py-versions| image:: https://img.shields.io/pypi/pyversions/upsetplot.svg
     :alt: Python versions supported
 
-.. |version| image:: https://badge.fury.io/py/upsetplot.svg
+.. |version| image:: https://badge.fury.io/py/UpSetPlot.svg
     :alt: Latest version on PyPi
-    :target: https://badge.fury.io/py/upsetplot
+    :target: https://badge.fury.io/py/UpSetPlot
 
 .. |build| image:: https://travis-ci.org/jnothman/UpSetPlot.svg?branch=master
     :alt: Travis CI build status
