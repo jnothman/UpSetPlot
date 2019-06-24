@@ -1,18 +1,5 @@
 language: generic
-# command to run tests
-script:
-  - pytest
-  - flake8
-env:
-  global:
-    - FIXED_CONDA_DEPS="flake8 pytest pytest-cov<2.6 coveralls"
-# command to install dependencies
-matrix:
-  include:
-    - env: CONDA_DEPS="python=2.7 pandas matplotlib"
-    - env: CONDA_DEPS="python=3.5 pandas=0.20 matplotlib=2.0.2 numpy=1.9.3"
-    - env: CONDA_DEPS="python=3.6 pandas matplotlib seaborn"
-    - env: CONDA_DEPS="python pandas matplotlib seaborn scikit-learn"  # extra deps to run examples
+
 install:
   - test -x $HOME/miniconda/bin/conda || (sudo apt-get update; wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; bash miniconda.sh -u -b -p $HOME/miniconda)
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -26,12 +13,22 @@ install:
   - source activate test-environment
   - python setup.py install
   - cp ci/matplotlibrc matplotlibrc
+script:
+  - pytest
+  - flake8
 after_success:
   - coveralls
-### cache:
-###    pip: true
-###    directories:
-###        - $HOME/miniconda/pkgs
+
+env:
+  global:
+    - FIXED_CONDA_DEPS="flake8 pytest pytest-cov<2.6 coveralls"
+matrix:
+  include:
+    - env: CONDA_DEPS="python=2.7 pandas matplotlib"
+    - env: CONDA_DEPS="python=3.5 pandas=0.20 matplotlib=2.0.2 numpy=1.9.3"
+    - env: CONDA_DEPS="python=3.6 pandas matplotlib seaborn"
+    - env: CONDA_DEPS="python pandas matplotlib seaborn scikit-learn"  # extra deps to run examples
+
 branches:
   only:
     - master
