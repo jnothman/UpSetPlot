@@ -2,6 +2,6 @@
 
 .. toctree::
 
-    _examples/index
+    auto_examples/index
     api
     changelog

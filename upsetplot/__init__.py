@@ -1,6 +1,13 @@
-from .plotting import UpSet, plot
-from .data import generate_data, from_memberships
+__version__ = '0.4-dev'
 
-__version__ = '0.3-dev'
+import os
 
-__all__ = ['UpSet', 'generate_data', 'plot', 'from_memberships']
+if os.environ.get('__in-setup', None) != '1':
+    from .plotting import UpSet, plot
+    from .data import (generate_counts, generate_data, generate_samples,
+                       from_memberships, from_contents)
+
+    __all__ = ['UpSet',
+               'generate_data', 'generate_counts', 'generate_samples',
+               'plot',
+               'from_memberships', 'from_contents']

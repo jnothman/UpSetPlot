@@ -4,8 +4,6 @@ import os
 import sys
 from setuptools import setup
 
-from upsetplot import __version__ as version
-
 
 def setup_package():
     src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -14,7 +12,9 @@ def setup_package():
     sys.path.insert(0, src_path)
 
     try:
-        # See setup.cfg
+        os.environ['__in-setup'] = '1'  # ensures only version is imported
+        from upsetplot import __version__ as version
+        # See also setup.cfg
         setup(name='UpSetPlot',
               version=version,
               packages=["upsetplot"],

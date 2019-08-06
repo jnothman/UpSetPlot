@@ -12,15 +12,15 @@ more readable. Documentation is at https://upsetplot.readthedocs.io.
 This ``upsetplot`` library tries to provide a simple interface backed by an
 extensible, object-oriented design.
 
-The basic input format is a `pandas.Series` containing counts
-corresponding to set intersection sizes.  The index indicates which rows
-pertain to which sets, by having multiple boolean indices, like ``example``
-in the following::
+The basic input format is a `pandas.Series` containing counts corresponding to
+subset sizes, where each subset is an intersection of named categories.  The
+index of the Series indicates which rows pertain to which categories, by having
+multiple boolean indices, like ``example`` in the following::
 
-    >>> from upsetplot import generate_data
-    >>> example = generate_data(aggregated=True)
+    >>> from upsetplot import generate_counts
+    >>> example = generate_counts()
     >>> example  # doctest: +NORMALIZE_WHITESPACE
-    set0   set1   set2
+    cat0   cat1   cat2
     False  False  False      56
                   True      283
            True   False    1279
@@ -43,17 +43,17 @@ makes:
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_generated_001.png
    :target: ../auto_examples/plot_generated.html
 
-This plot shows the cardinality of every set combination seen in our data.  The
-leftmost column counts items absent from any set. The next three columns count
-items only in ``set1``, ``set2`` and ``set3``` respectively, with following
-columns showing cardinalities for items in each combination of exactly two
-named sets. The rightmost column counts items in all three sets.
+This plot shows the cardinality of every category combination seen in our data.
+The leftmost column counts items absent from any category. The next three
+columns count items only in ``cat1``, ``cat2`` and ``cat3`` respectively, with
+following columns showing cardinalities for items in each combination of
+exactly two named sets. The rightmost column counts items in all three sets.
 
 Rotation
 ........
 
-We call the above plot style "horizontal" because the set intersections are
-presented from left to right.  `Vertical plots
+We call the above plot style "horizontal" because the category intersections
+are presented from left to right.  `Vertical plots
 <http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_vertical.html>`__
 are also supported!
 
@@ -71,30 +71,29 @@ in each subset.
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_boston_001.png
    :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html
 
-
 Loading datasets
 ................
 
 While the dataset above is randomly generated, you can prepare your own dataset
 for input to upsetplot.  A helpful tool is `from_memberships`, which allows
-us to reconstruct the example above by indicating each data point's set
+us to reconstruct the example above by indicating each data point's category
 membership::
 
     >>> from upsetplot import from_memberships
     >>> example = from_memberships(
     ...     [[],
-    ...      ['set2'],
-    ...      ['set1'],
-    ...      ['set1', 'set2'],
-    ...      ['set0'],
-    ...      ['set0', 'set2'],
-    ...      ['set0', 'set1'],
-    ...      ['set0', 'set1', 'set2'],
+    ...      ['cat2'],
+    ...      ['cat1'],
+    ...      ['cat1', 'cat2'],
+    ...      ['cat0'],
+    ...      ['cat0', 'cat2'],
+    ...      ['cat0', 'cat1'],
+    ...      ['cat0', 'cat1', 'cat2'],
     ...      ],
     ...      data=[56, 283, 1279, 5882, 24, 90, 429, 1957]
     ... )
     >>> example  # doctest: +NORMALIZE_WHITESPACE
-    set0   set1   set2
+    cat0   cat1   cat2
     False  False  False      56
                   True      283
            True   False    1279
@@ -104,6 +103,8 @@ membership::
            True   False     429
                   True     1957
     dtype: int64
+
+See also `from_contents`, another way to describe categorised data.
 
 Installation
 ------------
@@ -130,8 +131,8 @@ Why an alternative to py-upset?
 Probably for petty reasons. It appeared `py-upset
 <https://github.com/ImSoErgodic/py-upset>`_ was not being maintained.  Its
 input format was undocumented, inefficient and, IMO, inappropriate.  It did not
-facilitate showing plots of each set intersection distribution as in Lex et
-al's work introducing UpSet plots. Nor did it include the horizontal bar plots
+facilitate showing plots of each subset's distribution as in Lex et al's work
+introducing UpSet plots. Nor did it include the horizontal bar plots
 illustrated there. It did not support Python 2. I decided it would be easier to
 construct a cleaner version than to fix it.
 
@@ -147,9 +148,9 @@ References
 .. |py-versions| image:: https://img.shields.io/pypi/pyversions/upsetplot.svg
     :alt: Python versions supported
 
-.. |version| image:: https://badge.fury.io/py/upsetplot.svg
+.. |version| image:: https://badge.fury.io/py/UpSetPlot.svg
     :alt: Latest version on PyPi
-    :target: https://badge.fury.io/py/upsetplot
+    :target: https://badge.fury.io/py/UpSetPlot
 
 .. |build| image:: https://travis-ci.org/jnothman/UpSetPlot.svg?branch=master
     :alt: Travis CI build status

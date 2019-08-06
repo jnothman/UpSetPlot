@@ -278,6 +278,6 @@ sphinx_gallery_conf = {
     # path to your examples scripts
     'examples_dirs': '../examples',
     # path where to save gallery generated examples
-    'gallery_dirs': '_examples',
+    'gallery_dirs': 'auto_examples',
     'backreferences_dir': '_modules',
 }

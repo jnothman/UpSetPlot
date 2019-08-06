@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import warnings
 import itertools
 
 import numpy as np
@@ -9,64 +10,117 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _process_data(df, sort_by, sort_sets_by, sum_over):
+def _aggregate_data(df, subset_size, sum_over):
+    """
+    Returns
+    -------
+    df : DataFrame
+        full data frame
+    aggregated : Series
+        aggregates
+    """
+    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum', 'legacy']
+    if subset_size not in _SUBSET_SIZE_VALUES:
+        raise ValueError('subset_size should be one of %s. Got %r'
+                         % (_SUBSET_SIZE_VALUES, subset_size))
     if df.ndim == 1:
-        data = df
+        # Series
+        input_name = df.name
         df = pd.DataFrame({'_value': df})
 
-        if not data.index.is_unique:
-            data = (data
-                    .groupby(level=list(range(data.index.nlevels)))
-                    .sum())
+        if not df.index.is_unique:
+            if subset_size == 'legacy':
+                warnings.warn('From version 0.4, passing a Series as data '
+                              'with non-unqiue groups will raise an error '
+                              'unless subset_size="sum" or "count".',
+                              FutureWarning)
+            if subset_size == 'auto':
+                raise ValueError('subset_size="auto" cannot be used for a '
+                                 'Series with non-unique groups.')
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
-    elif sum_over is None:
-        raise ValueError('sum_over must be False or a column name when a '
-                         'DataFrame is input')
-    else:
-        gb = df.groupby(level=list(range(df.index.nlevels)))
-        if sum_over is False:
-            data = gb.size()
-            data.name = 'size'
-        elif hasattr(sum_over, 'lower'):
-            data = gb[sum_over].sum()
+        if subset_size == 'count':
+            sum_over = False
         else:
-            raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+            sum_over = '_value'
+    else:
+        # DataFrame
+        if subset_size == 'legacy' and sum_over is None:
+            raise ValueError('Please specify subset_size or sum_over for a '
+                             'DataFrame.')
+        elif subset_size == 'legacy' and sum_over is False:
+            warnings.warn('sum_over=False will not be supported from version '
+                          '0.4. Use subset_size="auto" or "count" '
+                          'instead.', DeprecationWarning)
+        elif subset_size in ('auto', 'sum') and sum_over is False:
+            # remove this after deprecation
+            raise ValueError('sum_over=False is not supported when '
+                             'subset_size=%r' % subset_size)
+        elif subset_size == 'auto' and sum_over is None:
+            sum_over = False
+        elif subset_size == 'count':
+            if sum_over is not None:
+                raise ValueError('sum_over cannot be set if subset_size=%r' %
+                                 subset_size)
+            sum_over = False
+        elif subset_size == 'sum':
+            if sum_over is None:
+                raise ValueError('sum_over should be a field name if '
+                                 'subset_size="sum" and a DataFrame is '
+                                 'provided.')
+
+    gb = df.groupby(level=list(range(df.index.nlevels)))
+    if sum_over is False:
+        aggregated = gb.size()
+        aggregated.name = 'size'
+    elif hasattr(sum_over, 'lower'):
+        aggregated = gb[sum_over].sum()
+    else:
+        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+
+    if aggregated.name == '_value':
+        aggregated.name = input_name
+
+    return df, aggregated
+
+
+def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+    df, agg = _aggregate_data(df, subset_size, sum_over)
 
     # check all indices are boolean
-    assert all(set([True, False]) >= set(level) for level in data.index.levels)
+    assert all(set([True, False]) >= set(level) for level in agg.index.levels)
 
-    totals = [data[data.index.get_level_values(name).values.astype(bool)].sum()
-              for name in data.index.names]
-    totals = pd.Series(totals, index=data.index.names)
-    if sort_sets_by == 'cardinality':
+    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
+              for name in agg.index.names]
+    totals = pd.Series(totals, index=agg.index.names)
+    if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
-    elif sort_sets_by is not None:
-        raise ValueError('Unknown sort_sets_by: %r' % sort_sets_by)
+    elif sort_categories_by is not None:
+        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     df = df.reorder_levels(totals.index.values)
-    data = data.reorder_levels(totals.index.values)
+    agg = agg.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
-        data = data.sort_values(ascending=False)
+        agg = agg.sort_values(ascending=False)
     elif sort_by == 'degree':
         comb = itertools.combinations
         o = pd.DataFrame([{name: True for name in names}
-                          for i in range(data.index.nlevels + 1)
-                          for names in comb(data.index.names, i)],
-                         columns=data.index.names)
+                          for i in range(agg.index.nlevels + 1)
+                          for names in comb(agg.index.names, i)],
+                         columns=agg.index.names)
         o.fillna(False, inplace=True)
         o = o.astype(bool)
-        o.set_index(data.index.names, inplace=True)
-        data = data.reindex(index=o.index)
+        o.set_index(agg.index.names, inplace=True)
+        agg = agg.reindex(index=o.index)
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 
     min_value = 0
     max_value = np.inf
-    data = data[np.logical_and(data >= min_value, data <= max_value)]
+    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
 
-    # add '_bin' to df indicating index in data
+    # add '_bin' to df indicating index in agg
     # XXX: ugly!
     def _pack_binary(X):
         X = pd.DataFrame(X)
@@ -77,12 +131,12 @@ def _process_data(df, sort_by, sort_sets_by, sum_over):
         return out
 
     df_packed = _pack_binary(df.index.to_frame())
-    data_packed = _pack_binary(data.index.to_frame())
+    data_packed = _pack_binary(agg.index.to_frame())
     df['_bin'] = pd.Series(df_packed).map(
         pd.Series(np.arange(len(data_packed)),
                   index=data_packed))
 
-    return df, data, totals
+    return df, agg, totals
 
 
 class _Transposed:
@@ -149,29 +203,53 @@ class UpSet:
     Parameters
     ----------
     data : pandas.Series or pandas.DataFrame
-        Values for each set to plot.
-        Should have multi-index where each level is binary,
-        corresponding to set membership.
+        Elements associated with categories (a DataFrame), or the size of each
+        subset of categories (a Series).
+        Should have MultiIndex where each level is binary,
+        corresponding to category membership.
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
     sort_by : {'cardinality', 'degree'}
-        If 'cardinality', set intersections are listed from largest to
-        smallest value.
-        If 'degree', they are listed in order of the number of sets
+        If 'cardinality', subset are listed from largest to smallest.
+        If 'degree', they are listed in order of the number of categories
         intersected.
-    sort_sets_by : {'cardinality', None}
-        Whether to sort the overall sets by total cardinality, or leave them
+    sort_categories_by : {'cardinality', None}
+        Whether to sort the categories by total cardinality, or leave them
         in the provided order.
-    sum_over : str, False or None (default)
-        Must be specified when `data` is a DataFrame. If False, the
-        intersection plot will show the count of each subset. Otherwise, it
-        shows the sum of the specified field.
+
+        .. versionadded: 0.3
+            Replaces sort_sets_by
+    subset_size : {'auto', 'count', 'sum'}
+        Configures how to calculate the size of a subset. Choices are:
+
+        'auto'
+            If `data` is a DataFrame, count the number of rows in each group,
+            unless `sum_over` is specified.
+            If `data` is a Series with at most one row for each group, use
+            the value of the Series. If `data` is a Series with more than one
+            row per group, raise a ValueError.
+        'count'
+            Count the number of rows in each group.
+        'sum'
+            Sum the value of the `data` Series, or the DataFrame field
+            specified by `sum_over`.
+
+        Until version 0.4, the default is 'legacy' which uses `sum_over` to
+        control this behaviour. From version 0.4, 'auto' will be default.
+    sum_over : str or None
+        If `subset_size='sum'` or `'auto'`, then the intersection size is the
+        sum of the specified field in the `data` DataFrame. If a Series, only
+        None is supported and its value is summed.
+
+        If `subset_size='legacy'`, `sum_over` must be specified when `data` is
+        a DataFrame. If False, the intersection plot will show the count of
+        each subset. Otherwise, it shows the sum of the specified field.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
-        Whether to show lines joining dots in the matrix, to mark multiple sets
-        being intersected.
+        Whether to show lines joining dots in the matrix, to mark multiple
+        categories being intersected.
     element_size : float or None
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
@@ -184,14 +262,20 @@ class UpSet:
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.4.
     """
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
-                 sort_sets_by='cardinality', sum_over=None, facecolor='black',
+                 sort_categories_by='cardinality',
+                 subset_size='legacy', sum_over=None,
+                 facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts=''):
+                 show_counts='', sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -204,10 +288,16 @@ class UpSet:
                                'elements': intersection_plot_elements}]
         self._show_counts = show_counts
 
+        if sort_sets_by != 'deprecated':
+            sort_categories_by = sort_sets_by
+            warnings.warn('sort_sets_by was deprecated in version 0.3 and '
+                          'will be removed in version 0.4', DeprecationWarning)
+
         (self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
-                                      sort_sets_by=sort_sets_by,
+                                      sort_categories_by=sort_categories_by,
+                                      subset_size=subset_size,
                                       sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
@@ -352,13 +442,13 @@ class UpSet:
         """
         ax = self._reorient(ax)
         data = self.intersections
-        n_sets = data.index.nlevels
+        n_cats = data.index.nlevels
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array(['lightgrey'] * len(data) * n_sets, dtype='O')
+        c = np.array(['lightgrey'] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
-        x = np.repeat(np.arange(len(data)), n_sets)
-        y = np.tile(np.arange(n_sets), len(data))
+        x = np.repeat(np.arange(len(data)), n_cats)
+        y = np.tile(np.arange(n_cats), len(data))
         if self._element_size is not None:
             s = (self._element_size * .35) ** 2
         else:
@@ -375,7 +465,7 @@ class UpSet:
                       lw=2, colors=self._facecolor)
 
         tick_axis = ax.yaxis
-        tick_axis.set_ticks(np.arange(n_sets))
+        tick_axis.set_ticks(np.arange(n_cats))
         tick_axis.set_ticklabels(data.index.names,
                                  rotation=0 if self._horizontal else -90)
         ax.xaxis.set_visible(False)
