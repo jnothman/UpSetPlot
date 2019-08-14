@@ -88,7 +88,7 @@ def _aggregate_data(df, subset_size, sum_over):
 def _check_index(df):
     # check all indices are boolean
     if not all(set([True, False]) >= set(level)
-               for level in agg.index.levels):
+               for level in df.index.levels):
         raise ValueError('The DataFrame has values in its index that are not '
                          'boolean')
     df = df.copy(deep=False)
