@@ -255,8 +255,50 @@ def from_contents(contents, data=None, id_column='id'):
 ### SPEC
 
 
-# Could also be "CategorizedData"
+class CategorizedData:
+    """Represents data where each sample is assigned to one or more categories
+    """
+
+    def __init__(self, data, category_columns):
+        data = pd.DataFrame(data)
+        self.data = data
+        self.category_columns = category_columns
+        if not category_columns:
+            raise ValueError('Need at least one entry in category_columns')
+        if not (set(category_columns) <= set(data.columns)):
+            missing = sorted(set(data.columns) - set(category_columns))
+            raise ValueError('category_columns should be a subset of '
+                             'data.columns. '
+                             'Not in data.columns: {!r}'.format(missing))
+        for col in category_columns:
+            if data[col].dtype.kind != 'b':
+                raise ValueError('category_columns should have boolean '
+                                 'dtype. Column {!r} has dtype {!r}.'.format(
+                                     col, data[col].dtype.kind))
+
+    @classmethod
+    def from_memberships(cls, memberships, data=None):
+        raise NotImplementedError
+
+    @classmethod
+    def from_contents(cls, memberships, data=None):
+        raise NotImplementedError
+
+    def get_venn(self, weight=None):
+        gb = self.frame.groupby(self.category_fields)
+        if weight is None:
+            return VennData(gb.size())
+        else:
+            return VennData(gb[weight].sum())
+
+
 class VennData:
+    def __init__(self, sizes):
+        # TODO: check index is boolean and unique
+        self.sizes = sizes
+
+
+class OldVennData:
     def __init__(self, df, key_fields=None, category_fields=None):
         self._df = self._check_df(df)
 
