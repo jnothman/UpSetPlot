@@ -85,11 +85,23 @@ def _aggregate_data(df, subset_size, sum_over):
     return df, aggregated
 
 
+def _check_index(df):
+    # check all indices are boolean
+    if not all(set([True, False]) >= set(level)
+               for level in agg.index.levels):
+        raise ValueError('The DataFrame has values in its index that are not '
+                         'boolean')
+    df = df.copy(deep=False)
+    # XXX: this may break if input is not MultiIndex
+    df.index = pd.MultiIndex(levels=[x.astype(bool) for x in df.index.levels],
+                             codes=df.index.codes,
+                             names=df.index.names)
+    return df
+
+
 def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df, agg = _aggregate_data(df, subset_size, sum_over)
-
-    # check all indices are boolean
-    assert all(set([True, False]) >= set(level) for level in agg.index.levels)
+    df = _check_index(df)
 
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
