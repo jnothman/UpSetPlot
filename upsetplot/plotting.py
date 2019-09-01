@@ -93,9 +93,13 @@ def _check_index(df):
                          'boolean')
     df = df.copy(deep=False)
     # XXX: this may break if input is not MultiIndex
-    df.index = pd.MultiIndex(levels=[x.astype(bool) for x in df.index.levels],
-                             codes=df.index.codes,
-                             names=df.index.names)
+    kw = {'levels': [x.astype(bool) for x in df.index.levels],
+          'names': df.index.names,
+          }
+    if hasattr(df.index, 'codes'):
+        # compat for pandas <= 0.20
+        kw['codes'] = df.index.codes
+    df.index = pd.MultiIndex(**kw)
     return df
 
 
