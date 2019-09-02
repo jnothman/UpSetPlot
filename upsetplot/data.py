@@ -3,9 +3,16 @@ from numbers import Number
 import functools
 import distutils
 import warnings
+import re
 
 import pandas as pd
 import numpy as np
+
+
+_concat = pd.concat
+if distutils.version.LooseVersion(pd.__version__) >= '0.23.0':
+    # silence the warning
+    _concat = functools.partial(_concat, sort=False)
 
 
 def generate_samples(seed=0, n_samples=10000, n_categories=3):
@@ -85,6 +92,31 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
                                 n_categories=n_sets)['value']
 
 
+def _memberships_to_indicators(memberships):
+    df = pd.DataFrame([{name: True for name in names}
+                       for names in memberships])
+    for set_name in df.columns:
+        if not hasattr(set_name, 'lower'):
+            raise ValueError('Category names should be strings')
+    if df.shape[1] == 0:
+        raise ValueError('Require at least one category. None were found.')
+    df.sort_index(axis=1, inplace=True)
+    df.fillna(False, inplace=True)
+    df = df.astype(bool)
+    return df
+
+
+def _contents_to_indicators(contents):
+    cat_series = [pd.Series(True, index=list(elements), name=name)
+                  for name, elements in contents.items()]
+    if not all(s.index.is_unique for s in cat_series):
+        raise ValueError('Got duplicate ids in a category')
+
+    df = _concat(cat_series, axis=1)
+    df.fillna(False, inplace=True)
+    return df
+
+
 def from_memberships(memberships, data=None):
     """Load data where each sample has a collection of category names
 
@@ -137,16 +169,7 @@ def from_memberships(memberships, data=None):
     True  False False  6   7   8
     False False False  9  10  11
     """
-    df = pd.DataFrame([{name: True for name in names}
-                       for names in memberships])
-    for set_name in df.columns:
-        if not hasattr(set_name, 'lower'):
-            raise ValueError('Category names should be strings')
-    if df.shape[1] == 0:
-        raise ValueError('Require at least one category. None were found.')
-    df.sort_index(axis=1, inplace=True)
-    df.fillna(False, inplace=True)
-    df = df.astype(bool)
+    df = _memberships_to_indicators(memberships)
     df.set_index(list(df.columns), inplace=True)
     if data is None:
         return df.assign(ones=1)['ones']
@@ -220,21 +243,10 @@ def from_contents(contents, data=None, id_column='id'):
     False True  False   3    yellow
           False True    4      blue
     """
-    cat_series = [pd.Series(True, index=list(elements), name=name)
-                  for name, elements in contents.items()]
-    if not all(s.index.is_unique for s in cat_series):
-        raise ValueError('Got duplicate ids in a category')
-
-    concat = pd.concat
-    if distutils.version.LooseVersion(pd.__version__) >= '0.23.0':
-        # silence the warning
-        concat = functools.partial(concat, sort=False)
-
-    df = concat(cat_series, axis=1)
+    df = _contents_to_indicators(contents)
+    cat_names = list(df.columns)
     if id_column in df.columns:
         raise ValueError('A category cannot be named %r' % id_column)
-    df.fillna(False, inplace=True)
-    cat_names = list(df.columns)
 
     if data is not None:
         if set(df.columns).intersection(data.columns):
@@ -247,52 +259,88 @@ def from_contents(contents, data=None, id_column='id'):
             raise ValueError('Found identifiers in contents that are not in '
                              'data: %r' % not_in_data.index.values)
         df = df.reindex(index=data.index).fillna(False)
-        df = concat([data, df], axis=1)
+        df = _concat([data, df], axis=1)
     df.index.name = id_column
     return df.reset_index().set_index(cat_names)
 
 
 ### SPEC
 
+# TODO: Test use of CategorizedData and CategorizedCounts passed to plot()
 
 class CategorizedData:
     """Represents data where each sample is assigned to one or more categories
     """
 
-    def __init__(self, data, category_columns):
+    def __init__(self, data, categories):
         data = pd.DataFrame(data)
+
+        if hasattr(categories, 'dtype'):
+            categories = pd.DataFrame(categories)
+
+            invalid = set(categories.columns) & set(data.columns)
+            if invalid:
+                raise ValueError('Category names and data columns must be '
+                                 'unique. Got overlap: %r' % sorted(invalid))
+
+            not_in_data = categories.drop(data.index, axis=0, errors='ignore')
+            if len(not_in_data):
+                raise ValueError('Found identifiers in categories that are '
+                                 'not in data: %r' % not_in_data.index.values)
+
+            data = _concat([categories, data])
+            categories = categories.columns
+
         self.data = data
-        self.category_columns = category_columns
-        if not category_columns:
-            raise ValueError('Need at least one entry in category_columns')
-        if not (set(category_columns) <= set(data.columns)):
-            missing = sorted(set(data.columns) - set(category_columns))
-            raise ValueError('category_columns should be a subset of '
+        self.categories = categories
+        if not categories:
+            raise ValueError('Need at least one entry in categories')
+        if not (set(categories) <= set(data.columns)):
+            missing = sorted(set(data.columns) - set(categories))
+            raise ValueError('categories should be a subset of '
                              'data.columns. '
                              'Not in data.columns: {!r}'.format(missing))
-        for col in category_columns:
+        for col in categories:
             if data[col].dtype.kind != 'b':
-                raise ValueError('category_columns should have boolean '
+                raise ValueError('categories should have boolean '
                                  'dtype. Column {!r} has dtype {!r}.'.format(
                                      col, data[col].dtype.kind))
 
     @classmethod
     def from_memberships(cls, memberships, data=None):
-        raise NotImplementedError
+        indicators = _memberships_to_indicators(memberships)
+        if data is None:
+            data = indicators[[]]
+        return cls(data=data, categories=indicators)
 
     @classmethod
-    def from_contents(cls, memberships, data=None):
-        raise NotImplementedError
-
-    def get_venn(self, weight=None):
-        gb = self.frame.groupby(self.category_fields)
-        if weight is None:
-            return VennData(gb.size())
+    def from_memberships_str(cls, memberships, data=None,
+                             sep=re.compile(r'(?u)[^\w\ ]')):
+        if isinstance(memberships, str):
+            memberships = data[memberships]
+        if hasattr(sep, 'match'):
+            lists = pd.Series(memberships).apply(lambda x: sep.split)
         else:
-            return VennData(gb[weight].sum())
+            lists = pd.Series(memberships).str.split(sep)
+        return cls.from_memberships(lists, data)
+
+    @classmethod
+    def from_contents(cls, contents, data=None):
+        indicators = _contents_to_indicators(contents)
+        if data is None:
+            data = indicators[[]]
+        return cls(data=data, categories=indicators)
+
+    def get_counts(self, weight=None):
+        gb = self.frame.groupby(self.categories)
+        if weight is None:
+            return CategorizedCounts(gb.size())
+        else:
+            return CategorizedCounts(gb[weight].sum())
 
 
-class VennData:
+class CategorizedCounts:
+
     def __init__(self, sizes):
         # TODO: check index is boolean and unique
         self.sizes = sizes
