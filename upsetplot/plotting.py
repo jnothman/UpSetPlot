@@ -499,7 +499,14 @@ class UpSet:
         rects = ax.bar(np.arange(len(intersections)), intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+        if self._show_counts is True and self.normalize_counts:
+            fmt = '%.2f'
+        elif self._show_counts is True and not self.normalize_counts:
+            fmt = '%d'
+        else:
+            fmt = self._show_counts
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
+                          fmt)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -507,17 +514,15 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(True)
-        ax.set_ylabel('Intersection size')
+        ax.set_ylabel(
+            'Intersection {}'.format(
+                'Fraction' if self.normalize_counts else 'Size'
+            )
+        )
 
-    def _label_sizes(self, ax, rects, where):
+    def _label_sizes(self, ax, rects, where, fmt='%d'):
         if not self._show_counts:
             return
-        if self._show_counts is True and self.normalize_counts:
-            fmt = '%.2f'
-        elif self._show_counts is True and not self.normalize_counts:
-            fmt = '%d'
-        else:
-            fmt = self._show_counts
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
