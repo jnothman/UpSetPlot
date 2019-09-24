@@ -276,6 +276,8 @@ class UpSet:
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
             version 0.4.
+    normalize_counts : bool, default=False
+        Whether to normalize the intersection size bars when plotting.
     """
     _default_figsize = (10, 6)
 
@@ -285,7 +287,8 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated'):
+                 show_counts='', sort_sets_by='deprecated',
+                 normalize_counts=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -302,6 +305,8 @@ class UpSet:
             sort_categories_by = sort_sets_by
             warnings.warn('sort_sets_by was deprecated in version 0.3 and '
                           'will be removed in version 0.4', DeprecationWarning)
+
+        self.normalize_counts = normalize_counts
 
         (self._df, self.intersections,
          self.totals) = _process_data(data,
@@ -488,7 +493,10 @@ class UpSet:
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
-        rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
+        intersections = self.intersections
+        if self.normalize_counts:
+            intersections /= intersections.sum()
+        rects = ax.bar(np.arange(len(intersections)), intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
@@ -504,7 +512,12 @@ class UpSet:
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts:
             return
-        fmt = '%d' if self._show_counts is True else self._show_counts
+        if self._show_counts is True and self.normalize_counts:
+            fmt = '%.2f'
+        elif self._show_counts is True and not self.normalize_counts:
+            fmt = '%d'
+        else:
+            fmt = self._show_counts
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
