@@ -495,18 +495,16 @@ class UpSet:
         ax = self._reorient(ax)
         intersections = self.intersections
         if self.normalize_counts:
-            intersections /= intersections.sum()
+            intersections = 100 * (intersections / intersections.sum())
         rects = ax.bar(np.arange(len(intersections)), intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
-        if self._show_counts is True and self.normalize_counts:
-            fmt = '%.2f'
-        elif self._show_counts is True and not self.normalize_counts:
-            fmt = '%d'
-        else:
-            fmt = self._show_counts
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
-                          fmt)
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+        if self.normalize_counts:
+            self._label_sizes(
+                ax, rects, 'bottom', '%d', 0 if self._horizontal else -90,
+                list(self.intersections.values),
+            )
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -516,36 +514,59 @@ class UpSet:
         tick_axis.grid(True)
         ax.set_ylabel(
             'Intersection {}'.format(
-                'Fraction' if self.normalize_counts else 'Size'
+                'Percentage' if self.normalize_counts else 'Size'
             )
         )
 
-    def _label_sizes(self, ax, rects, where, fmt='%d'):
+    def _label_sizes(self, ax, rects, where, fmt=None, rotation=None,
+                     values=None):
         if not self._show_counts:
             return
+        if not fmt:
+            fmt = '%d' if self._show_counts is True else self._show_counts
+        if values and (len(values) != len(rects)):
+            raise ValueError('Lengths of values and rects must be the same')
+
+        if not values:
+            values = [
+                r.get_width() if where in ('left', 'right') else r.get_height()
+                for r in rects
+            ]
+
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
-            for rect in rects:
-                width = rect.get_width()
-                ax.text(width + margin,
+            for value, rect in zip(values, rects):
+                ax.text(rect.get_width() + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
-                        ha='left', va='center')
+                        fmt % value,
+                        ha='left', va='center', rotation=rotation)
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
-            for rect in rects:
-                width = rect.get_width()
-                ax.text(width + margin,
+            for value, rect in zip(values, rects):
+                ax.text(rect.get_width() + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
-                        ha='right', va='center')
+                        fmt % value,
+                        ha='right', va='center', rotation=rotation)
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
-            for rect in rects:
-                height = rect.get_height()
+            for value, rect in zip(values, rects):
                 ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin, fmt % height,
-                        ha='center', va='bottom')
+                        rect.get_height() + margin, fmt % value,
+                        ha='center', va='bottom', rotation=rotation)
+        elif where == 'bottom':
+            if self._horizontal:
+                margin = -0.05 * abs(np.diff(ax.get_ylim()))
+                for value, rect in zip(values, rects):
+                    ax.text(rect.get_x() + rect.get_width() * .5,
+                            margin, fmt % value,
+                            ha='center', va='center', rotation=rotation)
+            else:
+                margin = -0.5 * abs(np.diff(ax.get_ylim()))
+                for value, rect in zip(values, rects):
+                    ax.text(margin, rect.get_y() + rect.get_height() * .5,
+                            fmt % value, ha='center', va='center',
+                            rotation=rotation)
+
         else:
             raise NotImplementedError('unhandled where: %r' % where)
 
