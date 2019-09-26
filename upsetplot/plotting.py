@@ -88,6 +88,11 @@ def _aggregate_data(df, subset_size, sum_over):
 def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df, agg = _aggregate_data(df, subset_size, sum_over)
 
+    if len(agg.index.levels) >= 30:
+        warnings.warn('upsetplot is not designed to handle large numbers of '
+                      'categories, and will be very slow. This data has '
+                      '{} categories'.format(len(agg.index.levels)))
+
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in agg.index.levels)
 
