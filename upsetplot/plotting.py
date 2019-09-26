@@ -254,7 +254,7 @@ class UpSet:
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
-        elements.
+        elements. Set to 0 to disable intersection size bars.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
@@ -286,6 +286,8 @@ class UpSet:
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
+        if not intersection_plot_elements:
+            self._subset_plots.pop()
         self._show_counts = show_counts
 
         if sort_sets_by != 'deprecated':
