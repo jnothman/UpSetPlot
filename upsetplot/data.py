@@ -4,6 +4,7 @@ import functools
 import distutils
 import warnings
 import re
+import itertools
 
 import pandas as pd
 import numpy as np
@@ -270,9 +271,24 @@ def from_contents(contents, data=None, id_column='id'):
 
 class CategorizedData:
     """Represents data where each sample is assigned to one or more categories
+
+    Parameters
+    ----------
+    categories : list of str, or DataFrame-like
+        If a list of str, this should be names of boolean category indicator
+        columns in `data`. Otherwise, this should be a boolean DataFrame whose
+        column names indicate categories and do not have any column names in
+        common with `data`.
+
+    data : DataFrame-like, or None
+
+    Attributes
+    ----------
+    categories : list of str
+    data : DataFrame
     """
 
-    def __init__(self, data, categories):
+    def __init__(self, categories, data=None):
         data = pd.DataFrame(data)
 
         if hasattr(categories, 'dtype'):
@@ -331,7 +347,16 @@ class CategorizedData:
             data = indicators[[]]
         return cls(data=data, categories=indicators)
 
+    def _get_legacy_frame(self):
+        return self.data.set_index(self.categories)
+
     def get_counts(self, weight=None):
+        """
+        Parameters
+        ----------
+        weight : str
+            Column to use as weight
+        """
         gb = self.frame.groupby(self.categories)
         if weight is None:
             return CategorizedCounts(gb.size())
@@ -341,9 +366,56 @@ class CategorizedData:
 
 class CategorizedCounts:
 
-    def __init__(self, sizes):
+    def __init__(self, counts):
         # TODO: check index is boolean and unique
-        self.sizes = sizes
+        assert all(set([True, False]) >= set(level)
+                   for level in counts.index.levels)
+        assert counts.index.is_unique
+        self.counts = counts
+
+    def get_totals(self):
+        agg = self.counts
+        out = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
+               for name in agg.index.names]
+        out = pd.Series(out, index=agg.index.names)
+        return out
+
+    def sort(self, sort_by='degree', sort_categories_by=None,
+             inplace=False):
+        if not inplace:
+            out = type(self)(self.counts.copy())
+            out.sort(
+                sort_by=sort_by, sort_categories_by=sort_categories_by,
+                inplace=True)
+            return out
+
+        if sort_categories_by is None:
+            pass
+        elif sort_categories_by == 'cardinality':
+            totals = self.get_totals()
+            totals.sort_values(ascending=False, inplace=True)
+            self.counts = self.counts.reorder_levels(totals.index.values)
+        else:
+            raise ValueError('Unknown sort_categories_by: %r' %
+                             sort_categories_by)
+
+        if sort_by == 'cardinality':
+            self.counts.sort_values(ascending=False, inplace=True)
+        elif sort_by == 'degree':
+            comb = itertools.combinations
+            o = pd.DataFrame([{name: True for name in names}
+                              for i in range(self.counts.index.nlevels + 1)
+                              for names in comb(self.counts.index.names, i)],
+                             columns=self.counts.index.names)
+            o.fillna(False, inplace=True)
+            o = o.astype(bool)
+            o.set_index(self.counts.index.names, inplace=True)
+            self.counts = self.counts.reindex(index=o.index, copy=False)
+        else:
+            raise ValueError('Unknown sort_by: %r' % sort_by)
+
+    def clip(self, lower=0, upper=np.inf, inplace=False):
+        
 
 
 class OldVennData:

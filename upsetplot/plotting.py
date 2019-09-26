@@ -9,6 +9,46 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
+from .data import CategorizedCounts
+
+'''
+    if df.ndim == 1:
+        df = pd.DataFrame({'_value': df})
+
+        if not df.index.is_unique:
+            if subset_size == 'legacy':
+                warnings.warn('From version 0.4, passing a Series as data '
+                              'with non-unqiue groups will raise an error '
+                              'unless subset_size="sum" or "count".',
+                              FutureWarning)
+            if subset_size == 'auto':
+                raise ValueError('subset_size="auto" cannot be used for a '
+                                 'Series with non-unique groups.')
+        if sum_over is not None:
+            raise ValueError('sum_over is not applicable when the input is a '
+                             'Series')
+        if subset_size == 'count':
+            sum_over = False
+        else:
+            sum_over = '_value'
+    else:
+        elif subset_size == 'auto' and sum_over is None:
+            sum_over = False
+        elif subset_size == 'count':
+            if sum_over is not None:
+                raise ValueError('sum_over cannot be set if subset_size=%r' %
+                                 subset_size)
+            sum_over = False
+        elif subset_size == 'sum':
+            if sum_over is None:
+                raise ValueError('sum_over should be a field name if '
+                                 'subset_size="sum" and a DataFrame is '
+                                 'provided.')
+
+    cat_dat = CategorizedData(categories=df.index.to_frame().reset_index(),
+                              data=df.reset_index())
+    agg = cat_dat.get_counts(weight=None if sum_over is False else sum_over)
+'''
 
 def _aggregate_data(df, subset_size, sum_over):
     """
@@ -88,33 +128,9 @@ def _aggregate_data(df, subset_size, sum_over):
 def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df, agg = _aggregate_data(df, subset_size, sum_over)
 
-    # check all indices are boolean
-    assert all(set([True, False]) >= set(level) for level in agg.index.levels)
-
-    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
-              for name in agg.index.names]
-    totals = pd.Series(totals, index=agg.index.names)
-    if sort_categories_by == 'cardinality':
-        totals.sort_values(ascending=False, inplace=True)
-    elif sort_categories_by is not None:
-        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
-    df = df.reorder_levels(totals.index.values)
-    agg = agg.reorder_levels(totals.index.values)
-
-    if sort_by == 'cardinality':
-        agg = agg.sort_values(ascending=False)
-    elif sort_by == 'degree':
-        comb = itertools.combinations
-        o = pd.DataFrame([{name: True for name in names}
-                          for i in range(agg.index.nlevels + 1)
-                          for names in comb(agg.index.names, i)],
-                         columns=agg.index.names)
-        o.fillna(False, inplace=True)
-        o = o.astype(bool)
-        o.set_index(agg.index.names, inplace=True)
-        agg = agg.reindex(index=o.index)
-    else:
-        raise ValueError('Unknown sort_by: %r' % sort_by)
+    agg = CategorizedCounts(agg).sort(sort_by=sort_by,
+                                      sort_categories_by=sort_categories_by)
+    agg = agg.counts  # remove later
 
     min_value = 0
     max_value = np.inf
