@@ -60,6 +60,13 @@ are also supported!
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_vertical_001.png
    :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_vertical.html
 
+Filtering
+.........
+This package doesn't filter out small categories. Instead, filtering is expected to be done
+on the data passed to it. For example::
+
+    >>> plot(example[example > 100])  # doctest: +SKIP
+
 Distributions
 .............
 
