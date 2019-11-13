@@ -93,7 +93,8 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
                       'categories, and will be very slow. You may be able to'
                       'solve this by filtering some of the categories in the '
                       'dataframe you passed in (for example by removing small'
-                      'categories). This data has {} categories'.format(len(agg.index.levels)))
+                      'categories). This data has '
+                      '{} categories'.format(len(agg.index.levels)))
 
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in agg.index.levels)
