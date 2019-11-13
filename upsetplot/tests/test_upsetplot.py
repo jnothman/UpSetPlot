@@ -74,6 +74,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
+    generate_samples(n_categories=35)['value'],
     generate_counts(),
 ])
 def test_subset_size_series(x):
