@@ -135,12 +135,6 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, lower_
     max_value = upper_boundary
     agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
     
-    # JH Liu: reset index if required
-    # df.index[agg.index]
-    # print(agg)
-    # print(df)
-    # JH Liu: exclue index with all False
-
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
     def _pack_binary(X):
