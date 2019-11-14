@@ -104,15 +104,8 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     if sort_by == 'cardinality':
         agg = agg.sort_values(ascending=False)
     elif sort_by == 'degree':
-        comb = itertools.combinations
-        o = pd.DataFrame([{name: True for name in names}
-                          for i in range(agg.index.nlevels + 1)
-                          for names in comb(agg.index.names, i)],
-                         columns=agg.index.names)
-        o.fillna(False, inplace=True)
-        o = o.astype(bool)
-        o.set_index(agg.index.names, inplace=True)
-        agg = agg.reindex(index=o.index)
+        gb_degree = agg.groupby(sum, group_keys=False)
+        agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 

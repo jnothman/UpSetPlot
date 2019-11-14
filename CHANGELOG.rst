@@ -1,3 +1,9 @@
+In development
+--------------
+
+- Improved efficiency where there are many categories, but valid combinations
+  are sparse, if `sort_by='degree'`.
+
 What's new in version 0.3
 -------------------------
 
