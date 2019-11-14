@@ -91,13 +91,12 @@ def _aggregate_data(df, subset_size, sum_over, lower_boundary=0, upper_boundary=
         aggregated.name = input_name
     
     # by JH Liu: remove data out of boundary
-    aggregated = aggregated[(aggregated>=lower_boundary) & (aggregated<=upper_boundary)]
+    aggregated = aggregated.loc[(aggregated>=lower_boundary) & (aggregated<=upper_boundary)]
 
     if aggregated.shape[0] == 0:
         raise ValueError('No item can be found. Please loose the lower/upper boundary.')
     df = df.loc[aggregated.index]
     
-    # print(df)
     return df, aggregated
 
 
