@@ -1,8 +1,9 @@
 """
 ============================
-Plotting with generated data
+    Specify parameters
 ============================
-This example illustrates basic plotting functionality using generated data.
+
+by JH Liu
 """
 
 from matplotlib import pyplot as plt
