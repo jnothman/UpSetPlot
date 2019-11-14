@@ -98,7 +98,9 @@ def _check_index(df):
           }
     if hasattr(df.index, 'codes'):
         # compat for pandas <= 0.20
-        kw['labels'] = df.index.codes
+        kw['codes'] = df.index.codes
+    else:
+        kw['labels'] = df.index.labels
     df.index = pd.MultiIndex(**kw)
     return df
 
