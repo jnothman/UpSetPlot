@@ -331,10 +331,11 @@ class UpSet:
         
         if color_by_row is not None and color_by_col is not None:
             raise ValueError("color_by_row and color_by_col are mutually exclusive!")
-        if color_by_row is not None:
-            self.intersection_as_col = False
-        if color_by_col is not None:
-            self.total_as_row = False
+        if color_by_row is None:
+            self._total_as_row = False
+        if color_by_col is None:
+            self._intersection_as_col = False
+
         self._color_by_row = color_by_row
         self._color_by_col = color_by_col
 
