@@ -12,6 +12,7 @@ from upsetplot import generate_counts, plot
 example = generate_counts()
 print(example)
 
+
 # provide kws matrix
 plot(example, sort_by='cardinality',
      color_by_row={"cat1": "orange", "cat2": "green"},
@@ -24,6 +25,15 @@ plot(example, sort_by='cardinality',
      color_by_row={"cat1": "orange", "cat2": "green"},
      intersection_kws={"width": 1.0},
      totals_kws={"color": "purple", "width": 0.2})
+plt.suptitle('Ordered by cardinality')
+plt.show()
+
+# to test if orientation change works
+plot(example, sort_by='cardinality',
+     color_by_row={"cat1": "orange", "cat2": "green"},
+     intersection_kws={"width": 1.0},
+     totals_kws={"color": "purple", "width": 0.2}
+     , orientation="verticle")
 plt.suptitle('Ordered by cardinality')
 plt.show()
 
@@ -61,3 +71,6 @@ plot(example, sort_by='cardinality',
      intersection_grids=False, totals_grids=False)
 plt.suptitle('Ordered by cardinality')
 plt.show()
+
+
+
