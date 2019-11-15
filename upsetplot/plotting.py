@@ -521,7 +521,6 @@ class UpSet:
                 col_idx_loc = self.intersections.index.tolist()
                 col_idx_loc = col_idx_loc.index(tuple(col_idx))
 
-                n_intersections = len(data)
                 idx_min = n_cats * col_idx_loc
                 idx_max = n_cats * (col_idx_loc + 1)
                 idx_colored = idx[(idx < idx_max) & (idx >= idx_min)]
@@ -565,11 +564,6 @@ class UpSet:
                    **self._matrix_kws)
 
         # by JH Liu: enable control the color and width of lines
-        if self._lines_color is not None:
-            vlines_color = self._lines_color
-        else:
-            vlines_color = self._facecolor
-
         # setting up kws
         self._lines_kws["lw"] = self._lines_width
         if self._lines_color is not None:
