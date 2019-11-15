@@ -610,14 +610,17 @@ class UpSet:
                 colors[i] = c
             self._intersection_kws["color"] = colors
         if "width" not in self._intersection_kws:
-            self._intersection_kws["width"] = .5
+            width = .5
+        else:
+            width = self._intersection_kws["width"]
+            self._intersection_kws.pop("width")
         if "algin" not in self._intersection_kws:
             self._intersection_kws["align"] = "center"
         if "zorder" not in self._intersection_kws:
             self._intersection_kws["zorder"] = 10
 
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
-                       **self._intersection_kws)
+                       width, **self._intersection_kws)
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
 
@@ -668,10 +671,14 @@ class UpSet:
         # by JH Liu, enable color total bars
         # set up kws
         if "height" not in self._totals_kws:
-            self._totals_kws["height"] = .5
+            height = .5
+        else:
+            height = self._totals_kws["height"]
+            self._totals_kws.pop("height")
         if "width" in self._totals_kws:  # width should equal
-            self._totals_kws["height"] = self._totals_kws["width"]
+            height = self._totals_kws["width"]
             self._totals_kws.pop("width")
+
         if "algin" not in self._totals_kws:
             self._totals_kws["align"] = "center"
         if "zorder" not in self._totals_kws:
@@ -687,7 +694,7 @@ class UpSet:
             self._totals_kws["color"] = colors
 
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                        **self._totals_kws)
+                        height, **self._totals_kws)
         self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
 
         max_total = self.totals.max()
