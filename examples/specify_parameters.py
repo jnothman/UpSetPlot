@@ -32,8 +32,8 @@ plt.show()
 plot(example, sort_by='cardinality',
      color_by_row={"cat1": "orange", "cat2": "green"},
      intersection_kws={"width": 1.0},
-     totals_kws={"color": "purple", "width": 0.2}
-     , orientation="verticle")
+     totals_kws={"color": "purple", "width": 0.2},
+     orientation="verticle")
 plt.suptitle('Ordered by cardinality')
 plt.show()
 
@@ -71,6 +71,3 @@ plot(example, sort_by='cardinality',
      intersection_grids=False, totals_grids=False)
 plt.suptitle('Ordered by cardinality')
 plt.show()
-
-
-
