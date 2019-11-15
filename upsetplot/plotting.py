@@ -1,10 +1,3 @@
-# modied by JH Liu:
-# 1. add min/max arguments
-# 2. add row/col color control (format {("cat1"):"red"})
-# 3. seperate color control of bars
-# 4. enable turn on/off grid lines 
-# 5. control vline colors
-
 from __future__ import print_function, division, absolute_import
 
 import warnings
@@ -17,7 +10,7 @@ from matplotlib import pyplot as plt
 from matplotlib.tight_layout import get_renderer
 
 
-def _aggregate_data(df, subset_size, sum_over, lower_boundary=0, upper_boundary=np.inf): # by JH Liu: remove data out of boundary
+def _aggregate_data(df, subset_size, sum_over):
     """
     Returns
     -------
@@ -78,7 +71,6 @@ def _aggregate_data(df, subset_size, sum_over, lower_boundary=0, upper_boundary=
                                  'provided.')
 
     gb = df.groupby(level=list(range(df.index.nlevels)))
-    
     if sum_over is False:
         aggregated = gb.size()
         aggregated.name = 'size'
@@ -89,19 +81,12 @@ def _aggregate_data(df, subset_size, sum_over, lower_boundary=0, upper_boundary=
 
     if aggregated.name == '_value':
         aggregated.name = input_name
-    
-    # by JH Liu: remove data out of boundary
-    aggregated = aggregated.loc[(aggregated>=lower_boundary) & (aggregated<=upper_boundary)]
 
-    if aggregated.shape[0] == 0:
-        raise ValueError('No item can be found. Please loose the lower/upper boundary.')
-    df = df.loc[aggregated.index]
-    
     return df, aggregated
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, lower_boundary=0, upper_boundary=np.inf):  # by JH Liu: remove data out of boundary
-    df, agg = _aggregate_data(df, subset_size, sum_over, lower_boundary=lower_boundary, upper_boundary=upper_boundary) # by JH Liu: remove data out of boundary
+def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+    df, agg = _aggregate_data(df, subset_size, sum_over)
 
     # check all indices are boolean
     assert all(set([True, False]) >= set(level) for level in agg.index.levels)
@@ -130,10 +115,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, lower_
         agg = agg.reindex(index=o.index)
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
-    min_value = lower_boundary
-    max_value = upper_boundary
-    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
-    
+
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
     def _pack_binary(X):
@@ -289,36 +271,47 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated', 
-                 min = 0, max = np.inf, # by JH Liu: remove data out of boundary
-                 empty_color="lightgray", # by JH Liu: allow modifying empty dots colors
-                 color_by_row = None, # by JH Liu: allow coloring rows. Format: dictionary
-                 color_by_col = None, # by JH Liu: allow coloring columns. Format: dictionary
-                 intersection_facecolor = None, # by JH Liu: control the intersection bar color, options=[None, color]
-                 intersection_as_col = False, # by JH Liu: if true, color intersection as "color_by_col"
-                 total_facecolor = None, # by JH Liu: control the total bar color, options=[None, color]
-                 total_as_row = False, # by JH Liu: if true, color total as "color_by_row"
-                 intersection_grids = True, # by JH Liu: control grids of intersection barplot
-                 total_grids = True, # by JH Liu: control grids of total barplot
-                 intersection_label = "Intersection size", # by JH Liu: control grids of total barplot
-                 lines_color = None, # by JH Liu: control the line color
-                 lines_width = 2., # by JH Liu: control line width
-                 ): 
+                 show_counts='', sort_sets_by='deprecated',
+                 empty_color="lightgray",
+                 color_by_row=None,
+                 color_by_col=None,
+                 intersection_facecolor=None,
+                 intersection_as_col=False,
+                 totals_facecolor=None,
+                 totals_as_row=False,
+                 intersection_grids=True,
+                 totals_grids=True,
+                 intersection_label="Intersection size",
+                 lines_color=None,
+                 lines_width=2.,
+                 figsize=None,
+                 matrix_kws=None,
+                 lines_kws=None,
+                 intersection_kws=None,
+                 totals_kws=None,
+                 ):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
         self._facecolor = facecolor
-        self._empty_color = empty_color # by JH Liu: allow modifying empty dots colors
-        self._intersection_facecolor = intersection_facecolor # by JH Liu: control the intersection bar color
-        self._intersection_as_col = intersection_as_col # by JH Liu: control the intersection bar color
-        self._total_facecolor = total_facecolor # by JH Liu: control the total bar color
+        self._empty_color = empty_color
+        self._intersection_facecolor = intersection_facecolor
+        self._intersection_as_col = intersection_as_col
+        self._totals_facecolor = totals_facecolor
+
+        # parameters control, by JH Liu
         # row/col was defined as horizontal plot
-        self._total_as_row = total_as_row # by JH Liu: control the total bar color
-        self._intersection_grids = intersection_grids # by JH Liu: control the intersection grid lines
-        self._total_grids = total_grids # by JH Liu: control the total grid lines
-        self._intersection_label =  intersection_label# by JH Liu: control the ylabel of intersection barplot
-        self._lines_color = lines_color # by JH Liu: control the line color
-        self._lines_width = lines_width # by JH Liu: control the line width
+        self._totals_as_row = totals_as_row
+        self._intersection_grids = intersection_grids
+        self._totals_grids = totals_grids
+        self._intersection_label = intersection_label
+        self._lines_color = lines_color
+        self._lines_width = lines_width
+        self._figsize = figsize
+        self._matrix_kws = matrix_kws if matrix_kws else {}
+        self._lines_kws = lines_kws if lines_kws else {}
+        self._intersection_kws = intersection_kws if intersection_kws else {}
+        self._totals_kws = totals_kws if totals_kws else {}
 
         self._with_lines = with_lines
         self._element_size = element_size
@@ -327,18 +320,18 @@ class UpSet:
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
         self._show_counts = show_counts
-        
+
         if color_by_row is not None and color_by_col is not None:
-            raise ValueError("color_by_row and color_by_col are mutually exclusive!")
+            raise ValueError("color_by_row and color_by_col are\
+                              mutually exclusive!")
         if color_by_row is None:
-            self._total_as_row = False
+            self._totals_as_row = False
         if color_by_col is None:
             self._intersection_as_col = False
 
         self._color_by_row = color_by_row
         self._color_by_col = color_by_col
 
-        
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
             warnings.warn('sort_sets_by was deprecated in version 0.3 and '
@@ -350,7 +343,6 @@ class UpSet:
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
                                       sum_over=sum_over,
-                                      lower_boundary = min, upper_boundary = max, # by JH Liu: remove data out of boundary
                                       )
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
@@ -490,18 +482,20 @@ class UpSet:
                                            start + n_cats:stop + n_cats]
         return out
 
-    def plot_matrix(self, ax): # by JH Liu: allow modifying empty dot color and coloring rows/columns
+    def plot_matrix(self, ax):
         """Plot the matrix of intersection indicators onto ax
         """
         ax = self._reorient(ax)
         data = self.intersections
         n_cats = data.index.nlevels
-        
-        
-        idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        idx_zeros = np.where(np.reshape(np.array(data.index.to_frame()[data.index.names].values), -1)==0)[0] # by JH Liu: seperate empty and non-empty dots
 
-        c = np.array([self._empty_color] * len(data) * n_cats, dtype='O') # by JH Liu: allow modifying empty dot color and coloring rows/columns
+        # seperate zeros and non-zeros here, by JH Liu
+        idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
+        idx_zeros = np.array(data.index.to_frame()[data.index.names].values)
+        idx_zeros = np.reshape(idx_zeros, -1)
+        idx_zeros = np.where(idx_zeros == 0)[0]
+
+        c = np.array([self._empty_color] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
 
         # very dirty
@@ -509,7 +503,7 @@ class UpSet:
             self._color_by_row_indexes = []
             for row_name, row_color in self._color_by_row.items():
                 row_idx = self.intersections.index.names.index(row_name)
-                idx_colored = idx[(idx-row_idx)%n_cats==0]
+                idx_colored = idx[(idx - row_idx) % n_cats == 0]
                 c[idx_colored] = row_color
                 self._color_by_row_indexes.append((row_idx, row_color))
 
@@ -524,27 +518,25 @@ class UpSet:
                     for i in col_name:
                         j = self.intersections.index.names.index(i)
                         col_idx[j] = True
-                col_idx_loc = self.intersections.index.tolist().index(tuple(col_idx))
+                col_idx_loc = self.intersections.index.tolist()
+                col_idx_loc = col_idx_loc.index(tuple(col_idx))
 
                 n_intersections = len(data)
                 idx_min = n_cats * col_idx_loc
-                idx_max = n_cats * (col_idx_loc+1)
-                idx_colored = idx[(idx<idx_max)&(idx>=idx_min)]
+                idx_max = n_cats * (col_idx_loc + 1)
+                idx_colored = idx[(idx < idx_max) & (idx >= idx_min)]
                 c[idx_colored] = col_color
                 self._color_by_col_indexes.append((col_idx_loc, col_color))
 
-        
         x = np.repeat(np.arange(len(data)), n_cats)
-        
         y = np.tile(np.arange(n_cats), len(data))
         if self._element_size is not None:
             s = (self._element_size * .35) ** 2
         else:
             # TODO: make s relative to colw
             s = 200
-        # ax.scatter(*self._swapaxes(x, y), c=self._empty_color, linewidth=0, s=s, zorder=1) # by JH Liu: let vlines below background dots
-        
-        # by JH Liu: seperate empty and non-empty dots
+
+        # by JH Liu: seperate empty and non-empty dots, dirty
         x0 = []
         y0 = []
         c0 = []
@@ -560,11 +552,30 @@ class UpSet:
             y1.append(y[i])
             c1.append(c[i])
 
-        ax.scatter(*self._swapaxes(x0, y0), c=c0, linewidth=0, s=s, zorder=1.) # by JH Liu: let vlines below background dots
-        ax.scatter(*self._swapaxes(x1, y1), c=c1, linewidth=0, s=s, zorder=1.2) # by JH Liu: let vlines below background dots
+        # setting up kws
+        if "s" not in self._matrix_kws:
+            self._matrix_kws["s"] = s
+        if "linewidth" not in self._matrix_kws \
+           and "lw" not in self._matrix_kws:
+            self._matrix_kws["linewidth"] = 0
+
+        ax.scatter(*self._swapaxes(x0, y0), c=c0, zorder=1.,
+                   **self._matrix_kws)
+        ax.scatter(*self._swapaxes(x1, y1), c=c1, zorder=1.2,
+                   **self._matrix_kws)
 
         # by JH Liu: enable control the color and width of lines
-        vlines_color = self._lines_color if self._lines_color else self._facecolor
+        if self._lines_color is not None:
+            vlines_color = self._lines_color
+        else:
+            vlines_color = self._facecolor
+
+        # setting up kws
+        self._lines_kws["lw"] = self._lines_width
+        if self._lines_color is not None:
+            self._lines_kws["colors"] = self._lines_color
+        elif "colors" not in self._lines_kws:
+            self._lines_kws["colors"] = self._facecolor
 
         if self._with_lines:
             line_data = (pd.Series(y[idx], index=x[idx])
@@ -572,7 +583,7 @@ class UpSet:
                          .aggregate(['min', 'max']))
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
-                      lw=self._lines_width, colors=vlines_color, zorder=1.1) # by JH Liu: let vlines below dots
+                      zorder=1.1, **self._lines_kws)
 
         tick_axis = ax.yaxis
         tick_axis.set_ticks(np.arange(n_cats))
@@ -587,18 +598,26 @@ class UpSet:
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
         """
-        # JH Liu: allow controlling the color of intersections
         ax = self._reorient(ax)
-        if self._intersection_facecolor is None:
-            intersection_color = self._facecolor
-        else:
-            intersection_color = self._intersection_facecolor
-        if self._intersection_as_col == True:
-            intersection_color = [intersection_color] * len(self.intersections)
-            for i,c in self._color_by_col_indexes:
-                intersection_color[i] = c
+
+        # set up kws
+        if "color" not in self._intersection_kws:
+            self._intersection_kws["color"] = self._facecolor
+        color = self._intersection_kws["color"]
+        if self._intersection_as_col is True:
+            colors = [color] * len(self.intersections)
+            for i, c in self._color_by_col_indexes:
+                colors[i] = c
+            self._intersection_kws["color"] = colors
+        if "width" not in self._intersection_kws:
+            self._intersection_kws["width"] = .5
+        if "algin" not in self._intersection_kws:
+            self._intersection_kws["align"] = "center"
+        if "zorder" not in self._intersection_kws:
+            self._intersection_kws["zorder"] = 10
+
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
-                       .5, color=intersection_color, zorder=10, align='center')
+                       **self._intersection_kws)
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
 
@@ -608,7 +627,7 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(self._intersection_grids)
-        ax.set_ylabel(self._intersection_label) # by JH Liu: default='Intersection size'
+        ax.set_ylabel(self._intersection_label)
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts:
@@ -647,17 +666,28 @@ class UpSet:
         ax = self._reorient(ax)
 
         # by JH Liu, enable color total bars
-        if self._total_facecolor is None:
-            total_color = self._facecolor
-        else:
-            total_color = self._total_facecolor
-        if self._total_as_row == True:
-            total_color = [total_color] * self.intersections.index.nlevels
-            for i,c in self._color_by_row_indexes:
-                total_color[i] = c
+        # set up kws
+        if "height" not in self._totals_kws:
+            self._totals_kws["height"] = .5
+        if "width" in self._totals_kws:  # width should equal
+            self._totals_kws["height"] = self._totals_kws["width"]
+            self._totals_kws.pop("width")
+        if "algin" not in self._totals_kws:
+            self._totals_kws["align"] = "center"
+        if "zorder" not in self._totals_kws:
+            self._totals_kws["zorder"] = 10
+
+        if "color" not in self._totals_kws:
+            self._totals_kws["color"] = self._facecolor
+        if self._totals_as_row is True:
+            color = self._totals_kws["color"]
+            colors = [color] * self.intersections.index.nlevels
+            for i, c in self._color_by_row_indexes:
+                colors[i] = c
+            self._totals_kws["color"] = colors
 
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                        .5, color=total_color, align='center')
+                        **self._totals_kws)
         self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
 
         max_total = self.totals.max()
@@ -666,7 +696,7 @@ class UpSet:
         for x in ['top', 'left', 'right']:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
-        ax.xaxis.grid(self._total_grids)
+        ax.xaxis.grid(self._totals_grids)
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
@@ -705,7 +735,8 @@ class UpSet:
             Keys are 'matrix', 'intersections', 'totals', 'shading'
         """
         if fig is None:
-            fig = plt.figure(figsize=self._default_figsize)
+            figsize = self._figsize if self._figsize else self._default_figsize
+            fig = plt.figure(figsize=figsize)
         specs = self.make_grid(fig)
         shading_ax = fig.add_subplot(specs['shading'])
         self.plot_shading(shading_ax)
@@ -732,7 +763,12 @@ class UpSet:
         return out
 
     def _repr_html_(self):
-        fig = plt.figure(figsize=self._default_figsize)
+        # by JH Liu, figsize
+        if self._figsize is None:
+            figsize = self._default_figsize
+        else:
+            figsize = self._figsize
+        fig = plt.figure(figsize=figsize)
         self.plot(fig=fig)
         return fig._repr_html_()
 
