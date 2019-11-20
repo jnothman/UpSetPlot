@@ -440,3 +440,22 @@ def test_add_catplot():
     upset.add_catplot('foobar', value='foo')
     with pytest.raises(AttributeError):
         upset.plot(fig)
+
+
+@pytest.mark.parametrize('x', [
+    generate_counts(),
+])
+def test_index_must_be_bool(x):
+    # Truthy ints are okay
+    x = x.reset_index()
+    x[['cat0', 'cat2', 'cat2']] = x[['cat0', 'cat1', 'cat2']].astype(int)
+    x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
+
+    UpSet(x)
+
+    # other ints are not
+    x = x.reset_index()
+    x[['cat0', 'cat2', 'cat2']] = x[['cat0', 'cat1', 'cat2']] + 1
+    x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
+    with pytest.raises(ValueError, match='not boolean'):
+        UpSet(x)

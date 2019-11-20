@@ -1,3 +1,10 @@
+In development
+--------------
+
+- Improved efficiency where there are many categories, but valid combinations
+  are sparse, if `sort_by='degree'`. (:issue:`82`)
+- Permit truthy (not necessarily bool) values in index. (:issue:`74`)
+
 What's new in version 0.3
 -------------------------
 
