@@ -499,8 +499,13 @@ class UpSet:
         values = self.intersections
         if self.normalize_counts:
             values = 100 * (values / values.sum())
+
+        if self.normalize_counts:
+            fmt = '%.1f%%'
+        else:
+            fmt = None
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
-                          values=values)
+                          fmt=fmt, values=values)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -555,8 +560,7 @@ class UpSet:
         ax = self._reorient(ax)
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                         .5, color=self._facecolor, align='center')
-        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top',
-                          '%d')
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
 
         max_total = self.totals.max()
         if self._horizontal:
