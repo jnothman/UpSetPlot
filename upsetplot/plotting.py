@@ -493,18 +493,14 @@ class UpSet:
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
-        intersections = self.intersections
-        if self.normalize_counts:
-            intersections = 100 * (intersections / intersections.sum())
-        rects = ax.bar(np.arange(len(intersections)), intersections,
+        rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+        values = self.intersections
         if self.normalize_counts:
-            self._label_sizes(
-                ax, rects, 'bottom', '%d', 0 if self._horizontal else -90,
-                list(self.intersections.values),
-            )
+            values = 100 * (values / values.sum())
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
+                          values=values)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -512,11 +508,7 @@ class UpSet:
 
         tick_axis = ax.yaxis
         tick_axis.grid(True)
-        ax.set_ylabel(
-            'Intersection {}'.format(
-                'Percentage' if self.normalize_counts else 'Size'
-            )
-        )
+        ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where, fmt=None, rotation=None,
                      values=None):
@@ -524,10 +516,10 @@ class UpSet:
             return
         if not fmt:
             fmt = '%d' if self._show_counts is True else self._show_counts
-        if values and (len(values) != len(rects)):
-            raise ValueError('Lengths of values and rects must be the same')
 
-        if not values:
+        assert values is None or (len(values) == len(rects))
+
+        if values is None:
             values = [
                 r.get_width() if where in ('left', 'right') else r.get_height()
                 for r in rects
@@ -553,20 +545,6 @@ class UpSet:
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         rect.get_height() + margin, fmt % value,
                         ha='center', va='bottom', rotation=rotation)
-        elif where == 'bottom':
-            if self._horizontal:
-                margin = -0.05 * abs(np.diff(ax.get_ylim()))
-                for value, rect in zip(values, rects):
-                    ax.text(rect.get_x() + rect.get_width() * .5,
-                            margin, fmt % value,
-                            ha='center', va='center', rotation=rotation)
-            else:
-                margin = -0.5 * abs(np.diff(ax.get_ylim()))
-                for value, rect in zip(values, rects):
-                    ax.text(margin, rect.get_y() + rect.get_height() * .5,
-                            fmt % value, ha='center', va='center',
-                            rotation=rotation)
-
         else:
             raise NotImplementedError('unhandled where: %r' % where)
 
@@ -577,7 +555,8 @@ class UpSet:
         ax = self._reorient(ax)
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                         .5, color=self._facecolor, align='center')
-        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top',
+                          '%d')
 
         max_total = self.totals.max()
         if self._horizontal:
