@@ -307,6 +307,7 @@ class UpSet:
     empty_dot_color : str, default="lightgray"
         Color of empty matrix dots.
     """
+
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
