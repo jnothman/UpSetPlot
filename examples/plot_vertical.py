@@ -14,6 +14,6 @@ plot(example, orientation='vertical')
 plt.suptitle('A vertical plot')
 plt.show()
 
-plot(example, orientation='vertical', show_counts='%d')
+plot(example, orientation='vertical', show_counts=True)
 plt.suptitle('A vertical plot with counts shown')
 plt.show()
