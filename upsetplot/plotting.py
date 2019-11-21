@@ -269,15 +269,13 @@ class UpSet:
         The totals plot should be large enough to fit this many matrix
         elements.
     show_counts : bool or str, default=False
-        Whether to label the intersection size bars with the cardinality
-        of the intersection. When a string, this formats the number.
-        For example, '%d' is equivalent to True.
+        Whether to label the intersection size bars with the cardinality or
+        percentage of the intersection. Accepts "cardinality" (equivalent to
+        True) or "percent"
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
             version 0.4.
-    normalize_counts : bool, default=False
-        Whether to normalize the intersection size bars when plotting.
     """
     _default_figsize = (10, 6)
 
@@ -287,8 +285,7 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated',
-                 normalize_counts=False):
+                 show_counts='', sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -299,14 +296,19 @@ class UpSet:
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
+        if show_counts not in (True, False, 'cardinality', 'percent'):
+            raise ValueError(
+                'show_counts must be bool, "cardinality", or "percent"'
+            )
+        if show_counts is True:
+            show_counts = 'cardinality'
+
         self._show_counts = show_counts
 
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
             warnings.warn('sort_sets_by was deprecated in version 0.3 and '
                           'will be removed in version 0.4', DeprecationWarning)
-
-        self.normalize_counts = normalize_counts
 
         (self._df, self.intersections,
          self.totals) = _process_data(data,
@@ -497,13 +499,12 @@ class UpSet:
                        .5, color=self._facecolor, zorder=10, align='center')
 
         values = self.intersections
-        if self.normalize_counts:
-            values = 100 * (values / values.sum())
-
-        if self.normalize_counts:
-            fmt = '%.1f%%'
+        if self._show_counts == 'cardinality':
+            fmt = '%d'
         else:
-            fmt = None
+            values = 100 * (values / values.sum())
+            fmt = '%.1f%%'
+
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
                           fmt=fmt, values=values)
 
@@ -515,12 +516,10 @@ class UpSet:
         tick_axis.grid(True)
         ax.set_ylabel('Intersection size')
 
-    def _label_sizes(self, ax, rects, where, fmt=None, rotation=None,
+    def _label_sizes(self, ax, rects, where, fmt='%d', rotation=None,
                      values=None):
         if not self._show_counts:
             return
-        if not fmt:
-            fmt = '%d' if self._show_counts is True else self._show_counts
 
         assert values is None or (len(values) == len(rects))
 
