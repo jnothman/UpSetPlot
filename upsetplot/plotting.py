@@ -1,7 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
 import warnings
-import itertools
 
 import numpy as np
 import pandas as pd
@@ -85,11 +84,29 @@ def _aggregate_data(df, subset_size, sum_over):
     return df, aggregated
 
 
+def _check_index(df):
+    # check all indices are boolean
+    if not all(set([True, False]) >= set(level)
+               for level in df.index.levels):
+        raise ValueError('The DataFrame has values in its index that are not '
+                         'boolean')
+    df = df.copy(deep=False)
+    # XXX: this may break if input is not MultiIndex
+    kw = {'levels': [x.astype(bool) for x in df.index.levels],
+          'names': df.index.names,
+          }
+    if hasattr(df.index, 'codes'):
+        # compat for pandas <= 0.20
+        kw['codes'] = df.index.codes
+    else:
+        kw['labels'] = df.index.labels
+    df.index = pd.MultiIndex(**kw)
+    return df
+
+
 def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df, agg = _aggregate_data(df, subset_size, sum_over)
-
-    # check all indices are boolean
-    assert all(set([True, False]) >= set(level) for level in agg.index.levels)
+    df = _check_index(df)
 
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
@@ -104,17 +121,14 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     if sort_by == 'cardinality':
         agg = agg.sort_values(ascending=False)
     elif sort_by == 'degree':
-        comb = itertools.combinations
-        o = pd.DataFrame([{name: True for name in names}
-                          for i in range(agg.index.nlevels + 1)
-                          for names in comb(agg.index.names, i)],
-                         columns=agg.index.names)
-        o.fillna(False, inplace=True)
-        o = o.astype(bool)
-        o.set_index(agg.index.names, inplace=True)
-        agg = agg.reindex(index=o.index)
+        gb_degree = agg.groupby(sum, group_keys=False)
+        agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
+
+    min_value = 0
+    max_value = np.inf
+    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -262,6 +276,37 @@ class UpSet:
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
             version 0.4.
+    -------------------------------- temporary ------------------------------
+    intersection_facecolor : str, default=None.
+        The default color for intersection barplots. If not provided, equals
+        to 'facecolor'.
+    color_by_col : dict, default=None
+        Specify bar colors in intersection barplots.
+        Example: {("cat0", "cat1"): "red"}.
+    intersection_as_col : bool, default=False
+        In colomn level, make colors the same in the matrix and the barplot.
+        Mutually exclusive to 'totals_as_row'.
+    intersection_width : float, default=0.5
+        The width of intersection barplots.
+    totals_facecolor : str, default=None
+        The default color for intersection barplots. If not provided, equals
+        to 'facecolor'.
+    totals_width : float, default=0.5
+        The width of totals barplots.
+    color_by_row : dict, default=None
+        Specify bar colors in intersection barplots.
+        Example: {"cat0": "red", "cat1":"green"}.
+    totals_as_row : bool, default=False.
+        In row level, make colors the same in the matrix and the barplot.
+        Mutually exclusive to 'intersection_as_col'.
+    matrix_line_color : str, default=None
+        The color of matrix lines
+    matrix_line_width : float, default=2.
+        The widths of matrix lines
+    dot_color : str, default=None
+        Color of matrix dots. If not provided, equals to 'facecolor'.
+    empty_dot_color : str, default="lightgray"
+        Color of empty matrix dots.
     """
     _default_figsize = (10, 6)
 
@@ -272,47 +317,23 @@ class UpSet:
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts='', sort_sets_by='deprecated',
-                 empty_color="lightgray",
                  color_by_row=None,
                  color_by_col=None,
                  intersection_facecolor=None,
                  intersection_as_col=False,
+                 intersection_width=0.5,
                  totals_facecolor=None,
                  totals_as_row=False,
-                 intersection_grids=True,
-                 totals_grids=True,
-                 intersection_label="Intersection size",
-                 lines_color=None,
-                 lines_width=2.,
-                 figsize=None,
-                 matrix_kws=None,
-                 lines_kws=None,
-                 intersection_kws=None,
-                 totals_kws=None,
+                 totals_width=0.5,
+                 matrix_line_color=None,
+                 matrix_line_width=2.,
+                 dot_color=None,
+                 empty_dot_color="lightgray",
                  ):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
         self._facecolor = facecolor
-        self._empty_color = empty_color
-        self._intersection_facecolor = intersection_facecolor
-        self._intersection_as_col = intersection_as_col
-        self._totals_facecolor = totals_facecolor
-
-        # parameters control, by JH Liu
-        # row/col was defined as horizontal plot
-        self._totals_as_row = totals_as_row
-        self._intersection_grids = intersection_grids
-        self._totals_grids = totals_grids
-        self._intersection_label = intersection_label
-        self._lines_color = lines_color
-        self._lines_width = lines_width
-        self._figsize = figsize
-        self._matrix_kws = matrix_kws if matrix_kws else {}
-        self._lines_kws = lines_kws if lines_kws else {}
-        self._intersection_kws = intersection_kws if intersection_kws else {}
-        self._totals_kws = totals_kws if totals_kws else {}
-
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
@@ -320,6 +341,34 @@ class UpSet:
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
         self._show_counts = show_counts
+
+        # parameters for row/colomn color control
+        self._empty_dot_color = empty_dot_color
+        if dot_color is not None:
+            self._dot_color = dot_color
+        else:
+            self._dot_color = self._facecolor
+
+        if intersection_facecolor is None:
+            self._intersection_facecolor = self._facecolor
+        else:
+            self._intersection_facecolor = intersection_facecolor
+        self._intersection_as_col = intersection_as_col
+        self._intersection_width = intersection_width
+
+        if totals_facecolor is None:
+            self._totals_facecolor = self._facecolor
+        else:
+            self._totals_facecolor = totals_facecolor
+        self._totals_as_row = totals_as_row
+        self._totals_width = totals_width
+
+        # parameters for matrix line color/width
+        self._matrix_line_width = matrix_line_width
+        if matrix_line_color is None:
+            self._matrix_line_color = self._facecolor
+        else:
+            self._matrix_line_color = matrix_line_color
 
         if color_by_row is not None and color_by_col is not None:
             raise ValueError("color_by_row and color_by_col are\
@@ -342,8 +391,7 @@ class UpSet:
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
-                                      sum_over=sum_over,
-                                      )
+                                      sum_over=sum_over)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
@@ -489,16 +537,22 @@ class UpSet:
         data = self.intersections
         n_cats = data.index.nlevels
 
-        # seperate zeros and non-zeros here, by JH Liu
+        # old version
+        # idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
+        # c = np.array(['lightgrey'] * len(data) * n_cats, dtype='O')
+
+        # seperate zeros and non-zeros here
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
         idx_zeros = np.array(data.index.to_frame()[data.index.names].values)
         idx_zeros = np.reshape(idx_zeros, -1)
         idx_zeros = np.where(idx_zeros == 0)[0]
 
-        c = np.array([self._empty_color] * len(data) * n_cats, dtype='O')
-        c[idx] = self._facecolor
+        c = np.array([self._empty_dot_color] * len(data) * n_cats, dtype='O')
+        # old version
+        # c[idx] = self._facecolor
+        c[idx] = self._dot_color
 
-        # very dirty
+        # calculate colors, very dirty
         if self._color_by_row is not None:
             self._color_by_row_indexes = []
             for row_name, row_color in self._color_by_row.items():
@@ -534,6 +588,8 @@ class UpSet:
         else:
             # TODO: make s relative to colw
             s = 200
+        # old version
+        # ax.scatter(*self._swapaxes(x, y), c=c.tolist(), linewidth=0, s=s)
 
         # by JH Liu: seperate empty and non-empty dots, dirty
         x0 = []
@@ -551,25 +607,10 @@ class UpSet:
             y1.append(y[i])
             c1.append(c[i])
 
-        # setting up kws
-        if "s" not in self._matrix_kws:
-            self._matrix_kws["s"] = s
-        if "linewidth" not in self._matrix_kws \
-           and "lw" not in self._matrix_kws:
-            self._matrix_kws["linewidth"] = 0
-
         ax.scatter(*self._swapaxes(x0, y0), c=c0, zorder=1.,
-                   **self._matrix_kws)
+                   linewidth=0, s=s)
         ax.scatter(*self._swapaxes(x1, y1), c=c1, zorder=1.2,
-                   **self._matrix_kws)
-
-        # by JH Liu: enable control the color and width of lines
-        # setting up kws
-        self._lines_kws["lw"] = self._lines_width
-        if self._lines_color is not None:
-            self._lines_kws["colors"] = self._lines_color
-        elif "colors" not in self._lines_kws:
-            self._lines_kws["colors"] = self._facecolor
+                   linewidth=0, s=s)
 
         if self._with_lines:
             line_data = (pd.Series(y[idx], index=x[idx])
@@ -577,7 +618,10 @@ class UpSet:
                          .aggregate(['min', 'max']))
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
-                      zorder=1.1, **self._lines_kws)
+                      lw=self._matrix_line_width,
+                      colors=self._matrix_line_color,
+                      zorder=1.1,
+                      )
 
         tick_axis = ax.yaxis
         tick_axis.set_ticks(np.arange(n_cats))
@@ -594,27 +638,16 @@ class UpSet:
         """
         ax = self._reorient(ax)
 
-        # set up kws
-        if "color" not in self._intersection_kws:
-            self._intersection_kws["color"] = self._facecolor
-        color = self._intersection_kws["color"]
+        color = self._intersection_facecolor
+        colors = [color] * len(self.intersections)
+        width = self._intersection_width
+
         if self._intersection_as_col is True:
-            colors = [color] * len(self.intersections)
             for i, c in self._color_by_col_indexes:
                 colors[i] = c
-            self._intersection_kws["color"] = colors
-        if "width" not in self._intersection_kws:
-            width = .5
-        else:
-            width = self._intersection_kws["width"]
-            self._intersection_kws.pop("width")
-        if "algin" not in self._intersection_kws:
-            self._intersection_kws["align"] = "center"
-        if "zorder" not in self._intersection_kws:
-            self._intersection_kws["zorder"] = 10
 
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
-                       width, **self._intersection_kws)
+                       width, color=colors, zorder=10, align='center')
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
 
@@ -623,8 +656,8 @@ class UpSet:
             ax.spines[self._reorient(x)].set_visible(False)
 
         tick_axis = ax.yaxis
-        tick_axis.grid(self._intersection_grids)
-        ax.set_ylabel(self._intersection_label)
+        tick_axis.grid(True)
+        ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts:
@@ -662,33 +695,15 @@ class UpSet:
         orig_ax = ax
         ax = self._reorient(ax)
 
-        # by JH Liu, enable color total bars
-        # set up kws
-        if "height" not in self._totals_kws:
-            height = .5
-        else:
-            height = self._totals_kws["height"]
-            self._totals_kws.pop("height")
-        if "width" in self._totals_kws:  # width should equal
-            height = self._totals_kws["width"]
-            self._totals_kws.pop("width")
-
-        if "algin" not in self._totals_kws:
-            self._totals_kws["align"] = "center"
-        if "zorder" not in self._totals_kws:
-            self._totals_kws["zorder"] = 10
-
-        if "color" not in self._totals_kws:
-            self._totals_kws["color"] = self._facecolor
+        color = self._totals_facecolor
+        colors = [color] * self.intersections.index.nlevels
         if self._totals_as_row is True:
-            color = self._totals_kws["color"]
-            colors = [color] * self.intersections.index.nlevels
             for i, c in self._color_by_row_indexes:
                 colors[i] = c
-            self._totals_kws["color"] = colors
+        width = self._totals_width
 
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
-                        height, **self._totals_kws)
+                        width, color=colors, align='center')
         self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
 
         max_total = self.totals.max()
@@ -697,7 +712,7 @@ class UpSet:
         for x in ['top', 'left', 'right']:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
-        ax.xaxis.grid(self._totals_grids)
+        ax.xaxis.grid(True)
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
@@ -736,8 +751,7 @@ class UpSet:
             Keys are 'matrix', 'intersections', 'totals', 'shading'
         """
         if fig is None:
-            figsize = self._figsize if self._figsize else self._default_figsize
-            fig = plt.figure(figsize=figsize)
+            fig = plt.figure(figsize=self._default_figsize)
         specs = self.make_grid(fig)
         shading_ax = fig.add_subplot(specs['shading'])
         self.plot_shading(shading_ax)
@@ -764,12 +778,7 @@ class UpSet:
         return out
 
     def _repr_html_(self):
-        # by JH Liu, figsize
-        if self._figsize is None:
-            figsize = self._default_figsize
-        else:
-            figsize = self._figsize
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=self._default_figsize)
         self.plot(fig=fig)
         return fig._repr_html_()
 
