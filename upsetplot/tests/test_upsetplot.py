@@ -389,16 +389,16 @@ def _count_descendants(el):
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
     X = generate_counts(n_samples=100)
-    plot(X, fig)
+    plot(X, fig, orientation=orientation)
     n_artists_no_sizes = _count_descendants(fig)
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts=True)
+    plot(X, fig, orientation=orientation, show_counts=True)
     n_artists_yes_sizes = _count_descendants(fig)
     assert n_artists_yes_sizes - n_artists_no_sizes > 6
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts='percent')
+    plot(X, fig, orientation=orientation, show_counts='percent')
     assert n_artists_yes_sizes == _count_descendants(fig)
 
     with pytest.raises(ValueError):
