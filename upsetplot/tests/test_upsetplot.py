@@ -398,7 +398,7 @@ def test_show_counts(orientation):
     assert n_artists_yes_sizes - n_artists_no_sizes > 6
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts='%0.2g')
+    plot(X, fig, show_counts='percent')
     assert n_artists_yes_sizes == _count_descendants(fig)
 
     with pytest.raises(ValueError):
