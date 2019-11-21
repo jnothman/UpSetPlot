@@ -276,7 +276,6 @@ class UpSet:
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
             version 0.4.
-    -------------------------------- temporary ------------------------------
     intersection_facecolor : str, default=None.
         The default color for intersection barplots. If not provided, equals
         to 'facecolor'.
