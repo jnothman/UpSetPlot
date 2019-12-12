@@ -264,7 +264,7 @@ class UpSet:
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
-        elements.
+        elements. Set to 0 to disable intersection size bars.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
@@ -296,6 +296,8 @@ class UpSet:
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
+        if not intersection_plot_elements:
+            self._subset_plots.pop()
         self._show_counts = show_counts
 
         if sort_sets_by != 'deprecated':
@@ -422,11 +424,12 @@ class UpSet:
                                                  self._totals_plot_elements)))
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
-        gridspec = GS(*self._swapaxes(n_cats + sizes.sum(),
+        gridspec = GS(*self._swapaxes(n_cats + (sizes.sum() or 0),
                                       n_inters + text_nelems +
                                       self._totals_plot_elements),
                       hspace=1)
         if self._horizontal:
+            print(n_cats, n_inters, self._totals_plot_elements)
             out = {'matrix': gridspec[-n_cats:, -n_inters:],
                    'shading': gridspec[-n_cats:, :],
                    'totals': gridspec[-n_cats:, :self._totals_plot_elements],
