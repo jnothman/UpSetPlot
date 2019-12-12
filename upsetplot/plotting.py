@@ -269,9 +269,12 @@ class UpSet:
         The totals plot should be large enough to fit this many matrix
         elements.
     show_counts : bool or str, default=False
-        Whether to label the intersection size bars with the cardinality or
-        percentage of the intersection. Accepts "cardinality" (equivalent to
-        True) or "percent"
+        Whether to label the intersection size bars with the cardinality (or
+        percent if `counts_as_percent` is specified) of the intersection. When
+        a string, this formats the number.  For example, '%d' is equivalent to
+        True.
+    counts_as_percent : bool, default=False
+        If the intersection counts should be displayed as a percentage.
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
@@ -285,7 +288,8 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts=False, sort_sets_by='deprecated'):
+                 show_counts=False, counts_as_percent=False,
+                 sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -296,14 +300,8 @@ class UpSet:
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
-        if show_counts not in (True, False, 'cardinality', 'percent'):
-            raise ValueError(
-                'show_counts must be bool, "cardinality", or "percent"'
-            )
-        if show_counts is True:
-            show_counts = 'cardinality'
-
         self._show_counts = show_counts
+        self._counts_as_percent = counts_as_percent
 
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
@@ -499,11 +497,11 @@ class UpSet:
                        .5, color=self._facecolor, zorder=10, align='center')
 
         values = self.intersections
-        if self._show_counts == 'cardinality':
-            fmt = '%d'
-        else:
+        if self._counts_as_percent:
             values = 100 * (values / values.sum())
-            fmt = '%.1f%%'
+            fmt = '%.1f%%' if self._show_counts is True else self._show_counts
+        else:
+            fmt = '%d' if self._show_counts is True else self._show_counts
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right',
                           fmt=fmt, values=values)
