@@ -20,7 +20,8 @@ def _aggregate_data(df, subset_size, sum_over):
     """
     _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum', 'legacy']
     if subset_size not in _SUBSET_SIZE_VALUES:
-        raise ValueError('subset_size should be one of {}. Got {}'.format(_SUBSET_SIZE_VALUES, repr(subset_size)))
+        raise ValueError('subset_size should be one of %s. Got %r'
+                         % (_SUBSET_SIZE_VALUES, subset_size))
     if df.ndim == 1:
         # Series
         input_name = df.name
@@ -54,12 +55,13 @@ def _aggregate_data(df, subset_size, sum_over):
         elif subset_size in ('auto', 'sum') and sum_over is False:
             # remove this after deprecation
             raise ValueError('sum_over=False is not supported when '
-                             'subset_size={}'.format(repr(subset_size)))
+                             'subset_size=%r' % subset_size)
         elif subset_size == 'auto' and sum_over is None:
             sum_over = False
         elif subset_size == 'count':
             if sum_over is not None:
-                raise ValueError('sum_over cannot be set if subset_size={}'.format(repr(subset_size)))
+                raise ValueError('sum_over cannot be set if subset_size=%r' %
+                                 subset_size)
             sum_over = False
         elif subset_size == 'sum':
             if sum_over is None:
@@ -74,7 +76,7 @@ def _aggregate_data(df, subset_size, sum_over):
     elif hasattr(sum_over, 'lower'):
         aggregated = gb[sum_over].sum()
     else:
-        raise ValueError('Unsupported value for sum_over: {}'.format(repr(sum_over)))
+        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
 
     if aggregated.name == '_value':
         aggregated.name = input_name
@@ -112,7 +114,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_categories_by is not None:
-        raise ValueError('Unknown sort_categories_by: {}'.format(repr(sort_categories_by)))
+        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     df = df.reorder_levels(totals.index.values)
     agg = agg.reorder_levels(totals.index.values)
 
@@ -122,7 +124,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
         gb_degree = agg.groupby(sum, group_keys=False)
         agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
     else:
-        raise ValueError('Unknown sort_by: {}'.format(repr(sort_by)))
+        raise ValueError('Unknown sort_by: %r' % sort_by)
 
     min_value = 0
     max_value = np.inf
@@ -269,9 +271,9 @@ class UpSet:
     show_counts : bool or str, default=False
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
-        For example, 'd' is equivalent to True.
-        '%' or 'pctg' or 'percentage' displays both the absolute frequency and the percentage of the total
-        for each intersection and category
+        For example, '%d' is equivalent to True.
+        '%' or 'pctg' or 'percentage' displays both the absolute frequency and
+        the percentage of the total for each intersection and category
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
@@ -345,14 +347,14 @@ class UpSet:
         if value is None:
             if '_value' not in self._df.columns:
                 raise ValueError('value cannot be set if data is a Series. '
-                                 'Got {}'.format(repr(value)))
+                                 'Got %r' % value)
         else:
             if value not in self._df.columns:
-                raise ValueError('value {} is not a column in data'.format(repr(value)))
+                raise ValueError('value %r is not a column in data' % value)
         self._subset_plots.append({'type': 'catplot',
                                    'value': value,
                                    'kind': kind,
-                                   'id': 'extra{:d}'.format(len(self._subset_plots)),
+                                   'id': 'extra%d' % len(self._subset_plots),
                                    'elements': elements,
                                    'kw': kw})
 
@@ -492,7 +494,7 @@ class UpSet:
         """
         ax = self._reorient(ax)
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
-                       .8, color=self._facecolor, zorder=10, align='center')
+                       .5, color=self._facecolor, zorder=10, align='center')
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
 
@@ -507,53 +509,50 @@ class UpSet:
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts:
             return
-        fmt = 'd' if self._show_counts is True else self._show_counts
-        fmt = fmt[1:] if fmt.find('%') == 0 and len(fmt) > 1 else fmt
-
+        fmt = '%d' if self._show_counts is True else self._show_counts
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if fmt in ['pctg', 'percentage', '%']:
+                if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "{w} ({p:.1%})".format(w=width, p=width / max(1, sum(self.intersections))),
+                            "%d (%.1f%%)" % (width, (100*width/max(1, sum(self.intersections)))),
                             ha='left', va='center')
                 else:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "{w:{fmt}}".format(w=width, fmt=fmt),
+                            fmt % width,
                             ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if fmt in ['pctg', 'percentage', '%']:
+                if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "{w} ({p:.1%})".format(w=width, p=width / max(1, sum(self.intersections))),
+                            "%d (%.1f%%)" % (width, (100*width/max(1, sum(self.intersections)))),
                             ha='right', va='center')
                 else:
                     ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            "{w:{fmt}}".format(w=width, fmt=fmt),
-                            ha='right', va='center')
-
+                        rect.get_y() + rect.get_height() * .5,
+                        fmt % width,
+                        ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
-                if fmt in ['pctg', 'percentage', '%']:
+                if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                            height + margin, "{h}\n{p:.1%}".format(h=height, p=height / sum(self.intersections)),
-                            ha='center', va='bottom', fontsize=8)
+                        height + margin,
+                        "%d\n(%.1f%%)" % (height, (100*height/max(1, sum(self.intersections)))),
+                        ha='center', va='bottom', fontsize=8)
                 else:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                            height + margin, "{h:{fmt}}".format(h=height, fmt=fmt),
+                            height + margin, fmt % height,
                             ha='center', va='bottom')
-
         else:
-            raise NotImplementedError('unhandled where: {}'.format(repr(where)))
+            raise NotImplementedError('unhandled where: %r' % where)
 
     def plot_totals(self, ax):
         """Plot bars indicating total set size
@@ -631,7 +630,7 @@ class UpSet:
             elif plot['type'] == 'catplot':
                 self._plot_catplot(ax, plot['value'], plot['kind'], plot['kw'])
             else:
-                raise ValueError('Unknown subset plot type: {}'.format(repr(plot['type'])))
+                raise ValueError('Unknown subset plot type: %r' % plot['type'])
             out[plot['id']] = ax
         return out
 
