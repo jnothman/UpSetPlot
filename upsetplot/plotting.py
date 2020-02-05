@@ -448,8 +448,8 @@ class UpSet:
             cumsizes = np.cumsum(sizes)
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
                                          self._subset_plots):
-                out[plot['id']] = gridspec[-n_inters:,
-                                           start + n_cats:stop + n_cats]
+                out[plot['id']] = gridspec[-n_inters:,start + n_cats:stop +
+                                                                     n_cats]
         return out
 
     def plot_matrix(self, ax):
@@ -517,7 +517,9 @@ class UpSet:
                 if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "%d (%.1f%%)" % (width, (100*width/max(1, sum(self.intersections)))),
+                            "%d (%.1f%%)" % (width,
+                                             (100 * width / max(1, sum(
+                                                 self.intersections)))),
                             ha='left', va='center')
                 else:
                     ax.text(width + margin,
@@ -531,22 +533,27 @@ class UpSet:
                 if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "%d (%.1f%%)" % (width, (100*width/max(1, sum(self.intersections)))),
+                            "%d (%.1f%%)" % (width,
+                                             (100 * width /
+                                              max(1, sum(
+                                                  self.intersections)))),
                             ha='right', va='center')
                 else:
                     ax.text(width + margin,
-                        rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
-                        ha='right', va='center')
+                            rect.get_y() + rect.get_height() * .5,
+                            fmt % width,
+                            ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
                 if fmt in ['%', 'pctg', 'percentage']:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin,
-                        "%d\n(%.1f%%)" % (height, (100*height/max(1, sum(self.intersections)))),
-                        ha='center', va='bottom', fontsize=8)
+                            height + margin,
+                            "%d\n(%.1f%%)" % (height,
+                                              (100 * height / max(1, sum(
+                                                  self.intersections)))),
+                            ha='center', va='bottom', fontsize=8)
                 else:
                     ax.text(rect.get_x() + rect.get_width() * .5,
                             height + margin, fmt % height,
