@@ -509,49 +509,49 @@ class UpSet:
             return
         fmt = 'd' if self._show_counts is True else self._show_counts
         fmt = fmt[1:] if fmt.find('%') == 0 and len(fmt) > 1 else fmt
+
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                # Keep both 'd' and '%d' for backwards compatibility
-                if fmt not in ['pctg', 'percentage', '%']:
+                if fmt in ['pctg', 'percentage', '%']:
+                    ax.text(width + margin,
+                            rect.get_y() + rect.get_height() * .5,
+                            "{w} ({p:.1%})".format(w=width, p=width / max(1, sum(self.intersections))),
+                            ha='left', va='center')
+                else:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
                             "{w:{fmt}}".format(w=width, fmt=fmt),
-                            ha='left', va='center')
-                elif fmt in ['pctg', 'percentage', '%']:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            "{w} ({p:.1%})".format(w=width, p=width/max(1, sum(self.intersections))),
                             ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                # Keep both 'd' and '%d' for backwards compatibility
-                if fmt in ['d', '%d']:
+                if fmt in ['pctg', 'percentage', '%']:
+                    ax.text(width + margin,
+                            rect.get_y() + rect.get_height() * .5,
+                            "{w} ({p:.1%})".format(w=width, p=width / max(1, sum(self.intersections))),
+                            ha='right', va='center')
+                else:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
                             "{w:{fmt}}".format(w=width, fmt=fmt),
                             ha='right', va='center')
-                elif fmt in ['pctg', 'percentage', '%']:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            "{w} ({p:.1%})".format(w=width, p=width/max(1, sum(self.intersections))),
-                            ha='right', va='center')
+
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
-                # Keep both 'd' and '%d' for backwards compatibility
-                if fmt in ['d', '%d']:
+                if fmt in ['pctg', 'percentage', '%']:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin, "{h:{fmt}}".format(h=height, fmt=fmt),
-                        ha='center', va='bottom')
-                elif fmt in ['pctg', 'percentage', '%']:
+                            height + margin, "{h}\n{p:.1%}".format(h=height, p=height / sum(self.intersections)),
+                            ha='center', va='bottom', fontsize=8)
+                else:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin, "{h}\n{p:.1%}".format(h=height, p=height/sum(self.intersections)),
-                        ha='center', va='bottom', fontsize=8)
+                            height + margin, "{h:{fmt}}".format(h=height, fmt=fmt),
+                            ha='center', va='bottom')
+
         else:
             raise NotImplementedError('unhandled where: {}'.format(repr(where)))
 
