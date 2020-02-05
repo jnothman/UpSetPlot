@@ -508,12 +508,13 @@ class UpSet:
         if not self._show_counts:
             return
         fmt = 'd' if self._show_counts is True else self._show_counts
+        fmt = fmt[1:] if fmt.find('%') == 0 and len(fmt) > 1 else fmt
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
                 # Keep both 'd' and '%d' for backwards compatibility
-                if fmt in ['d', '%d']:
+                if fmt not in ['pctg', 'percentage', '%']:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
                             "{w:{fmt}}".format(w=width, fmt=fmt),
