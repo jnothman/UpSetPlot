@@ -38,11 +38,11 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
     df = pd.DataFrame({'value': np.zeros(n_samples)})
     for i in range(n_categories):
         r = rng.rand(n_samples)
-        df['cat%d' % i] = r > rng.rand()
+        df['cat{:d}'.format(i)] = r > rng.rand()
         df['value'] += r
 
     df.reset_index(inplace=True)
-    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
+    df.set_index(['cat{:d}'.format(i) for i in range(n_categories)], inplace=True)
     return df
 
 
@@ -159,8 +159,7 @@ def from_memberships(memberships, data=None):
         data = pd.DataFrame(data)
     if len(data) != len(df):
         raise ValueError('memberships and data must have the same length. '
-                         'Got len(memberships) == %d, len(data) == %d'
-                         % (len(memberships), len(data)))
+                         'Got len(memberships) == {:d}, len(data) == {:d}'.format(len(memberships), len(data)))
     data.index = df.index
     return data
 
@@ -232,7 +231,7 @@ def from_contents(contents, data=None, id_column='id'):
 
     df = concat(cat_series, axis=1)
     if id_column in df.columns:
-        raise ValueError('A category cannot be named %r' % id_column)
+        raise ValueError('A category cannot be named {}'.format(repr(id_column)))
     df.fillna(False, inplace=True)
     cat_names = list(df.columns)
 
@@ -240,12 +239,11 @@ def from_contents(contents, data=None, id_column='id'):
         if set(df.columns).intersection(data.columns):
             raise ValueError('Data columns overlap with category names')
         if id_column in data.columns:
-            raise ValueError('data cannot contain a column named %r' %
-                             id_column)
+            raise ValueError('data cannot contain a column named {}'.format(repr(id_column)))
         not_in_data = df.drop(data.index, axis=0, errors='ignore')
         if len(not_in_data):
             raise ValueError('Found identifiers in contents that are not in '
-                             'data: %r' % not_in_data.index.values)
+                             'data: {}'.format(repr(not_in_data.index.values)))
         df = df.reindex(index=data.index).fillna(False)
         df = concat([data, df], axis=1)
     df.index.name = id_column
