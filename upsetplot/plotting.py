@@ -448,8 +448,8 @@ class UpSet:
             cumsizes = np.cumsum(sizes)
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
                                          self._subset_plots):
-                out[plot['id']] = gridspec[-n_inters:,start + n_cats:stop +
-                                                                     n_cats]
+                out[plot['id']] = \
+                    gridspec[-n_inters:, start + n_cats:stop + n_cats]
         return out
 
     def plot_matrix(self, ax):
