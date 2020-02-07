@@ -519,11 +519,12 @@ class UpSet:
                 if self._show_percentages:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            fmt % width + " (%.1f%%)" % (100 * width /
-                                            max(1,sum(self.intersections)))
-                            if self._show_counts else "%.1f%%" % (
-                                        100 * width / max(1, sum(
-                                    self.intersections))),
+                            fmt % width +
+                            " (%.1f%%)" % (100 * width /
+                                           max(1, sum(self.intersections)))
+                            if self._show_counts else
+                            "%.1f%%" % (100 * width /
+                                        max(1, sum(self.intersections))),
                             ha='left', va='center')
                 else:
                     ax.text(width + margin,
@@ -538,9 +539,8 @@ class UpSet:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
                             fmt % width +
-                                    " (%.1f%%)" % (
-                                        100 * width /
-                                        max(1,sum(self.intersections)))
+                            " (%.1f%%)" % (100 * width /
+                                           max(1, sum(self.intersections)))
                             if self._show_counts else "%.1f%%" % (
                                         100 * width / max(1, sum(
                                             self.intersections))),
@@ -557,12 +557,12 @@ class UpSet:
                 if self._show_percentages:
                     ax.text(rect.get_x() + rect.get_width() * .5,
                             height + margin,
-                            fmt % height + "\n(%.1f%%)" % (
-                                        100 * height / max(1, sum(
-                                    self.intersections)))
-                            if self._show_counts else "%.1f%%" % (
-                                        100 * height / max(1, sum(
-                                    self.intersections))),
+                            fmt % height +
+                            "\n(%.1f%%)" % (100 * height /
+                                            max(1, sum(self.intersections)))
+                            if self._show_counts
+                            else "%.1f%%" % (100 * height /
+                                             max(1, sum(self.intersections))),
                             ha='center', va='bottom', fontsize=8)
                 else:
                     ax.text(rect.get_x() + rect.get_width() * .5,
