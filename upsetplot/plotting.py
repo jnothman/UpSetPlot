@@ -541,9 +541,9 @@ class UpSet:
                             fmt % width +
                             " (%.1f%%)" % (100 * width /
                                            max(1, sum(self.intersections)))
-                            if self._show_counts else "%.1f%%" % (
-                                        100 * width / max(1, sum(
-                                            self.intersections))),
+                            if self._show_counts
+                            else "%.1f%%" % (100 * width /
+                                             max(1, sum(self.intersections))),
                             ha='right', va='center')
                 else:
                     ax.text(width + margin,
