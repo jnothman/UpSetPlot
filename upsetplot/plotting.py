@@ -287,7 +287,8 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated'):
+                 show_counts='', show_percentages=False,
+                 sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -301,6 +302,7 @@ class UpSet:
         if not intersection_plot_elements:
             self._subset_plots.pop()
         self._show_counts = show_counts
+        self._show_percentages = show_percentages
 
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
@@ -431,7 +433,7 @@ class UpSet:
                                       self._totals_plot_elements),
                       hspace=1)
         if self._horizontal:
-            print(n_cats, n_inters, self._totals_plot_elements)
+            # print(n_cats, n_inters, self._totals_plot_elements)
             out = {'matrix': gridspec[-n_cats:, -n_inters:],
                    'shading': gridspec[-n_cats:, :],
                    'totals': gridspec[-n_cats:, :self._totals_plot_elements],
@@ -507,19 +509,21 @@ class UpSet:
         ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where):
-        if not self._show_counts:
+        if not self._show_counts and not self._show_percentages:
             return
         fmt = '%d' if self._show_counts is True else self._show_counts
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if fmt in ['%', 'pctg', 'percentage']:
+                if self._show_percentages:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "%d (%.1f%%)" % (width,
-                                             (100 * width / max(1, sum(
-                                                 self.intersections)))),
+                            fmt % width + " (%.1f%%)" % (100 * width /
+                                            max(1,sum(self.intersections)))
+                            if self._show_counts else "%.1f%%" % (
+                                        100 * width / max(1, sum(
+                                    self.intersections))),
                             ha='left', va='center')
                 else:
                     ax.text(width + margin,
@@ -530,13 +534,16 @@ class UpSet:
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if fmt in ['%', 'pctg', 'percentage']:
+                if self._show_percentages:
                     ax.text(width + margin,
                             rect.get_y() + rect.get_height() * .5,
-                            "%d (%.1f%%)" % (width,
-                                             (100 * width /
-                                              max(1, sum(
-                                                  self.intersections)))),
+                            fmt % width +
+                                    " (%.1f%%)" % (
+                                        100 * width /
+                                        max(1,sum(self.intersections)))
+                            if self._show_counts else "%.1f%%" % (
+                                        100 * width / max(1, sum(
+                                            self.intersections))),
                             ha='right', va='center')
                 else:
                     ax.text(width + margin,
@@ -547,16 +554,20 @@ class UpSet:
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
-                if fmt in ['%', 'pctg', 'percentage']:
+                if self._show_percentages:
                     ax.text(rect.get_x() + rect.get_width() * .5,
                             height + margin,
-                            "%d\n(%.1f%%)" % (height,
-                                              (100 * height / max(1, sum(
-                                                  self.intersections)))),
+                            fmt % height + "\n(%.1f%%)" % (
+                                        100 * height / max(1, sum(
+                                    self.intersections)))
+                            if self._show_counts else "%.1f%%" % (
+                                        100 * height / max(1, sum(
+                                    self.intersections))),
                             ha='center', va='bottom', fontsize=8)
                 else:
                     ax.text(rect.get_x() + rect.get_width() * .5,
-                            height + margin, fmt % height,
+                            height + margin,
+                            fmt % height,
                             ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)
