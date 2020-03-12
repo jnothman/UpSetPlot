@@ -104,10 +104,11 @@ def _check_index(df):
     return df
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, min_subset_size=1):
+def _process_data(df, sort_by, sort_categories_by, subset_size,
+                  sum_over, min_subset_size=1):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     df = _check_index(df)
-    agg = agg[agg>=min_subset_size]
+    agg = agg[agg >= min_subset_size]
     df = df[df.index.isin(agg.index)]
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
@@ -274,8 +275,8 @@ class UpSet:
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
     min_subset_size: int, default=1
-        Minimum size of a subset to be included in the plot. All subsets with a size
-        smaller than this threshold will be omitted from plotting.
+        Minimum size of a subset to be included in the plot. All subsets with
+        a size smaller than this threshold will be omitted from plotting.
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
@@ -315,7 +316,8 @@ class UpSet:
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
-                                      sum_over=sum_over, min_subset_size=min_subset_size)
+                                      sum_over=sum_over,
+                                      min_subset_size=min_subset_size)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
