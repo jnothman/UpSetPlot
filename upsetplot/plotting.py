@@ -87,14 +87,16 @@ def _check_index(df):
     return df
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+def _process_data(df, sort_by, sort_categories_by, subset_size,
+                  sum_over, min_subset_size=0, max_subset_size=np.inf):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     total = agg.sum()
     df = _check_index(df)
-
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
     totals = pd.Series(totals, index=agg.index.names)
+    agg = agg[np.logical_and(agg >= min_subset_size, agg <= max_subset_size)]
+    df = df[df.index.isin(agg.index)]
     if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_categories_by is not None:
@@ -111,10 +113,6 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
         pass
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
-
-    min_value = 0
-    max_value = np.inf
-    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -242,6 +240,40 @@ class UpSet:
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
+    min_subset_size: int, default=1
+        Minimum size of a subset to be included in the plot. All subsets with a size
+        smaller than this threshold will be omitted from plotting.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.4.
+    min_subset_size: int, default=1
+        Minimum size of a subset to be included in the plot. All subsets with
+        a size smaller than this threshold will be omitted from plotting.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.4.
+    min_subset_size : int, default=0
+        Minimum size of a subset to be included in the plot. All subsets with
+        a size smaller than this threshold will be omitted from plotting.
+    max_subset_size : int, default=0
+        Maximum size of a subset to be included in the plot. All subsets with
+        a size greater than this threshold will be omitted from plotting.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.4.
+    min_subset_size : int, default=0
+        Minimum size of a subset to be included in the plot. All subsets with
+        a size smaller than this threshold will be omitted from plotting.
+    max_subset_size : int, default=inf
+        Maximum size of a subset to be included in the plot. All subsets with
+        a size greater than this threshold will be omitted from plotting.
+    sort_sets_by
+        .. deprecated: 0.3
+            Replaced by sort_categories_by, this parameter will be removed in
+            version 0.4.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -277,7 +309,9 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False):
+                 show_counts='', show_percentages=False,
+                 sort_sets_by='deprecated',
+                 min_subset_size=0, max_subset_size=np.inf):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -298,7 +332,9 @@ class UpSet:
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
-                                      sum_over=sum_over)
+                                      sum_over=sum_over,
+                                      min_subset_size=min_subset_size,
+                                      max_subset_size=max_subset_size)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
