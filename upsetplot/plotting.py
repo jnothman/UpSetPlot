@@ -104,7 +104,7 @@ def _check_index(df):
     return df
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, min_subset_size):
+def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over, min_subset_size=1):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     df = _check_index(df)
     agg = agg[agg>=min_subset_size]
