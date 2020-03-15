@@ -272,8 +272,10 @@ class UpSet:
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
-        '%' or 'pctg' or 'percentage' displays both the absolute frequency and
-        the percentage of the total for each intersection and category
+    show_percentages : bool, default=False
+        Whether to label the intersection size bars with the percentage
+        of the intersection relative to the total dataset.
+        This may be applied with or without show_counts.
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
@@ -433,7 +435,6 @@ class UpSet:
                                       self._totals_plot_elements),
                       hspace=1)
         if self._horizontal:
-            # print(n_cats, n_inters, self._totals_plot_elements)
             out = {'matrix': gridspec[-n_cats:, -n_inters:],
                    'shading': gridspec[-n_cats:, :],
                    'totals': gridspec[-n_cats:, :self._totals_plot_elements],
@@ -511,64 +512,53 @@ class UpSet:
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts and not self._show_percentages:
             return
-        fmt = '%d' if self._show_counts is True else self._show_counts
+        if self._show_counts is True:
+            count_fmt = "%d"
+        else:
+            count_fmt = self._show_counts
+        if self._show_percentages is True:
+            pct_fmt = "%.1f%%"
+        else:
+            pct_fmt = self._show_percentages
+
+        total = sum(self.totals)
+        if count_fmt and pct_fmt:
+            if where == 'top':
+                fmt = '%s\n(%s)' % (count_fmt, pct_fmt)
+            else:
+                fmt = '%s (%s)' % (count_fmt, pct_fmt)
+            make_args = lambda val: (val, 100 * val / total)
+        elif count_fmt:
+            fmt = count_fmt
+            make_args = lambda val: (val,)
+        else:
+            fmt = pct_fmt
+            make_args = lambda val: (100 * val / total,)
+
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if self._show_percentages:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            fmt % width +
-                            " (%.1f%%)" % (100 * width /
-                                           max(1, sum(self.intersections)))
-                            if self._show_counts else
-                            "%.1f%%" % (100 * width /
-                                        max(1, sum(self.intersections))),
-                            ha='left', va='center')
-                else:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            fmt % width,
-                            ha='left', va='center')
+                ax.text(width + margin,
+                        rect.get_y() + rect.get_height() * .5,
+                        fmt % make_args(width),
+                        ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
-                if self._show_percentages:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            fmt % width +
-                            " (%.1f%%)" % (100 * width /
-                                           max(1, sum(self.intersections)))
-                            if self._show_counts
-                            else "%.1f%%" % (100 * width /
-                                             max(1, sum(self.intersections))),
-                            ha='right', va='center')
-                else:
-                    ax.text(width + margin,
-                            rect.get_y() + rect.get_height() * .5,
-                            fmt % width,
-                            ha='right', va='center')
+                ax.text(width + margin,
+                        rect.get_y() + rect.get_height() * .5,
+                        fmt % make_args(width),
+                        ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
-                if self._show_percentages:
-                    ax.text(rect.get_x() + rect.get_width() * .5,
-                            height + margin,
-                            fmt % height +
-                            "\n(%.1f%%)" % (100 * height /
-                                            max(1, sum(self.intersections)))
-                            if self._show_counts
-                            else "%.1f%%" % (100 * height /
-                                             max(1, sum(self.intersections))),
-                            ha='center', va='bottom', fontsize=8)
-                else:
-                    ax.text(rect.get_x() + rect.get_width() * .5,
-                            height + margin,
-                            fmt % height,
-                            ha='center', va='bottom')
+                ax.text(rect.get_x() + rect.get_width() * .5,
+                        height + margin,
+                        fmt % make_args(height),
+                        ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)
 

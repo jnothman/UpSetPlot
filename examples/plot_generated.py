@@ -23,3 +23,7 @@ plt.show()
 plot(example, show_counts='%d')
 plt.suptitle('With counts shown')
 plt.show()
+
+plot(example, show_counts='%d', show_percentages=True)
+plt.suptitle('With counts and % shown')
+plt.show()
