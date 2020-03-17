@@ -527,13 +527,19 @@ class UpSet:
                 fmt = '%s\n(%s)' % (count_fmt, pct_fmt)
             else:
                 fmt = '%s (%s)' % (count_fmt, pct_fmt)
-            make_args = lambda val: (val, 100 * val / total)
+
+            def make_args(val):
+                return val, 100 * val / total
         elif count_fmt:
             fmt = count_fmt
-            make_args = lambda val: (val,)
+
+            def make_args(val):
+                return val,
         else:
             fmt = pct_fmt
-            make_args = lambda val: (100 * val / total,)
+
+            def make_args(val):
+                return 100 * val / total,
 
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
