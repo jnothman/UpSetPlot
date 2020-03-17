@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
+from matplotlib.text import Text
 
 from upsetplot import plot
 from upsetplot import UpSet
@@ -21,6 +22,11 @@ from upsetplot.plotting import _process_data
 def is_ascending(seq):
     # return np.all(np.diff(seq) >= 0)
     return sorted(seq) == list(seq)
+
+
+def get_all_texts(mpl_artist):
+    out = [text.get_text() for text in mpl_artist.findobj(Text)]
+    return [text for text in out if text]
 
 
 @pytest.mark.parametrize('x', [
@@ -389,22 +395,43 @@ def _count_descendants(el):
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
-    X = generate_counts(n_samples=100)
-    plot(X, fig)
+    X = generate_counts(n_samples=10000)
+    plot(X, fig, orientation=orientation)
     n_artists_no_sizes = _count_descendants(fig)
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts=True)
+    plot(X, fig, orientation=orientation, show_counts=True)
     n_artists_yes_sizes = _count_descendants(fig)
     assert n_artists_yes_sizes - n_artists_no_sizes > 6
+    assert '9547' in get_all_texts(fig)  # set size
+    assert '283' in get_all_texts(fig)   # intersection size
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts='%0.2g')
+    plot(X, fig, orientation=orientation, show_counts='%0.2g')
     assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '9.5e+03' in get_all_texts(fig)
+    assert '2.8e+02' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_percentages=True)
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '47.1%' in get_all_texts(fig)
+    assert '1.4%' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_counts=True,
+         show_percentages=True)
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    if orientation == 'vertical':
+        assert '9547\n(47.1%)' in get_all_texts(fig)
+        assert '283 (1.4%)' in get_all_texts(fig)
+    else:
+        assert '9547 (47.1%)' in get_all_texts(fig)
+        assert '283\n(1.4%)' in get_all_texts(fig)
 
     with pytest.raises(ValueError):
         fig = matplotlib.figure.Figure()
-        plot(X, fig, show_counts='%0.2h')
+        plot(X, fig, orientation=orientation, show_counts='%0.2h')
 
 
 def test_add_catplot():
