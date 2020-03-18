@@ -316,7 +316,8 @@ class UpSet:
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
                                       sum_over=sum_over,
-                                      min_subset_size=min_subset_size, max_subset_size=max_subset_size)
+                                      min_subset_size=min_subset_size,
+                                      max_subset_size=max_subset_size)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
