@@ -265,6 +265,9 @@ class UpSet:
     intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
         elements. Set to 0 to disable intersection size bars.
+
+        .. versionchanged: 0.4
+            Setting to 0 is handled.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
@@ -276,6 +279,8 @@ class UpSet:
         Whether to label the intersection size bars with the percentage
         of the intersection relative to the total dataset.
         This may be applied with or without show_counts.
+
+        .. versionadded: 0.4
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
