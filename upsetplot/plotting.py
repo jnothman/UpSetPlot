@@ -264,7 +264,7 @@ class UpSet:
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
-        elements.
+        elements. Set to 0 to disable intersection size bars.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
@@ -272,6 +272,10 @@ class UpSet:
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
+    show_percentages : bool, default=False
+        Whether to label the intersection size bars with the percentage
+        of the intersection relative to the total dataset.
+        This may be applied with or without show_counts.
     sort_sets_by
         .. deprecated: 0.3
             Replaced by sort_categories_by, this parameter will be removed in
@@ -285,7 +289,8 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated'):
+                 show_counts='', show_percentages=False,
+                 sort_sets_by='deprecated'):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -296,7 +301,10 @@ class UpSet:
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
+        if not intersection_plot_elements:
+            self._subset_plots.pop()
         self._show_counts = show_counts
+        self._show_percentages = show_percentages
 
         if sort_sets_by != 'deprecated':
             sort_categories_by = sort_sets_by
@@ -422,7 +430,7 @@ class UpSet:
                                                  self._totals_plot_elements)))
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
-        gridspec = GS(*self._swapaxes(n_cats + sizes.sum(),
+        gridspec = GS(*self._swapaxes(n_cats + (sizes.sum() or 0),
                                       n_inters + text_nelems +
                                       self._totals_plot_elements),
                       hspace=1)
@@ -443,8 +451,8 @@ class UpSet:
             cumsizes = np.cumsum(sizes)
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
                                          self._subset_plots):
-                out[plot['id']] = gridspec[-n_inters:,
-                                           start + n_cats:stop + n_cats]
+                out[plot['id']] = \
+                    gridspec[-n_inters:, start + n_cats:stop + n_cats]
         return out
 
     def plot_matrix(self, ax):
@@ -502,16 +510,44 @@ class UpSet:
         ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where):
-        if not self._show_counts:
+        if not self._show_counts and not self._show_percentages:
             return
-        fmt = '%d' if self._show_counts is True else self._show_counts
+        if self._show_counts is True:
+            count_fmt = "%d"
+        else:
+            count_fmt = self._show_counts
+        if self._show_percentages is True:
+            pct_fmt = "%.1f%%"
+        else:
+            pct_fmt = self._show_percentages
+
+        total = sum(self.totals)
+        if count_fmt and pct_fmt:
+            if where == 'top':
+                fmt = '%s\n(%s)' % (count_fmt, pct_fmt)
+            else:
+                fmt = '%s (%s)' % (count_fmt, pct_fmt)
+
+            def make_args(val):
+                return val, 100 * val / total
+        elif count_fmt:
+            fmt = count_fmt
+
+            def make_args(val):
+                return val,
+        else:
+            fmt = pct_fmt
+
+            def make_args(val):
+                return 100 * val / total,
+
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
+                        fmt % make_args(width),
                         ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -519,14 +555,15 @@ class UpSet:
                 width = rect.get_width()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
+                        fmt % make_args(width),
                         ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
                 ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin, fmt % height,
+                        height + margin,
+                        fmt % make_args(height),
                         ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)

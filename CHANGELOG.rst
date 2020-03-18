@@ -1,9 +1,12 @@
 In development
 --------------
-
+- Added option to display both the absolute frequency and the percentage of
+  the total for each intersection and category. (:issue:`89`)
 - Improved efficiency where there are many categories, but valid combinations
   are sparse, if `sort_by='degree'`. (:issue:`82`)
 - Permit truthy (not necessarily bool) values in index. (:issue:`74`)
+- `intersection_plot_elements` can now be set to 0 to hide the intersection
+  size plot when `add_catplot` is used. (:issue:`80`)
 
 What's new in version 0.3
 -------------------------
