@@ -1,5 +1,6 @@
 In development
 --------------
+
 - Added option to display both the absolute frequency and the percentage of
   the total for each intersection and category. (:issue:`89` with thanks to
   :user:`Carlos Melus <maziello>` and :user:`Aaron Rosenfeld <arosenfeld>`)
