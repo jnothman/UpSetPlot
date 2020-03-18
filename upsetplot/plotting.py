@@ -273,7 +273,7 @@ class UpSet:
     min_subset_size : int, default=0
         Minimum size of a subset to be included in the plot. All subsets with
         a size smaller than this threshold will be omitted from plotting.
-    max_subset_size : int, default=0
+    max_subset_size : int, default=inf
         Maximum size of a subset to be included in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
     sort_sets_by
