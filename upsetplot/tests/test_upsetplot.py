@@ -37,7 +37,7 @@ def get_all_texts(mpl_artist):
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     assert x.name == 'value'
-    for subset_size in ['auto', 'legacy', 'sum', 'count']:
+    for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):
                 _process_data(x, sort_by=sort_by,
@@ -90,17 +90,6 @@ def test_subset_size_series(x):
         x, subset_size='sum', **kw)
 
     if x.index.is_unique:
-        expected_warning = None
-    else:
-        expected_warning = FutureWarning
-    with pytest.warns(expected_warning):
-        df, intersections, totals = _process_data(
-            x, subset_size='legacy', **kw)
-    assert_frame_equal(df, df_sum)
-    assert_series_equal(intersections, intersections_sum)
-    assert_series_equal(totals, totals_sum)
-
-    if x.index.is_unique:
         df, intersections, totals = _process_data(
             x, subset_size='auto', **kw)
         assert_frame_equal(df, df_sum)
@@ -108,8 +97,7 @@ def test_subset_size_series(x):
         assert_series_equal(totals, totals_sum)
     else:
         with pytest.raises(ValueError):
-            _process_data(
-                x, subset_size='auto', **kw)
+            _process_data(x, subset_size='auto', **kw)
 
     df_count, intersections_count, totals_count = _process_data(
         x, subset_size='count', **kw)
@@ -120,29 +108,6 @@ def test_subset_size_series(x):
     assert_series_equal(totals, totals_count)
 
 
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-@pytest.mark.parametrize('x', [
-    generate_counts(),
-])
-def test_sort_sets_by_deprecation(x, sort_sets_by):
-    with pytest.warns(DeprecationWarning, match='sort_sets_by'):
-        upset1 = UpSet(x, sort_sets_by=sort_sets_by)
-    with pytest.warns(None):
-        upset2 = UpSet(x, sort_categories_by=sort_sets_by)
-
-    fig = matplotlib.figure.Figure()
-    upset1.plot(fig)
-    png1 = io.BytesIO()
-    fig.savefig(png1, format='raw')
-
-    fig = matplotlib.figure.Figure()
-    upset2.plot(fig)
-    png2 = io.BytesIO()
-    fig.savefig(png2, format='raw')
-
-    assert png1.getvalue() == png2.getvalue()
-
-
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
 ])
@@ -150,11 +115,6 @@ def test_sort_sets_by_deprecation(x, sort_sets_by):
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_frame(x, sort_by, sort_categories_by):
     X = pd.DataFrame({'a': x})
-
-    with pytest.raises(ValueError, match='Please specify subset_size'):
-        _process_data(X, sort_by=sort_by,
-                      sort_categories_by=sort_categories_by,
-                      subset_size='legacy', sum_over=None)
 
     with pytest.warns(None):
         df, intersections, totals = _process_data(
@@ -240,25 +200,16 @@ def test_subset_size_frame(x):
         _process_data(
             X, subset_size='count', sum_over='x', **kw)
 
-    # check subset_size='auto' or 'legacy' with sum_over=str => sum
-    for subset_size in ['auto', 'legacy']:
-        df, intersections, totals = _process_data(
-            X, subset_size=subset_size, sum_over='x', **kw)
-        assert_frame_equal(df, df_sum)
-        assert_series_equal(intersections, intersections_sum)
-        assert_series_equal(totals, totals_sum)
+    # check subset_size='auto' with sum_over=str => sum
+    df, intersections, totals = _process_data(
+        X, subset_size='auto', sum_over='x', **kw)
+    assert_frame_equal(df, df_sum)
+    assert_series_equal(intersections, intersections_sum)
+    assert_series_equal(totals, totals_sum)
 
     # check subset_size='auto' with sum_over=None => count
     df, intersections, totals = _process_data(
         X, subset_size='auto', sum_over=None, **kw)
-    assert_frame_equal(df, df_count)
-    assert_series_equal(intersections, intersections_count)
-    assert_series_equal(totals, totals_count)
-
-    # check legacy use of sum_over=False
-    with pytest.warns(DeprecationWarning, match='sum_over=False'):
-        df, intersections, totals = _process_data(
-            X, subset_size='legacy', sum_over=False, **kw)
     assert_frame_equal(df, df_count)
     assert_series_equal(intersections, intersections_count)
     assert_series_equal(totals, totals_count)
@@ -324,15 +275,6 @@ def test_two_sets(set1, set2):
                        'set1': set1,
                        'set2': set2}).set_index(['set1', 'set2'])['val'],
          fig, subset_size='sum')
-
-
-def test_dataframe_raises():
-    fig = matplotlib.figure.Figure()
-    df = pd.DataFrame({'val': [5, 7],
-                       'set1': [False, True],
-                       'set2': [True, True]}).set_index(['set1', 'set2'])
-    with pytest.raises(ValueError, match='Please specify subset_size or '):
-        plot(df, fig)
 
 
 def test_vertical():
