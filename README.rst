@@ -1,5 +1,7 @@
-UpSetPlot documentation
-============================
+UpSetPlot
+=========
+
+**Documentation for |release|**
 
 |version| |licence| |py-versions|
 
