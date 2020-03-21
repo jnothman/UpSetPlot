@@ -459,3 +459,32 @@ def test_index_must_be_bool(x):
     x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
     with pytest.raises(ValueError, match='not boolean'):
         UpSet(x)
+
+
+@pytest.mark.parametrize("min, max", [(1, 500), (10, 1000), (100, 2000)])
+def test_filter_subsets(min, max):
+    data = generate_samples(0, 5000, 3)
+    upset_data = UpSet(data, subset_size='auto')
+    subset_upset_data = UpSet(data, subset_size='auto',
+                              min_subset_size=min, max_subset_size=max)
+    intersections = upset_data.intersections
+    df = upset_data._df
+    subset_intersections = intersections[np.logical_and(intersections >= min,
+                                                        intersections <= max)]
+    subset_df = df[df.index.isin(subset_intersections.index)]
+    assert_series_equal(subset_upset_data.intersections, subset_intersections)
+
+    def _pack_binary(X):
+        X = pd.DataFrame(X)
+        out = 0
+        for i, (_, col) in enumerate(X.items()):
+            out *= 2
+            out += col
+        return out
+
+    subset_df_packed = _pack_binary(subset_df.index.to_frame())
+    subset_data_packed = _pack_binary(subset_intersections.index.to_frame())
+    subset_df['_bin'] = pd.Series(subset_df_packed).map(
+        pd.Series(np.arange(len(subset_data_packed)),
+                  index=subset_data_packed))
+    assert_frame_equal(subset_upset_data._df, subset_df)
