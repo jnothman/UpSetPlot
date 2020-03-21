@@ -108,11 +108,11 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=0, max_subset_size=np.inf):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     df = _check_index(df)
-    agg = agg[np.logical_and(agg >= min_subset_size, agg <= max_subset_size)]
-    df = df[df.index.isin(agg.index)]
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
     totals = pd.Series(totals, index=agg.index.names)
+    agg = agg[np.logical_and(agg >= min_subset_size, agg <= max_subset_size)]
+    df = df[df.index.isin(agg.index)]
     if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_categories_by is not None:
