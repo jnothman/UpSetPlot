@@ -52,7 +52,7 @@ def _aggregate_data(df, subset_size, sum_over):
                                  'subset_size="sum" and a DataFrame is '
                                  'provided.')
 
-    gb = df.groupby(level=list(range(df.index.nlevels)))
+    gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
     if sum_over is False:
         aggregated = gb.size()
         aggregated.name = 'size'
@@ -106,6 +106,8 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     elif sort_by == 'degree':
         gb_degree = agg.groupby(sum, group_keys=False)
         agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
+    elif sort_by is None:
+        pass
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 
