@@ -238,7 +238,6 @@ def test_not_unique(sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},
-                                {'sort_by': None},
                                 {'sort_categories_by': 'blah'},
                                 {'sort_categories_by': True}])
 def test_param_validation(kw):
