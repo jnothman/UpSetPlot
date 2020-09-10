@@ -44,9 +44,12 @@ def test_process_data_series(x, sort_by, sort_categories_by):
                               sort_categories_by=sort_categories_by,
                               subset_size=subset_size, sum_over=sum_over)
 
-    df, intersections, totals = _process_data(
+    total, df, intersections, totals = _process_data(
         x, subset_size='auto', sort_by=sort_by,
         sort_categories_by=sort_categories_by, sum_over=None)
+
+    assert total == x.sum()
+
     assert intersections.name == 'value'
     x_reordered = (x
                    .reorder_levels(intersections.index.names)
@@ -86,12 +89,14 @@ def test_subset_size_series(x):
     kw = {'sort_by': 'cardinality',
           'sort_categories_by': 'cardinality',
           'sum_over': None}
-    df_sum, intersections_sum, totals_sum = _process_data(
+    total, df_sum, intersections_sum, totals_sum = _process_data(
         x, subset_size='sum', **kw)
+    assert total == intersections_sum.sum()
 
     if x.index.is_unique:
-        df, intersections, totals = _process_data(
+        total, df, intersections, totals = _process_data(
             x, subset_size='auto', **kw)
+        assert total == intersections.sum()
         assert_frame_equal(df, df_sum)
         assert_series_equal(intersections, intersections_sum)
         assert_series_equal(totals, totals_sum)
@@ -99,11 +104,13 @@ def test_subset_size_series(x):
         with pytest.raises(ValueError):
             _process_data(x, subset_size='auto', **kw)
 
-    df_count, intersections_count, totals_count = _process_data(
+    total, df_count, intersections_count, totals_count = _process_data(
         x, subset_size='count', **kw)
-    df, intersections, totals = _process_data(
+    assert total == intersections_count.sum()
+    total, df, intersections, totals = _process_data(
         x.groupby(level=list(range(len(x.index.levels)))).count(),
         subset_size='sum', **kw)
+    assert total == intersections.sum()
     assert_series_equal(intersections, intersections_count, check_names=False)
     assert_series_equal(totals, totals_count)
 
@@ -117,13 +124,14 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     X = pd.DataFrame({'a': x})
 
     with pytest.warns(None):
-        df, intersections, totals = _process_data(
+        total, df, intersections, totals = _process_data(
             X, sort_by=sort_by, sort_categories_by=sort_categories_by,
             sum_over='a', subset_size='auto')
     assert df is not X
+    assert total == intersections.sum()
 
     # check equivalence to Series
-    df1, intersections1, totals1 = _process_data(
+    total1, df1, intersections1, totals1 = _process_data(
         x, sort_by=sort_by, sort_categories_by=sort_categories_by,
         subset_size='sum', sum_over=None)
 
@@ -134,9 +142,10 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check effect of extra column
     X = pd.DataFrame({'a': x, 'b': np.arange(len(x))})
-    df2, intersections2, totals2 = _process_data(
+    total2, df2, intersections2, totals2 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='a', subset_size='auto')
+    assert total2 == intersections2.sum()
     assert_series_equal(intersections, intersections2)
     assert_series_equal(totals, totals2)
     assert_frame_equal(df, df2.drop('b', axis=1))
@@ -144,9 +153,10 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check effect not dependent on order/name
     X = pd.DataFrame({'b': np.arange(len(x)), 'c': x})
-    df3, intersections3, totals3 = _process_data(
+    total3, df3, intersections3, totals3 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='c', subset_size='auto')
+    assert total3 == intersections3.sum()
     assert_series_equal(intersections, intersections3, check_names=False)
     assert intersections.name == 'a'
     assert intersections3.name == 'c'
@@ -156,12 +166,13 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check subset_size='count'
     X = pd.DataFrame({'b': np.ones(len(x), dtype=int), 'c': x})
-    df4, intersections4, totals4 = _process_data(
+    total4, df4, intersections4, totals4 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='b', subset_size='auto')
-    df5, intersections5, totals5 = _process_data(
+    total5, df5, intersections5, totals5 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         subset_size='count', sum_over=None)
+    assert total5 == intersections5.sum()
     assert_series_equal(intersections4, intersections5, check_names=False)
     assert intersections4.name == 'b'
     assert intersections5.name == 'size'
@@ -177,9 +188,9 @@ def test_subset_size_frame(x):
     kw = {'sort_by': 'cardinality',
           'sort_categories_by': 'cardinality'}
     X = pd.DataFrame({'x': x})
-    df_sum, intersections_sum, totals_sum = _process_data(
+    total_sum, df_sum, intersections_sum, totals_sum = _process_data(
         X, subset_size='sum', sum_over='x', **kw)
-    df_count, intersections_count, totals_count = _process_data(
+    total_count, df_count, intersections_count, totals_count = _process_data(
         X, subset_size='count', sum_over=None, **kw)
 
     # error cases: sum_over=False
@@ -201,15 +212,17 @@ def test_subset_size_frame(x):
             X, subset_size='count', sum_over='x', **kw)
 
     # check subset_size='auto' with sum_over=str => sum
-    df, intersections, totals = _process_data(
+    total, df, intersections, totals = _process_data(
         X, subset_size='auto', sum_over='x', **kw)
+    assert total == intersections.sum()
     assert_frame_equal(df, df_sum)
     assert_series_equal(intersections, intersections_sum)
     assert_series_equal(totals, totals_sum)
 
     # check subset_size='auto' with sum_over=None => count
-    df, intersections, totals = _process_data(
+    total, df, intersections, totals = _process_data(
         X, subset_size='auto', sum_over=None, **kw)
+    assert total == intersections.sum()
     assert_frame_equal(df, df_count)
     assert_series_equal(intersections, intersections_count)
     assert_series_equal(totals, totals_count)
@@ -223,12 +236,13 @@ def test_not_unique(sort_by, sort_categories_by):
           'subset_size': 'sum',
           'sum_over': None}
     Xagg = generate_counts()
-    df1, intersections1, totals1 = _process_data(Xagg, **kw)
+    total1, df1, intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_samples()['value']
     Xunagg.loc[:] = 1
-    df2, intersections2, totals2 = _process_data(Xunagg, **kw)
+    total2, df2, intersections2, totals2 = _process_data(Xunagg, **kw)
     assert_series_equal(intersections1, intersections2,
                         check_dtype=False)
+    assert total2 == intersections2.sum()
     assert_series_equal(totals1, totals2, check_dtype=False)
     assert set(df1.columns) == {'_value', '_bin'}
     assert set(df2.columns) == {'_value', '_bin'}
@@ -357,19 +371,19 @@ def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_percentages=True)
     assert n_artists_yes_sizes == _count_descendants(fig)
-    assert '47.1%' in get_all_texts(fig)
-    assert '1.4%' in get_all_texts(fig)
+    assert '95.5%' in get_all_texts(fig)
+    assert '2.8%' in get_all_texts(fig)
 
     fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_counts=True,
          show_percentages=True)
     assert n_artists_yes_sizes == _count_descendants(fig)
     if orientation == 'vertical':
-        assert '9547\n(47.1%)' in get_all_texts(fig)
-        assert '283 (1.4%)' in get_all_texts(fig)
+        assert '9547\n(95.5%)' in get_all_texts(fig)
+        assert '283 (2.8%)' in get_all_texts(fig)
     else:
-        assert '9547 (47.1%)' in get_all_texts(fig)
-        assert '283\n(1.4%)' in get_all_texts(fig)
+        assert '9547 (95.5%)' in get_all_texts(fig)
+        assert '283\n(2.8%)' in get_all_texts(fig)
 
     with pytest.raises(ValueError):
         fig = matplotlib.figure.Figure()

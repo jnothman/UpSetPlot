@@ -89,6 +89,7 @@ def _check_index(df):
 
 def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df, agg = _aggregate_data(df, subset_size, sum_over)
+    total = agg.sum()
     df = _check_index(df)
 
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
@@ -128,8 +129,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df['_bin'] = pd.Series(df_packed).map(
         pd.Series(np.arange(len(data_packed)),
                   index=data_packed))
-
-    return df, agg, totals
+    return total, df, agg, totals
 
 
 class _Transposed:
@@ -281,7 +281,7 @@ class UpSet:
         self._show_counts = show_counts
         self._show_percentages = show_percentages
 
-        (self._df, self.intersections,
+        (self.total, self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
@@ -491,7 +491,6 @@ class UpSet:
         else:
             pct_fmt = self._show_percentages
 
-        total = sum(self.totals)
         if count_fmt and pct_fmt:
             if where == 'top':
                 fmt = '%s\n(%s)' % (count_fmt, pct_fmt)
@@ -499,7 +498,7 @@ class UpSet:
                 fmt = '%s (%s)' % (count_fmt, pct_fmt)
 
             def make_args(val):
-                return val, 100 * val / total
+                return val, 100 * val / self.total
         elif count_fmt:
             fmt = count_fmt
 
@@ -509,7 +508,7 @@ class UpSet:
             fmt = pct_fmt
 
             def make_args(val):
-                return 100 * val / total,
+                return 100 * val / self.total,
 
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))

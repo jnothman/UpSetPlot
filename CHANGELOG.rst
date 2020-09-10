@@ -1,3 +1,8 @@
+What's new in version 0.4.1
+---------------------------
+
+- Fixed the calculation of percentage which was broken in 0.4.0. (:issue:`101`)
+
 What's new in version 0.4
 -------------------------
 
