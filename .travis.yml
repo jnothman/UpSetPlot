@@ -15,6 +15,7 @@ install:
   - cp ci/matplotlibrc matplotlibrc
 script:
   - pytest
+  - pip install flake8  # fixes issue with missing typing import
   - flake8
 after_success:
   - coveralls
