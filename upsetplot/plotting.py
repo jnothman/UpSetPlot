@@ -362,7 +362,7 @@ class UpSet:
         tick_axis = ax.yaxis
         tick_axis.grid(True)
 
-    def make_grid(self, fig=None):
+    def make_grid(self, fig=None,text_nelems=5):
         """Get a SubplotSpec for each Axes, accounting for label text width
         """
         n_cats = len(self.totals)
@@ -382,22 +382,21 @@ class UpSet:
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
 
-        if self._element_size is None:
-            colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
-                                                    self._totals_plot_elements)
-        else:
-            fig = self._reorient(fig)
-            render_ratio = figw / fig.get_figwidth()
-            colw = self._element_size / 72 * render_ratio
-            figw = (colw * (len(self.intersections) +
-                            self._totals_plot_elements) +
-                    MAGIC_MARGIN + textw)
-            fig.set_figwidth(figw / render_ratio)
-            fig.set_figheight((colw * (n_cats + sizes.sum())) /
-                              render_ratio)
-
-        text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
-                                                 self._totals_plot_elements)))
+#         if self._element_size is None:
+#             colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
+#                                                     self._totals_plot_elements)
+#         else:
+#             fig = self._reorient(fig)
+#             render_ratio = figw / fig.get_figwidth()
+#             colw = self._element_size / 72 * render_ratio
+#             figw = (colw * (len(self.intersections) +
+#                             self._totals_plot_elements) +
+#                     MAGIC_MARGIN + textw)
+#             fig.set_figwidth(figw / render_ratio)
+#             fig.set_figheight((colw * (n_cats + sizes.sum())) /
+#                               render_ratio)
+#         text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
+#                                                  self._totals_plot_elements)))
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
         gridspec = GS(*self._swapaxes(n_cats + (sizes.sum() or 0),
@@ -407,7 +406,7 @@ class UpSet:
         if self._horizontal:
             out = {'matrix': gridspec[-n_cats:, -n_inters:],
                    'shading': gridspec[-n_cats:, :],
-                   'totals': gridspec[-n_cats:, :self._totals_plot_elements],
+                   'totals': gridspec[-n_cats:, :self._totals_plot_elements+4],
                    'gs': gridspec}
             cumsizes = np.cumsum(sizes[::-1])
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
@@ -577,7 +576,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None):
+    def plot(self, figsize=None,text_nelems=10):
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -590,9 +589,11 @@ class UpSet:
         subplots : dict of matplotlib.axes.Axes
             Keys are 'matrix', 'intersections', 'totals', 'shading'
         """
-        if fig is None:
+        if figsize is None:
             fig = plt.figure(figsize=self._default_figsize)
-        specs = self.make_grid(fig)
+        else:
+            fig = plt.figure(figsize=figsize)
+        specs = self.make_grid(fig,text_nelems=text_nelems)
         shading_ax = fig.add_subplot(specs['shading'])
         self.plot_shading(shading_ax)
         matrix_ax = self._reorient(fig.add_subplot)(specs['matrix'],
@@ -617,13 +618,13 @@ class UpSet:
             out[plot['id']] = ax
         return out
 
-    def _repr_html_(self):
-        fig = plt.figure(figsize=self._default_figsize)
-        self.plot(fig=fig)
-        return fig._repr_html_()
+#     def _repr_html_(self):
+#         fig = plt.figure(figsize=self._default_figsize)
+#         self.plot(fig=fig)
+#         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs):
+def plot(data, figsize,text_width, **kwargs):
     """Make an UpSet plot of data on fig
 
     Parameters
@@ -643,4 +644,4 @@ def plot(data, fig=None, **kwargs):
     subplots : dict of matplotlib.axes.Axes
         Keys are 'matrix', 'intersections', 'totals', 'shading'
     """
-    return UpSet(data, **kwargs).plot(fig)
+    return UpSet(data, **kwargs).plot(figsize=figsize,text_nelems=text_width)
