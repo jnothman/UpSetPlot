@@ -25,8 +25,8 @@ env:
     - FIXED_CONDA_DEPS="flake8 pytest pytest-cov<2.6 coveralls"
 matrix:
   include:
-    - env: CONDA_DEPS="python=3.5 pandas=0.20 matplotlib=2.2.3 numpy=1.13.3"
-    - env: CONDA_DEPS="python=3.6 pandas matplotlib seaborn"
+    - env: CONDA_DEPS="python=3.6 pandas=0.20 matplotlib=2.2.3 numpy=1.13.3"
+    - env: CONDA_DEPS="python=3.7 pandas matplotlib seaborn"
     - env: CONDA_DEPS="python pandas matplotlib seaborn scikit-learn"  # extra deps to run examples
 
 branches:
