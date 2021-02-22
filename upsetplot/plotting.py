@@ -87,7 +87,7 @@ def _check_index(df):
     return df
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over,ascending=False):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     total = agg.sum()
     df = _check_index(df)
@@ -96,17 +96,20 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
               for name in agg.index.names]
     totals = pd.Series(totals, index=agg.index.names)
     if sort_categories_by == 'cardinality':
-        totals.sort_values(ascending=False, inplace=True)
+        totals.sort_values(ascending=ascending, inplace=True)
     elif sort_categories_by is not None:
         raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     df = df.reorder_levels(totals.index.values)
     agg = agg.reorder_levels(totals.index.values)
 
     if sort_by == 'cardinality':
-        agg = agg.sort_values(ascending=False)
+        agg = agg.sort_values(ascending=ascending)
     elif sort_by == 'degree':
         gb_degree = agg.groupby(sum, group_keys=False)
-        agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
+#         print(agg)
+        agg=agg.sort_index(ascending=False)
+#         agg = gb_degree.apply(lambda x: x.sort_index(ascending=False,level=-1))
+#         print(agg)
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
 
@@ -265,7 +268,7 @@ class UpSet:
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False):
+                 show_counts='', show_percentages=False,ascending=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -286,7 +289,8 @@ class UpSet:
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
-                                      sum_over=sum_over)
+                                      sum_over=sum_over,
+                                     ascending=ascending)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
