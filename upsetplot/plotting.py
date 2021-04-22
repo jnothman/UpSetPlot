@@ -467,6 +467,7 @@ class UpSet:
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
+        ax.set_autoscalex_on(False)
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
