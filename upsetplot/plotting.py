@@ -461,11 +461,13 @@ class UpSet:
         if not self._horizontal:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
+        ax.set_xlim(xmin=.5, xmax=x[-1] + .5, auto=False)
 
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
+        ax.set_autoscalex_on(False)
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 

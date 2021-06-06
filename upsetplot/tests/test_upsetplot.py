@@ -442,3 +442,19 @@ def test_index_must_be_bool(x):
     x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
     with pytest.raises(ValueError, match='not boolean'):
         UpSet(x)
+
+
+@pytest.mark.parametrize('x', [
+    generate_counts(n_categories=3),
+    generate_counts(n_categories=8),
+    generate_counts(n_categories=15),
+])
+def test_matrix_plot_margins(x):
+    """Non-regression test addressing a bug where there is are large whitespace
+       margins around the matrix when the number of intersections is large"""
+    axes = plot(x)
+
+    # Expected behavior is that each matrix column takes up one unit on x-axis
+    expected = len(x) - 1
+    actual = axes['matrix'].get_xlim()[1] - axes['matrix'].get_xlim()[0]
+    assert expected == actual

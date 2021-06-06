@@ -1,3 +1,9 @@
+What's new in version 0.4.2
+---------------------------
+
+- Fixed large x-axis plot margins with high number of unique intersections
+  (:issue:`106` with thanks to :user:`Yidi Huang <huangy6>`)
+
 What's new in version 0.4.1
 ---------------------------
 
