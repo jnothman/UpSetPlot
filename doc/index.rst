@@ -3,6 +3,6 @@
 .. toctree::
 
     auto_examples/index
-    DataFormatGuide.ipynb
+    formats.ipynb
     api
     changelog
