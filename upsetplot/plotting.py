@@ -352,6 +352,7 @@ class UpSet:
         else:
             kw['orient'] = 'h'
             kw['x'] = value
+            df = df.assign(_bin=df["_bin"].max() - df["_bin"])
             kw['y'] = '_bin'
         import seaborn
         kw['ax'] = ax
