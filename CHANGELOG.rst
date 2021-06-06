@@ -1,3 +1,10 @@
+What's new in version 0.4.3
+---------------------------
+
+- Fixed issue with the order of catplots being reversed for vertical plots
+  (:issue:`122` with thanks to :user:`Enrique Fernandez-Blanco <ennanco>`)
+- Fixed issue with the x limits of vertical plots (:issue:`121`).
+
 What's new in version 0.4.2
 ---------------------------
 
