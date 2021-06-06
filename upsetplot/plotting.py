@@ -175,6 +175,12 @@ class _Transposed:
         'set_figheight': 'set_figwidth',
         'set_xlabel': 'set_ylabel',
         'set_ylabel': 'set_xlabel',
+        'set_xlim': 'set_ylim',
+        'set_ylim': 'set_xlim',
+        'get_xlim': 'get_ylim',
+        'get_ylim': 'get_xlim',
+        'set_autoscalex_on': 'set_autoscaley_on',
+        'set_autoscaley_on': 'set_autoscalex_on',
     }
 
 
@@ -461,7 +467,7 @@ class UpSet:
         if not self._horizontal:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
-        ax.set_xlim(xmin=.5, xmax=x[-1] + .5, auto=False)
+        ax.set_xlim(.5, x[-1] + .5, auto=False)
 
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
