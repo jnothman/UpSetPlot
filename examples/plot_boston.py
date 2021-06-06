@@ -58,4 +58,15 @@ upset = UpSet(boston_df, subset_size='count', intersection_plot_elements=3)
 upset.add_catplot(value='median_value', kind='strip', color='blue')
 upset.add_catplot(value='AGE', kind='strip', color='black')
 upset.plot()
+plt.title("UpSet with catplots, for orientation='horizontal'")
+plt.show()
+
+# And again in vertical orientation
+
+upset = UpSet(boston_df, subset_size='count', intersection_plot_elements=3,
+              orientation='vertical')
+upset.add_catplot(value='median_value', kind='strip', color='blue')
+upset.add_catplot(value='AGE', kind='strip', color='black')
+upset.plot()
+plt.title("UpSet with catplots, for orientation='vertical'")
 plt.show()
