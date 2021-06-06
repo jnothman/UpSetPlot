@@ -449,12 +449,17 @@ def test_index_must_be_bool(x):
     generate_counts(n_categories=8),
     generate_counts(n_categories=15),
 ])
-def test_matrix_plot_margins(x):
+@pytest.mark.parametrize('orientation', [
+    'horizontal',
+    'vertical',
+])
+def test_matrix_plot_margins(x, orientation):
     """Non-regression test addressing a bug where there is are large whitespace
        margins around the matrix when the number of intersections is large"""
-    axes = plot(x)
+    axes = plot(x, orientation=orientation)
 
     # Expected behavior is that each matrix column takes up one unit on x-axis
     expected = len(x) - 1
-    actual = axes['matrix'].get_xlim()[1] - axes['matrix'].get_xlim()[0]
-    assert expected == actual
+    attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
+    lim = getattr(axes['matrix'], attr)()
+    assert expected == lim[1] - lim[0]
