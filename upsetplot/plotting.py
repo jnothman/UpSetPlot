@@ -468,7 +468,7 @@ class UpSet:
         if not self._horizontal:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
-        ax.set_xlim(.5, x[-1] + .5, auto=False)
+        ax.set_xlim(-.5, x[-1] + .5, auto=False)
 
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
