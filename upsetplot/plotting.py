@@ -380,31 +380,33 @@ class UpSet:
 
         # Determine text size to determine figure size / spacing
         r = get_renderer(fig)
-        t = fig.text(0, 0, '\n'.join(self.totals.index.values))
+        text_kw = {"size": matplotlib.rcParams['xtick.labelsize']}
+        # adding "x" ensures a margin
+        t = fig.text(0, 0, '\n'.join(str(label) + "x"
+                                     for label in self.totals.index.values),
+                     **text_kw)
         textw = t.get_window_extent(renderer=r).width
         t.remove()
 
-        MAGIC_MARGIN = 10  # FIXME
         figw = self._reorient(fig.get_window_extent(renderer=r)).width
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
+        fig = self._reorient(fig)
 
+        non_text_nelems = len(self.intersections) + self._totals_plot_elements
         if self._element_size is None:
-            colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
-                                                    self._totals_plot_elements)
+            colw = (figw - textw) / non_text_nelems
         else:
-            fig = self._reorient(fig)
             render_ratio = figw / fig.get_figwidth()
             colw = self._element_size / 72 * render_ratio
-            figw = (colw * (len(self.intersections) +
-                            self._totals_plot_elements) +
-                    MAGIC_MARGIN + textw)
+            figw = colw * (non_text_nelems + np.ceil(textw / colw) + 1)
             fig.set_figwidth(figw / render_ratio)
             fig.set_figheight((colw * (n_cats + sizes.sum())) /
                               render_ratio)
 
-        text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
-                                                 self._totals_plot_elements)))
+        text_nelems = int(np.ceil(figw / colw - non_text_nelems))
+        # print('textw', textw, 'figw', figw, 'colw', colw,
+        #       'ncols', figw/colw, 'text_nelems', text_nelems)
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
         gridspec = GS(*self._swapaxes(n_cats + (sizes.sum() or 0),
