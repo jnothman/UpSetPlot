@@ -1,3 +1,15 @@
+What's new in version 0.4.5
+---------------------------
+
+- Fixed an issue where tick labels were not given enough space and overlapped
+  category totals. (:issue:`132`)
+
+What's new in version 0.4.4
+---------------------------
+
+- Fixed a regresion which caused the first column to be hidden
+  (:issue:`125`)
+
 What's new in version 0.4.3
 ---------------------------
 

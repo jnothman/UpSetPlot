@@ -330,7 +330,8 @@ def test_element_size():
     assert np.all(np.diff(figwidths) > 0)
     aspect = np.divide(figwidths, figheights)
     # Font size stays constant, so aspect ratio decreases
-    assert np.all(np.diff(aspect) < 0)
+    assert np.all(np.diff(aspect) <= 1e-8)  # allow for near-equality
+    assert np.any(np.diff(aspect) < 1e-4)  # require some significant decrease
     # But doesn't decrease by much
     assert np.all(aspect[:-1] / aspect[1:] < 1.1)
 
@@ -341,6 +342,7 @@ def test_element_size():
     assert figsize_before == figsize_after
 
     # TODO: make sure axes are all within figure
+    # TODO: make sure text does not overlap axes, even with element_size=None
 
 
 def _walk_artists(el):
