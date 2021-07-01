@@ -1,6 +1,8 @@
-What's new in version 0.4.5
----------------------------
+What's new in version 0.5
+-------------------------
 
+- Support using input intersection order with ``sort_by=None`` (:issue:`133`
+  with thanks to :user:`Brandon B <outlace>`).
 - Fixed an issue where tick labels were not given enough space and overlapped
   category totals. (:issue:`132`)
 

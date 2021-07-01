@@ -33,7 +33,7 @@ def get_all_texts(mpl_artist):
     generate_counts(),
     generate_counts().iloc[1:-2],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     assert x.name == 'value'
@@ -43,6 +43,9 @@ def test_process_data_series(x, sort_by, sort_categories_by):
                 _process_data(x, sort_by=sort_by,
                               sort_categories_by=sort_categories_by,
                               subset_size=subset_size, sum_over=sum_over)
+
+    # shuffle input to test sorting
+    x = x.sample(frac=1., replace=False, random_state=0)
 
     total, df, intersections, totals = _process_data(
         x, subset_size='auto', sort_by=sort_by,
@@ -61,11 +64,16 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
     if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
-    else:
+    elif sort_by == 'degree':
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
+    else:
+        find_first_in_orig = x_reordered.index.tolist().index
+        orig_order = list(map(find_first_in_orig,
+                              intersections.index.tolist()))
+        assert orig_order == sorted(orig_order)
     if sort_categories_by:
         assert is_ascending(totals.values[::-1])
 
@@ -118,9 +126,12 @@ def test_subset_size_series(x):
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_frame(x, sort_by, sort_categories_by):
+    # shuffle input to test sorting
+    x = x.sample(frac=1., replace=False, random_state=0)
+
     X = pd.DataFrame({'a': x})
 
     with pytest.warns(None):
