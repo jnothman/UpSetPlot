@@ -1,3 +1,9 @@
+What's new in version 0.4.4
+---------------------------
+
+- Fixed a regresion which caused the first column to be hidden
+  (:issue:`125`)
+
 What's new in version 0.4.3
 ---------------------------
 
