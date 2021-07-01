@@ -106,7 +106,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     elif sort_by == 'degree':
         gb_degree = agg.groupby(sum, group_keys=False)
         agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
-    elif sort_by is None:
+    elif sort_by == 'given':
         pass
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
@@ -205,10 +205,11 @@ class UpSet:
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
-    sort_by : {'cardinality', 'degree'}
+    sort_by : {'cardinality', 'degree', 'given'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
-        intersected.
+        intersected. If 'given', the order they appear in the data input is
+        used.
     sort_categories_by : {'cardinality', None}
         Whether to sort the categories by total cardinality, or leave them
         in the provided order.
