@@ -268,8 +268,15 @@ def test_param_validation(kw):
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_counts(n_samples=100)
-    plot(X, fig, **kw)
+    axes = plot(X, fig, **kw)
     fig.savefig(io.BytesIO(), format='png')
+
+    attr = ('get_xlim'
+            if kw.get('orientation', 'horizontal') == 'horizontal'
+            else 'get_ylim')
+    lim = getattr(axes['matrix'], attr)()
+    expected_width = len(X)
+    assert expected_width == lim[1] - lim[0]
 
     # Also check fig is optional
     n_nums = len(plt.get_fignums())
@@ -459,7 +466,7 @@ def test_matrix_plot_margins(x, orientation):
     axes = plot(x, orientation=orientation)
 
     # Expected behavior is that each matrix column takes up one unit on x-axis
-    expected = len(x) - 1
+    expected_width = len(x)
     attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
     lim = getattr(axes['matrix'], attr)()
-    assert expected == lim[1] - lim[0]
+    assert expected_width == lim[1] - lim[0]
