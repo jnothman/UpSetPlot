@@ -463,6 +463,71 @@ def test_index_must_be_bool(x):
         UpSet(x)
 
 
+@pytest.mark.parametrize(
+    "filter_params, expected",
+    [
+        ({"min_subset_size": 623},
+         {(True, False, False): 884,
+          (True, True, False): 1547,
+          (True, False, True): 623,
+          (True, True, True): 990,
+          }),
+        ({"min_subset_size": 800, "max_subset_size": 990},
+         {(True, False, False): 884,
+          (True, True, True): 990,
+          }),
+        ({"min_degree": 2},
+         {(True, True, False): 1547,
+          (True, False, True): 623,
+          (False, True, True): 258,
+          (True, True, True): 990,
+          }),
+        ({"min_degree": 2, "max_degree": 2},
+         {(True, True, False): 1547,
+          (True, False, True): 623,
+          (False, True, True): 258,
+          }),
+        ({"max_subset_size": 500, "max_degree": 2},
+         {(False, False, False): 220,
+          (False, True, False): 335,
+          (False, False, True): 143,
+          (False, True, True): 258,
+          }),
+    ]
+)
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+def test_filter_subsets(filter_params, expected, sort_by):
+    data = generate_samples(seed=0, n_samples=5000, n_categories=3)
+    # data =
+    #   cat1   cat0   cat2
+    #   False  False  False     220
+    #   True   False  False     884
+    #   False  True   False     335
+    #          False  True      143
+    #   True   True   False    1547
+    #          False  True      623
+    #   False  True   True      258
+    #   True   True   True      990
+    upset_full = UpSet(data, subset_size='auto', sort_by=sort_by)
+    upset_filtered = UpSet(data, subset_size='auto',
+                           sort_by=sort_by,
+                           **filter_params)
+    intersections = upset_full.intersections
+    df = upset_full._df
+    # check integrity of expected, just to be sure
+    for key, value in expected.items():
+        assert intersections.loc[key] == value
+    subset_intersections = intersections[
+        intersections.index.isin(list(expected.keys()))]
+    subset_df = df[df.index.isin(list(expected.keys()))]
+    assert len(subset_intersections) < len(intersections)
+    assert_series_equal(upset_filtered.intersections, subset_intersections)
+    assert_frame_equal(upset_filtered._df.drop("_bin", axis=1),
+                       subset_df.drop("_bin", axis=1))
+    # category totals should not be affected
+    assert_series_equal(upset_full.totals, upset_filtered.totals)
+
+
 @pytest.mark.parametrize('x', [
     generate_counts(n_categories=3),
     generate_counts(n_categories=8),
@@ -482,32 +547,3 @@ def test_matrix_plot_margins(x, orientation):
     attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
     lim = getattr(axes['matrix'], attr)()
     assert expected_width == lim[1] - lim[0]
-
-
-@pytest.mark.parametrize("min, max", [(1, 500), (10, 1000), (100, 2000)])
-def test_filter_subsets(min, max):
-    data = generate_samples(0, 5000, 3)
-    upset_data = UpSet(data, subset_size='auto')
-    subset_upset_data = UpSet(data, subset_size='auto',
-                              min_subset_size=min, max_subset_size=max)
-    intersections = upset_data.intersections
-    df = upset_data._df
-    subset_intersections = intersections[np.logical_and(intersections >= min,
-                                                        intersections <= max)]
-    subset_df = df[df.index.isin(subset_intersections.index)]
-    assert_series_equal(subset_upset_data.intersections, subset_intersections)
-
-    def _pack_binary(X):
-        X = pd.DataFrame(X)
-        out = 0
-        for i, (_, col) in enumerate(X.items()):
-            out *= 2
-            out += col
-        return out
-
-    subset_df_packed = _pack_binary(subset_df.index.to_frame())
-    subset_data_packed = _pack_binary(subset_intersections.index.to_frame())
-    subset_df['_bin'] = pd.Series(subset_df_packed).map(
-        pd.Series(np.arange(len(subset_data_packed)),
-                  index=subset_data_packed))
-    assert_frame_equal(subset_upset_data._df, subset_df)

@@ -87,16 +87,45 @@ def _check_index(df):
     return df
 
 
+def _filter_subsets(df, agg,
+                    min_subset_size, max_subset_size,
+                    min_degree, max_degree):
+    subset_mask = True
+    if min_subset_size is not None:
+        subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
+    if max_subset_size is not None:
+        subset_mask = np.logical_and(subset_mask, agg <= max_subset_size)
+    if (min_degree is not None and min_degree >= 0) or max_degree is not None:
+        degree = agg.index.to_frame().sum(axis=1)
+        if min_degree is not None:
+            subset_mask = np.logical_and(subset_mask, degree >= min_degree)
+        if max_degree is not None:
+            subset_mask = np.logical_and(subset_mask, degree <= max_degree)
+
+    if subset_mask is True:
+        return df, agg
+
+    agg = agg[subset_mask]
+    df = df[df.index.isin(agg.index)]
+    return df, agg
+
+
 def _process_data(df, sort_by, sort_categories_by, subset_size,
-                  sum_over, min_subset_size=0, max_subset_size=np.inf):
+                  sum_over, min_subset_size=None, max_subset_size=None,
+                  min_degree=None, max_degree=None):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     total = agg.sum()
     df = _check_index(df)
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
     totals = pd.Series(totals, index=agg.index.names)
-    agg = agg[np.logical_and(agg >= min_subset_size, agg <= max_subset_size)]
-    df = df[df.index.isin(agg.index)]
+
+    # filter subsets:
+    df, agg = _filter_subsets(df, agg,
+                              min_subset_size, max_subset_size,
+                              min_degree, max_degree)
+
+    # sort:
     if sort_categories_by == 'cardinality':
         totals.sort_values(ascending=False, inplace=True)
     elif sort_categories_by is not None:
@@ -107,8 +136,10 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     if sort_by == 'cardinality':
         agg = agg.sort_values(ascending=False)
     elif sort_by == 'degree':
-        gb_degree = agg.groupby(sum, group_keys=False)
-        agg = gb_degree.apply(lambda x: x.sort_index(ascending=False))
+        index_tuples = sorted(agg.index,
+                              key=lambda x: (sum(x),) + tuple(reversed(x)))
+        agg = agg.reindex(pd.MultiIndex.from_tuples(index_tuples,
+                                                    names=agg.index.names))
     elif sort_by is None:
         pass
     else:
@@ -240,40 +271,17 @@ class UpSet:
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
-    min_subset_size: int, default=1
-        Minimum size of a subset to be included in the plot. All subsets with a size
-        smaller than this threshold will be omitted from plotting.
-    sort_sets_by
-        .. deprecated: 0.3
-            Replaced by sort_categories_by, this parameter will be removed in
-            version 0.4.
-    min_subset_size: int, default=1
-        Minimum size of a subset to be included in the plot. All subsets with
+    min_subset_size : int, optional
+        Minimum size of a subset to be shown in the plot. All subsets with
         a size smaller than this threshold will be omitted from plotting.
-    sort_sets_by
-        .. deprecated: 0.3
-            Replaced by sort_categories_by, this parameter will be removed in
-            version 0.4.
-    min_subset_size : int, default=0
-        Minimum size of a subset to be included in the plot. All subsets with
-        a size smaller than this threshold will be omitted from plotting.
-    max_subset_size : int, default=0
-        Maximum size of a subset to be included in the plot. All subsets with
+        Size may be a sum of values, see `subset_size`.
+    max_subset_size : int, optional
+        Maximum size of a subset to be shown in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
-    sort_sets_by
-        .. deprecated: 0.3
-            Replaced by sort_categories_by, this parameter will be removed in
-            version 0.4.
-    min_subset_size : int, default=0
-        Minimum size of a subset to be included in the plot. All subsets with
-        a size smaller than this threshold will be omitted from plotting.
-    max_subset_size : int, default=inf
-        Maximum size of a subset to be included in the plot. All subsets with
-        a size greater than this threshold will be omitted from plotting.
-    sort_sets_by
-        .. deprecated: 0.3
-            Replaced by sort_categories_by, this parameter will be removed in
-            version 0.4.
+    min_degree : int, optional
+        Minimum degree of a subset to be shown in the plot.
+    max_degree : int, optional
+        Maximum degree of a subset to be shown in the plot.
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
@@ -306,12 +314,12 @@ class UpSet:
     def __init__(self, data, orientation='horizontal', sort_by='degree',
                  sort_categories_by='cardinality',
                  subset_size='auto', sum_over=None,
+                 min_subset_size=None, max_subset_size=None,
+                 min_degree=None, max_degree=None,
                  facecolor='black',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False,
-                 sort_sets_by='deprecated',
-                 min_subset_size=0, max_subset_size=np.inf):
+                 show_counts='', show_percentages=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -334,7 +342,9 @@ class UpSet:
                                       subset_size=subset_size,
                                       sum_over=sum_over,
                                       min_subset_size=min_subset_size,
-                                      max_subset_size=max_subset_size)
+                                      max_subset_size=max_subset_size,
+                                      min_degree=min_degree,
+                                      max_degree=max_degree)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
