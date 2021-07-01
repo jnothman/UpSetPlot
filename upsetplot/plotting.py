@@ -216,6 +216,9 @@ class UpSet:
         If 'degree', they are listed in order of the number of categories
         intersected. If None, the order they appear in the data input is
         used.
+
+        .. versionchanged: 0.5
+            Setting None was added.
     sort_categories_by : {'cardinality', None}
         Whether to sort the categories by total cardinality, or leave them
         in the provided order.
