@@ -342,6 +342,7 @@ def test_element_size():
     assert figsize_before == figsize_after
 
     # TODO: make sure axes are all within figure
+    # TODO: make sure text does not overlap axes, even with element_size=None
 
 
 def _walk_artists(el):
