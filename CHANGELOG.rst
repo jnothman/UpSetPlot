@@ -3,8 +3,12 @@ What's new in version 0.5
 
 - Support using input intersection order with ``sort_by=None`` (:issue:`133`
   with thanks to :user:`Brandon B <outlace>`).
+- Add parameters for filtering by subset size (with thanks to
+  :user:`Sichong Peng <SichongP>`) and degree. (:issue:`134`)
 - Fixed an issue where tick labels were not given enough space and overlapped
   category totals. (:issue:`132`)
+- Fixed an issue where our implementation of ``sort_by='degree'`` apparently
+  gave incorrect results for some inputs and versions of Pandas.
 
 What's new in version 0.4.4
 ---------------------------
