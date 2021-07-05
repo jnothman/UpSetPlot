@@ -8,7 +8,7 @@ What's new in version 0.5
 - Fixed an issue where tick labels were not given enough space and overlapped
   category totals. (:issue:`132`)
 - Fixed an issue where our implementation of ``sort_by='degree'`` apparently
-  gave incorrect results for some inputs and versions of Pandas.
+  gave incorrect results for some inputs and versions of Pandas. (:issue:`134`)
 
 What's new in version 0.4.4
 ---------------------------

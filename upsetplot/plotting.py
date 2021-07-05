@@ -275,13 +275,21 @@ class UpSet:
         Minimum size of a subset to be shown in the plot. All subsets with
         a size smaller than this threshold will be omitted from plotting.
         Size may be a sum of values, see `subset_size`.
+
+        .. versionadded: 0.5
     max_subset_size : int, optional
         Maximum size of a subset to be shown in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
+
+        .. versionadded: 0.5
     min_degree : int, optional
         Minimum degree of a subset to be shown in the plot.
+
+        .. versionadded: 0.5
     max_degree : int, optional
         Maximum degree of a subset to be shown in the plot.
+
+        .. versionadded: 0.5
     facecolor : str
         Color for bar charts and dots.
     with_lines : bool
