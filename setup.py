@@ -18,7 +18,7 @@ def setup_package():
         setup(name='UpSetPlot',
               version=version,
               packages=["upsetplot"],
-              license=['BSD-3-Clause'],
+              license='BSD-3-Clause',
               setup_requires=['pytest-runner'],
               tests_require=['pytest>=2.7', 'pytest-cov<2.6'],
               # TODO: check versions
