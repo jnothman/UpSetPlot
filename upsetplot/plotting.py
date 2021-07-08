@@ -1,5 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
+import itertools
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -112,7 +114,7 @@ def _filter_subsets(df, agg,
 
 def _process_data(df, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=None, max_subset_size=None,
-                  min_degree=None, max_degree=None):
+                  min_degree=None, max_degree=None, reverse=False):
     df, agg = _aggregate_data(df, subset_size, sum_over)
     total = agg.sum()
     df = _check_index(df)
@@ -158,8 +160,10 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     df_packed = _pack_binary(df.index.to_frame())
     data_packed = _pack_binary(agg.index.to_frame())
     df['_bin'] = pd.Series(df_packed).map(
-        pd.Series(np.arange(len(data_packed)),
+        pd.Series(np.arange(len(data_packed))[::-1 if reverse else 1],
                   index=data_packed))
+    if reverse:
+        agg = agg[::-1]
     return total, df, agg, totals
 
 
@@ -352,14 +356,67 @@ class UpSet:
                                       min_subset_size=min_subset_size,
                                       max_subset_size=max_subset_size,
                                       min_degree=min_degree,
-                                      max_degree=max_degree)
-        if not self._horizontal:
-            self.intersections = self.intersections[::-1]
+                                      max_degree=max_degree,
+                                      reverse=not self._horizontal)
 
     def _swapaxes(self, x, y):
         if self._horizontal:
             return x, y
         return y, x
+
+    def _plot_bars(self, ax, data, title, colors=None):
+        ax = self._reorient(ax)
+        ax.set_autoscalex_on(False)
+        use_legend = getattr(data, "ndim", 2) == 2
+        data_df = pd.DataFrame(data)
+
+        if callable(colors):
+            colors = colors(data_df.shape[1])
+        elif isinstance(colors, (str, type(None))):
+            colors = itertools.repeat(colors)
+
+        x = np.arange(len(data_df))
+        cum_y = None
+        for (name, y), color in zip(data_df.items(), colors):
+            rects = ax.bar(x, y, .5, cum_y,
+                           color=color, zorder=10,
+                           label=name if use_legend else None,
+                           align='center')
+            cum_y = y if cum_y is None else cum_y + y
+
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+
+        if use_legend:
+            ax.legend()
+
+        ax.xaxis.set_visible(False)
+        for x in ['top', 'bottom', 'right']:
+            ax.spines[self._reorient(x)].set_visible(False)
+
+        tick_axis = ax.yaxis
+        tick_axis.grid(True)
+        ax.set_ylabel(title)
+
+    def _plot_stacked_bars(self, ax, by, sum_over, title):
+        df = self._df.set_index("_bin").set_index(by, append=True, drop=False)
+        gb = df.groupby(level=list(range(df.index.nlevels)), sort=True)
+        if sum_over is None and "_value" in df.columns:
+            data = gb["_value"].sum()
+        elif sum_over is None:
+            data = gb.size()
+        else:
+            data = gb[sum_over].sum()
+        data = data.unstack(by)
+        self._plot_bars(ax, data=data, title=title)
+
+    def add_stacked_bars(self, by, sum_over=None, elements=3, title=None):
+        # TODO: docstring
+        self._subset_plots.append({'type': 'stacked_bars',
+                                   'by': by,
+                                   'sum_over': sum_over,
+                                   'title': title,
+                                   'id': 'extra%d' % len(self._subset_plots),
+                                   'elements': elements})
 
     def add_catplot(self, kind, value=None, elements=3, **kw):
         """Add a seaborn catplot over subsets when :func:`plot` is called.
@@ -398,12 +455,16 @@ class UpSet:
                                    'elements': elements,
                                    'kw': kw})
 
-    def _plot_catplot(self, ax, value, kind, kw):
-        df = self._df
-        if value is None and '_value' in df.columns:
+    def _check_value(self, value):
+        if value is None and '_value' in self._df.columns:
             value = '_value'
         elif value is None:
             raise ValueError('value can only be None when data is a Series')
+        return value
+
+    def _plot_catplot(self, ax, value, kind, kw):
+        df = self._df
+        value = self._check_value(value)
         kw = kw.copy()
         if self._horizontal:
             kw['orient'] = 'v'
@@ -412,7 +473,6 @@ class UpSet:
         else:
             kw['orient'] = 'h'
             kw['x'] = value
-            df = df.assign(_bin=df["_bin"].max() - df["_bin"])
             kw['y'] = '_bin'
         import seaborn
         kw['ax'] = ax
@@ -535,20 +595,8 @@ class UpSet:
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
         """
-        ax = self._reorient(ax)
-        ax.set_autoscalex_on(False)
-        rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
-                       .5, color=self._facecolor, zorder=10, align='center')
-
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
-
-        ax.xaxis.set_visible(False)
-        for x in ['top', 'bottom', 'right']:
-            ax.spines[self._reorient(x)].set_visible(False)
-
-        tick_axis = ax.yaxis
-        tick_axis.grid(True)
-        ax.set_ylabel('Intersection size')
+        self._plot_bars(ax, self.intersections, title='Intersection size',
+                        colors=self._facecolor)
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts and not self._show_percentages:
@@ -584,7 +632,7 @@ class UpSet:
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
-                width = rect.get_width()
+                width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt % make_args(width),
@@ -592,7 +640,7 @@ class UpSet:
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
-                width = rect.get_width()
+                width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt % make_args(width),
@@ -600,7 +648,7 @@ class UpSet:
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
-                height = rect.get_height()
+                height = rect.get_height() + rect.get_y()
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         height + margin,
                         fmt % make_args(height),
@@ -681,12 +729,21 @@ class UpSet:
                                                  sharex=matrix_ax)
             if plot['type'] == 'default':
                 self.plot_intersections(ax)
-            elif plot['type'] == 'catplot':
-                self._plot_catplot(ax, plot['value'], plot['kind'], plot['kw'])
+            elif plot['type'] in self.PLOT_TYPES:
+                kw = plot.copy()
+                del kw['type']
+                del kw['elements']
+                del kw['id']
+                self.PLOT_TYPES[plot['type']](self, ax, **kw)
             else:
                 raise ValueError('Unknown subset plot type: %r' % plot['type'])
             out[plot['id']] = ax
         return out
+
+    PLOT_TYPES = {
+        'catplot': _plot_catplot,
+        'stacked_bars': _plot_stacked_bars,
+    }
 
     def _repr_html_(self):
         fig = plt.figure(figsize=self._default_figsize)
