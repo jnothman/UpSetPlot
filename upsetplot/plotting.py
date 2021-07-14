@@ -370,8 +370,9 @@ class UpSet:
         use_legend = getattr(data, "ndim", 2) == 2
         data_df = pd.DataFrame(data)
 
+        # TODO: colors should be broadcastable to data_df shape
         if callable(colors):
-            colors = colors(data_df.shape[1])
+            colors = colors(range(data_df.shape[1]))
         elif isinstance(colors, (str, type(None))):
             colors = itertools.repeat(colors)
 
@@ -397,7 +398,7 @@ class UpSet:
         tick_axis.grid(True)
         ax.set_ylabel(title)
 
-    def _plot_stacked_bars(self, ax, by, sum_over, title):
+    def _plot_stacked_bars(self, ax, by, sum_over, colors, title):
         df = self._df.set_index("_bin").set_index(by, append=True, drop=False)
         gb = df.groupby(level=list(range(df.index.nlevels)), sort=True)
         if sum_over is None and "_value" in df.columns:
@@ -407,13 +408,15 @@ class UpSet:
         else:
             data = gb[sum_over].sum()
         data = data.unstack(by)
-        self._plot_bars(ax, data=data, title=title)
+        self._plot_bars(ax, data=data, colors=colors, title=title)
 
-    def add_stacked_bars(self, by, sum_over=None, elements=3, title=None):
+    def add_stacked_bars(self, by, sum_over=None, colors=None, elements=3,
+                         title=None):
         # TODO: docstring
         self._subset_plots.append({'type': 'stacked_bars',
                                    'by': by,
                                    'sum_over': sum_over,
+                                   'colors': colors,
                                    'title': title,
                                    'id': 'extra%d' % len(self._subset_plots),
                                    'elements': elements})
