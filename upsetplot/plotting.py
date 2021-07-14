@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib import colors
 from matplotlib.tight_layout import get_renderer
 
 
@@ -163,6 +164,14 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     return total, df, agg, totals
 
 
+def _multiply_alpha(c, mult):
+    # TODO: perhaps this should instead default to a lightness interpolation
+    #       bw background and foreground...
+    r, g, b, a = colors.to_rgba(c)
+    a *= mult
+    return colors.to_hex((r, g, b, a), keep_alpha=True)
+
+
 class _Transposed:
     """Wrap an object in order to transpose some plotting operations
 
@@ -291,7 +300,12 @@ class UpSet:
 
         .. versionadded: 0.5
     facecolor : str
-        Color for bar charts and dots.
+        Color for bar charts and dots. Defaults to black if axes.facecolor is
+        a light color, otherwise white.
+    shading_base_color : str, optional
+        Shading and unselected matrix dots will be colored with a
+        semi-transparent version of this color. Default is 'auto', meaning
+        same as facecolor.
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple
         categories being intersected.
@@ -324,14 +338,21 @@ class UpSet:
                  subset_size='auto', sum_over=None,
                  min_subset_size=None, max_subset_size=None,
                  min_degree=None, max_degree=None,
-                 facecolor='black',
+                 facecolor='auto', shading_base_color='auto',
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts='', show_percentages=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
+        if facecolor == 'auto':
+            bgcolor = matplotlib.rcParams.get('axes.facecolor', 'white')
+            r, g, b, a = colors.to_rgba(bgcolor)
+            lightness = colors.rgb_to_hsv((r, g, b))[-1] * a
+            facecolor = 'black' if lightness >= .5 else 'white'
         self._facecolor = facecolor
+        self._shading_base_color = (facecolor if shading_base_color == 'auto'
+                                    else shading_base_color)
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
@@ -502,7 +523,8 @@ class UpSet:
         n_cats = data.index.nlevels
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array(['lightgrey'] * len(data) * n_cats, dtype='O')
+        color = _multiply_alpha(self._shading_base_color, 0.18)
+        c = np.array([color] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
         x = np.repeat(np.arange(len(data)), n_cats)
         y = np.tile(np.arange(n_cats), len(data))
@@ -628,10 +650,11 @@ class UpSet:
 
     def plot_shading(self, ax):
         # alternating row shading (XXX: use add_patch(Rectangle)?)
+        color = _multiply_alpha(self._shading_base_color, 0.04)
         for i in range(0, len(self.totals), 2):
             rect = plt.Rectangle(self._swapaxes(0, i - .4),
                                  *self._swapaxes(*(1, .8)),
-                                 facecolor='#f5f5f5', lw=0, zorder=0)
+                                 facecolor=color, lw=0, zorder=0)
             ax.add_patch(rect)
         ax.set_frame_on(False)
         ax.tick_params(
