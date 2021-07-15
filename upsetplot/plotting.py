@@ -165,8 +165,6 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
 
 
 def _multiply_alpha(c, mult):
-    # TODO: perhaps this should instead default to a lightness interpolation
-    #       bw background and foreground...
     r, g, b, a = colors.to_rgba(c)
     a *= mult
     return colors.to_hex((r, g, b, a), keep_alpha=True)
@@ -299,13 +297,15 @@ class UpSet:
         Maximum degree of a subset to be shown in the plot.
 
         .. versionadded: 0.5
-    facecolor : str
-        Color for bar charts and dots. Defaults to black if axes.facecolor is
-        a light color, otherwise white.
-    shading_base_color : str, optional
-        Shading and unselected matrix dots will be colored with a
-        semi-transparent version of this color. Default is 'auto', meaning
-        same as facecolor.
+    facecolor : 'auto' or matplotlib color or float
+        Color for bar charts and active dots. Defaults to black if
+        axes.facecolor is a light color, otherwise white.
+    other_dots_color : matplotlib color or float
+        Color for shading of inactive dots, or opacity (between 0 and 1)
+        applied to facecolor.
+    shading_color : matplotlib color or float
+        Color for shading of odd rows in matrix and totals, or opacity (between
+        0 and 1) applied to facecolor.
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple
         categories being intersected.
@@ -338,7 +338,7 @@ class UpSet:
                  subset_size='auto', sum_over=None,
                  min_subset_size=None, max_subset_size=None,
                  min_degree=None, max_degree=None,
-                 facecolor='auto', shading_base_color='auto',
+                 facecolor='auto', other_dots_color=.18, shading_color=.05,
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts='', show_percentages=False):
@@ -351,8 +351,12 @@ class UpSet:
             lightness = colors.rgb_to_hsv((r, g, b))[-1] * a
             facecolor = 'black' if lightness >= .5 else 'white'
         self._facecolor = facecolor
-        self._shading_base_color = (facecolor if shading_base_color == 'auto'
-                                    else shading_base_color)
+        self._shading_color = (_multiply_alpha(facecolor, shading_color)
+                               if isinstance(shading_color, float)
+                               else shading_color)
+        self._other_dots_color = (_multiply_alpha(facecolor, other_dots_color)
+                                  if isinstance(other_dots_color, float)
+                                  else other_dots_color)
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
@@ -523,8 +527,7 @@ class UpSet:
         n_cats = data.index.nlevels
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        color = _multiply_alpha(self._shading_base_color, 0.18)
-        c = np.array([color] * len(data) * n_cats, dtype='O')
+        c = np.array([self._other_dots_color] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
         x = np.repeat(np.arange(len(data)), n_cats)
         y = np.tile(np.arange(n_cats), len(data))
@@ -553,6 +556,7 @@ class UpSet:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
         ax.set_xlim(-.5, x[-1] + .5, auto=False)
+        ax.grid(False)
 
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
@@ -646,15 +650,15 @@ class UpSet:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
+        ax.yaxis.grid(False)
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
         # alternating row shading (XXX: use add_patch(Rectangle)?)
-        color = _multiply_alpha(self._shading_base_color, 0.04)
         for i in range(0, len(self.totals), 2):
             rect = plt.Rectangle(self._swapaxes(0, i - .4),
                                  *self._swapaxes(*(1, .8)),
-                                 facecolor=color, lw=0, zorder=0)
+                                 facecolor=self._shading_color, lw=0, zorder=0)
             ax.add_patch(rect)
         ax.set_frame_on(False)
         ax.tick_params(
@@ -666,6 +670,7 @@ class UpSet:
             top=False,
             labelbottom=False,
             labelleft=False)
+        ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_xticklabels([])
