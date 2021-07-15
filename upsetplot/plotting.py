@@ -300,12 +300,19 @@ class UpSet:
     facecolor : 'auto' or matplotlib color or float
         Color for bar charts and active dots. Defaults to black if
         axes.facecolor is a light color, otherwise white.
+
+        .. versionchanged: 0.6
+            Before 0.6, the default was 'black'
     other_dots_color : matplotlib color or float
         Color for shading of inactive dots, or opacity (between 0 and 1)
         applied to facecolor.
+
+        .. versionadded: 0.6
     shading_color : matplotlib color or float
         Color for shading of odd rows in matrix and totals, or opacity (between
         0 and 1) applied to facecolor.
+
+        .. versionadded: 0.6
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple
         categories being intersected.
