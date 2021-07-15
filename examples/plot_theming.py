@@ -3,7 +3,8 @@
 Changing Plot Colors
 ====================
 
-This example illustrates use of matplotlib and upsetplot color settings.
+This example illustrates use of matplotlib and upsetplot color settings, aside
+from matplotlib style sheets.
 
 Upsetplot provides some color settings:
 
