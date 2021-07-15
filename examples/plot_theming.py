@@ -4,7 +4,8 @@ Changing Plot Colors
 ====================
 
 This example illustrates use of matplotlib and upsetplot color settings, aside
-from matplotlib style sheets.
+from matplotlib style sheets, which can control colors as well as grid lines,
+fonts and tick display.
 
 Upsetplot provides some color settings:
 
