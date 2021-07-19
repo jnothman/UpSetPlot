@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
 from matplotlib.text import Text
+from matplotlib.colors import to_hex
+from matplotlib import cm
 
 from upsetplot import plot
 from upsetplot import UpSet
@@ -442,6 +444,147 @@ def test_add_catplot():
     upset.add_catplot('foobar', value='foo')
     with pytest.raises(AttributeError):
         upset.plot(fig)
+
+
+def _get_patch_data(axes, swap=False):
+    out = [{"y": patch.get_y(), "x": patch.get_x(),
+            "h": patch.get_height(), "w": patch.get_width(),
+            "c": patch.get_facecolor()}
+           for patch in axes.patches]
+    if swap:
+        out = [{"y": patch["x"], "x": patch["y"],
+                "h": patch["w"], "w": patch["h"],
+                "c": patch["c"]}
+               for patch in out]
+    return pd.DataFrame(out)
+
+
+def _get_color_to_label_from_legend(ax):
+    handles, labels = ax.get_legend_handles_labels()
+    color_to_label = {
+        patches[0].get_facecolor(): label
+        for patches, label in zip(handles, labels)
+    }
+    return color_to_label
+
+
+@pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
+@pytest.mark.parametrize('show_counts', [False, True])
+def test_add_stacked_bars(orientation, show_counts):
+    df = generate_samples()
+    df["label"] = (pd.cut(generate_samples().value + np.random.rand() / 2, 3)
+                   .cat.codes
+                   .map({0: "foo", 1: "bar", 2: "baz"}))
+
+    upset = UpSet(df, show_counts=show_counts, orientation=orientation)
+    upset.add_stacked_bars(by="label")
+    upset_axes = upset.plot()
+
+    int_axes = upset_axes["intersections"]
+    stacked_axes = upset_axes["extra1"]
+
+    is_vertical = orientation == 'vertical'
+    int_rects = _get_patch_data(int_axes, swap=is_vertical)
+    stacked_rects = _get_patch_data(stacked_axes, swap=is_vertical)
+
+    # check bar heights match between int_rects and stacked_rects
+    assert_series_equal(int_rects.groupby("x")["h"].sum(),
+                        stacked_rects.groupby("x")["h"].sum(),
+                        check_dtype=False)
+    # check count labels match (TODO: check coordinate)
+    assert ([elem.get_text() for elem in int_axes.texts] ==
+            [elem.get_text() for elem in stacked_axes.texts])
+
+    color_to_label = _get_color_to_label_from_legend(stacked_axes)
+    stacked_rects["label"] = stacked_rects["c"].map(color_to_label)
+    # check totals for each label
+    assert_series_equal(stacked_rects.groupby("label")["h"].sum(),
+                        df.groupby("label").size(),
+                        check_dtype=False, check_names=False)
+
+    label_order = [text_obj.get_text()
+                   for text_obj in stacked_axes.get_legend().get_texts()]
+    # label order should be lexicographic
+    assert label_order == sorted(label_order)
+
+    if orientation == "horizontal":
+        # order of labels in legend should match stack, top to bottom
+        for prev, curr in zip(label_order, label_order[1:]):
+            assert (stacked_rects.query("label == @prev")
+                    .sort_values("x")["y"].values >=
+                    stacked_rects.query("label == @curr")
+                    .sort_values("x")["y"].values).all()
+    else:
+        # order of labels in legend should match stack, left to right
+        for prev, curr in zip(label_order, label_order[1:]):
+            assert (stacked_rects.query("label == @prev")
+                    .sort_values("x")["y"].values <=
+                    stacked_rects.query("label == @curr")
+                    .sort_values("x")["y"].values).all()
+
+
+@pytest.mark.parametrize("colors, expected", [
+    (["blue", "red", "green"], ["blue", "red", "green"]),
+    ({"bar": "blue", "baz": "red", "foo": "green"}, ["blue", "red", "green"]),
+    ("Pastel1", ["#fbb4ae", "#b3cde3", "#ccebc5"]),
+    (cm.viridis, ["#440154", "#440256", "#450457"]),
+    (lambda x: cm.Pastel1(x), ["#fbb4ae", "#b3cde3", "#ccebc5"]),
+])
+def test_add_stacked_bars_colors(colors, expected):
+    df = generate_samples()
+    df["label"] = (pd.cut(generate_samples().value + np.random.rand() / 2, 3)
+                   .cat.codes
+                   .map({0: "foo", 1: "bar", 2: "baz"}))
+
+    upset = UpSet(df)
+    upset.add_stacked_bars(by="label", colors=colors,
+                           title="Count by gender")
+    upset_axes = upset.plot()
+    stacked_axes = upset_axes["extra1"]
+    color_to_label = _get_color_to_label_from_legend(stacked_axes)
+    label_to_color = {v: k for k, v in color_to_label.items()}
+    actual = [to_hex(label_to_color[label]) for label in ["bar", "baz", "foo"]]
+    expected = [to_hex(color) for color in expected]
+    assert actual == expected
+
+
+@pytest.mark.parametrize('int_sum_over', [False, True])
+@pytest.mark.parametrize('stack_sum_over', [False, True])
+@pytest.mark.parametrize('show_counts', [False, True])
+def test_add_stacked_bars_sum_over(int_sum_over, stack_sum_over, show_counts):
+    # A rough test of sum_over
+    df = generate_samples()
+    df["label"] = (pd.cut(generate_samples().value + np.random.rand() / 2, 3)
+                   .cat.codes
+                   .map({0: "foo", 1: "bar", 2: "baz"}))
+
+    upset = UpSet(df, sum_over="value" if int_sum_over else None,
+                  show_counts=show_counts)
+    upset.add_stacked_bars(by="label",
+                           sum_over="value" if stack_sum_over else None,
+                           colors='Pastel1')
+    upset_axes = upset.plot()
+
+    int_axes = upset_axes["intersections"]
+    stacked_axes = upset_axes["extra1"]
+
+    int_rects = _get_patch_data(int_axes)
+    stacked_rects = _get_patch_data(stacked_axes)
+
+    if int_sum_over == stack_sum_over:
+        # check bar heights match between int_rects and stacked_rects
+        assert_series_equal(int_rects.groupby("x")["h"].sum(),
+                            stacked_rects.groupby("x")["h"].sum(),
+                            check_dtype=False)
+        # and check labels match with show_counts
+        assert ([elem.get_text() for elem in int_axes.texts] ==
+                [elem.get_text() for elem in stacked_axes.texts])
+    else:
+        assert (int_rects.groupby("x")["h"].sum() !=
+                stacked_rects.groupby("x")["h"].sum()).all()
+        if show_counts:
+            assert ([elem.get_text() for elem in int_axes.texts] !=
+                    [elem.get_text() for elem in stacked_axes.texts])
 
 
 @pytest.mark.parametrize('x', [

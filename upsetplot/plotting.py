@@ -1,6 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-import itertools
+import typing
 
 import numpy as np
 import pandas as pd
@@ -364,31 +364,32 @@ class UpSet:
             return x, y
         return y, x
 
-    def _plot_bars(self, ax, data, title, colors=None):
+    def _plot_bars(self, ax, data, title, colors=None, use_labels=False):
         ax = self._reorient(ax)
         ax.set_autoscalex_on(False)
-        use_legend = getattr(data, "ndim", 2) == 2
         data_df = pd.DataFrame(data)
+        if self._horizontal:
+            data_df = data_df.loc[:, ::-1]  # reverse: top row is top of stack
 
         # TODO: colors should be broadcastable to data_df shape
         if callable(colors):
             colors = colors(range(data_df.shape[1]))
         elif isinstance(colors, (str, type(None))):
-            colors = itertools.repeat(colors)
+            colors = [colors] * len(data_df)
+
+        if self._horizontal:
+            colors = reversed(colors)
 
         x = np.arange(len(data_df))
         cum_y = None
         for (name, y), color in zip(data_df.items(), colors):
             rects = ax.bar(x, y, .5, cum_y,
                            color=color, zorder=10,
-                           label=name if use_legend else None,
+                           label=name if use_labels else None,
                            align='center')
             cum_y = y if cum_y is None else cum_y + y
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
-
-        if use_legend:
-            ax.legend()
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -407,12 +408,68 @@ class UpSet:
             data = gb.size()
         else:
             data = gb[sum_over].sum()
-        data = data.unstack(by)
-        self._plot_bars(ax, data=data, colors=colors, title=title)
+        data = data.unstack(by).fillna(0)
+        if isinstance(colors, str):
+            colors = matplotlib.cm.get_cmap(colors)
+        elif isinstance(colors, typing.Mapping):
+            colors = data.columns.map(colors).values
+            if pd.isna(colors).any():
+                raise KeyError("Some labels mapped by colors: %r" %
+                               data.columns[pd.isna(colors)].tolist())
+
+        self._plot_bars(ax, data=data, colors=colors, title=title,
+                        use_labels=True)
+
+        handles, labels = ax.get_legend_handles_labels()
+        if self._horizontal:
+            # Make legend order match visual stack order
+            ax.legend(reversed(handles), reversed(labels))
+        else:
+            ax.legend()
 
     def add_stacked_bars(self, by, sum_over=None, colors=None, elements=3,
                          title=None):
-        # TODO: docstring
+        """Add a stacked bar chart over subsets when :func:`plot` is called.
+
+        Used to plot categorical variable distributions within each subset.
+
+        .. versionadded: 0.6
+
+        Parameters
+        ----------
+        by : str
+            Column name within the dataframe for color coding the stacked bars,
+            containing discrete or categorical values.
+        sum_over : str, optional
+            Ordinarily the bars will chart the size of each group. sum_over
+            may specify a column which will be summed to determine the size
+            of each bar.
+        colors : Mapping, list-like, str or callable, optional
+            The facecolors to use for bars corresponding to each discrete
+            label, specified as one of:
+
+            Mapping
+                Maps from label to matplotlib-compatible color specification.
+            list-like
+                A list of matplotlib colors to apply to labels in order.
+            str
+                The name of a matplotlib colormap name.
+            callable
+                When called with the number of labels, this should return a
+                list-like of that many colors.  Matplotlib colormaps satisfy
+                this callable API.
+            None
+                Uses the matplotlib default colormap.
+        elements : int, default=3
+            Size of the axes counted in number of matrix elements.
+        title : str, optional
+            The axis title labelling bar length.
+
+        Returns
+        -------
+        None
+        """
+        # TODO: allow sort_by = {"lexical", "sum_squares", "rev_sum_squares"}
         self._subset_plots.append({'type': 'stacked_bars',
                                    'by': by,
                                    'sum_over': sum_over,
