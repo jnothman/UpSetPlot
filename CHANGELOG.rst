@@ -3,6 +3,9 @@ What's new in version 0.6
 
 [In Development]
 
+- Added `add_stacked_bars`, similar to `add_catplot` but to add stacked bar
+  charts to show discrete variable distributions within each subset.
+  (:issue:`137`)
 - Improved ability to control colors, and added a new example of same.
   Parameters ``other_dots_color`` and ``shading_color`` were added.
   ``facecolor`` will now default to white if
