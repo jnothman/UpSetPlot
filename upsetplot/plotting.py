@@ -1,6 +1,9 @@
 from __future__ import print_function, division, absolute_import
 
-import typing
+try:
+    import typing
+except ImportError:
+    import collections.abc as typing
 
 import numpy as np
 import pandas as pd
@@ -469,7 +472,8 @@ class UpSet:
         -------
         None
         """
-        # TODO: allow sort_by = {"lexical", "sum_squares", "rev_sum_squares"}
+        # TODO: allow sort_by = {"lexical", "sum_squares", "rev_sum_squares",
+        #                        list of labels}
         self._subset_plots.append({'type': 'stacked_bars',
                                    'by': by,
                                    'sum_over': sum_over,
