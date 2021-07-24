@@ -17,14 +17,14 @@ import os
 import re
 
 # project root
-sys.path.insert(0, os.path.abspath('..'))  # noqa
+sys.path.insert(0, os.path.abspath('..'))
 
-import matplotlib
+import matplotlib  # noqa
 
-matplotlib.use('agg')  # noqa
+matplotlib.use('agg')
 
-import sphinx_rtd_theme
-from upsetplot import __version__ as release
+import sphinx_rtd_theme  # noqa
+from upsetplot import __version__ as release  # noqa
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -50,6 +50,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx_issues',
+    'nbsphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -66,7 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'upsetplot'
-copyright = u'2018, Joel Nothman'
+copyright = u'2018-2020, Joel Nothman'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

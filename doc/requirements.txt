@@ -7,3 +7,4 @@ sphinx-gallery
 sphinx-issues
 seaborn
 scikit-learn
+nbsphinx

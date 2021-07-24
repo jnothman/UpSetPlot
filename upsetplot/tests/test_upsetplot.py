@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
+from matplotlib.text import Text
 
 from upsetplot import plot
 from upsetplot import UpSet
@@ -23,24 +24,35 @@ def is_ascending(seq):
     return sorted(seq) == list(seq)
 
 
+def get_all_texts(mpl_artist):
+    out = [text.get_text() for text in mpl_artist.findobj(Text)]
+    return [text for text in out if text]
+
+
 @pytest.mark.parametrize('x', [
     generate_counts(),
     generate_counts().iloc[1:-2],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     assert x.name == 'value'
-    for subset_size in ['auto', 'legacy', 'sum', 'count']:
+    for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):
                 _process_data(x, sort_by=sort_by,
                               sort_categories_by=sort_categories_by,
                               subset_size=subset_size, sum_over=sum_over)
 
-    df, intersections, totals = _process_data(
+    # shuffle input to test sorting
+    x = x.sample(frac=1., replace=False, random_state=0)
+
+    total, df, intersections, totals = _process_data(
         x, subset_size='auto', sort_by=sort_by,
         sort_categories_by=sort_categories_by, sum_over=None)
+
+    assert total == x.sum()
+
     assert intersections.name == 'value'
     x_reordered = (x
                    .reorder_levels(intersections.index.names)
@@ -52,11 +64,16 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
     if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
-    else:
+    elif sort_by == 'degree':
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
+    else:
+        find_first_in_orig = x_reordered.index.tolist().index
+        orig_order = list(map(find_first_in_orig,
+                              intersections.index.tolist()))
+        assert orig_order == sorted(orig_order)
     if sort_categories_by:
         assert is_ascending(totals.values[::-1])
 
@@ -80,84 +97,52 @@ def test_subset_size_series(x):
     kw = {'sort_by': 'cardinality',
           'sort_categories_by': 'cardinality',
           'sum_over': None}
-    df_sum, intersections_sum, totals_sum = _process_data(
+    total, df_sum, intersections_sum, totals_sum = _process_data(
         x, subset_size='sum', **kw)
+    assert total == intersections_sum.sum()
 
     if x.index.is_unique:
-        expected_warning = None
-    else:
-        expected_warning = FutureWarning
-    with pytest.warns(expected_warning):
-        df, intersections, totals = _process_data(
-            x, subset_size='legacy', **kw)
-    assert_frame_equal(df, df_sum)
-    assert_series_equal(intersections, intersections_sum)
-    assert_series_equal(totals, totals_sum)
-
-    if x.index.is_unique:
-        df, intersections, totals = _process_data(
+        total, df, intersections, totals = _process_data(
             x, subset_size='auto', **kw)
+        assert total == intersections.sum()
         assert_frame_equal(df, df_sum)
         assert_series_equal(intersections, intersections_sum)
         assert_series_equal(totals, totals_sum)
     else:
         with pytest.raises(ValueError):
-            _process_data(
-                x, subset_size='auto', **kw)
+            _process_data(x, subset_size='auto', **kw)
 
-    df_count, intersections_count, totals_count = _process_data(
+    total, df_count, intersections_count, totals_count = _process_data(
         x, subset_size='count', **kw)
-    df, intersections, totals = _process_data(
+    assert total == intersections_count.sum()
+    total, df, intersections, totals = _process_data(
         x.groupby(level=list(range(len(x.index.levels)))).count(),
         subset_size='sum', **kw)
+    assert total == intersections.sum()
     assert_series_equal(intersections, intersections_count, check_names=False)
     assert_series_equal(totals, totals_count)
-
-
-@pytest.mark.parametrize('sort_sets_by', [None, 'cardinality'])
-@pytest.mark.parametrize('x', [
-    generate_counts(),
-])
-def test_sort_sets_by_deprecation(x, sort_sets_by):
-    with pytest.warns(DeprecationWarning, match='sort_sets_by'):
-        upset1 = UpSet(x, sort_sets_by=sort_sets_by)
-    with pytest.warns(None):
-        upset2 = UpSet(x, sort_categories_by=sort_sets_by)
-
-    fig = matplotlib.figure.Figure()
-    upset1.plot(fig)
-    png1 = io.BytesIO()
-    fig.savefig(png1, format='raw')
-
-    fig = matplotlib.figure.Figure()
-    upset2.plot(fig)
-    png2 = io.BytesIO()
-    fig.savefig(png2, format='raw')
-
-    assert png1.getvalue() == png2.getvalue()
 
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_frame(x, sort_by, sort_categories_by):
+    # shuffle input to test sorting
+    x = x.sample(frac=1., replace=False, random_state=0)
+
     X = pd.DataFrame({'a': x})
 
-    with pytest.raises(ValueError, match='Please specify subset_size'):
-        _process_data(X, sort_by=sort_by,
-                      sort_categories_by=sort_categories_by,
-                      subset_size='legacy', sum_over=None)
-
     with pytest.warns(None):
-        df, intersections, totals = _process_data(
+        total, df, intersections, totals = _process_data(
             X, sort_by=sort_by, sort_categories_by=sort_categories_by,
             sum_over='a', subset_size='auto')
     assert df is not X
+    assert total == intersections.sum()
 
     # check equivalence to Series
-    df1, intersections1, totals1 = _process_data(
+    total1, df1, intersections1, totals1 = _process_data(
         x, sort_by=sort_by, sort_categories_by=sort_categories_by,
         subset_size='sum', sum_over=None)
 
@@ -168,9 +153,10 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check effect of extra column
     X = pd.DataFrame({'a': x, 'b': np.arange(len(x))})
-    df2, intersections2, totals2 = _process_data(
+    total2, df2, intersections2, totals2 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='a', subset_size='auto')
+    assert total2 == intersections2.sum()
     assert_series_equal(intersections, intersections2)
     assert_series_equal(totals, totals2)
     assert_frame_equal(df, df2.drop('b', axis=1))
@@ -178,9 +164,10 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check effect not dependent on order/name
     X = pd.DataFrame({'b': np.arange(len(x)), 'c': x})
-    df3, intersections3, totals3 = _process_data(
+    total3, df3, intersections3, totals3 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='c', subset_size='auto')
+    assert total3 == intersections3.sum()
     assert_series_equal(intersections, intersections3, check_names=False)
     assert intersections.name == 'a'
     assert intersections3.name == 'c'
@@ -190,12 +177,13 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
     # check subset_size='count'
     X = pd.DataFrame({'b': np.ones(len(x), dtype=int), 'c': x})
-    df4, intersections4, totals4 = _process_data(
+    total4, df4, intersections4, totals4 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='b', subset_size='auto')
-    df5, intersections5, totals5 = _process_data(
+    total5, df5, intersections5, totals5 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         subset_size='count', sum_over=None)
+    assert total5 == intersections5.sum()
     assert_series_equal(intersections4, intersections5, check_names=False)
     assert intersections4.name == 'b'
     assert intersections5.name == 'size'
@@ -211,9 +199,9 @@ def test_subset_size_frame(x):
     kw = {'sort_by': 'cardinality',
           'sort_categories_by': 'cardinality'}
     X = pd.DataFrame({'x': x})
-    df_sum, intersections_sum, totals_sum = _process_data(
+    total_sum, df_sum, intersections_sum, totals_sum = _process_data(
         X, subset_size='sum', sum_over='x', **kw)
-    df_count, intersections_count, totals_count = _process_data(
+    total_count, df_count, intersections_count, totals_count = _process_data(
         X, subset_size='count', sum_over=None, **kw)
 
     # error cases: sum_over=False
@@ -234,25 +222,18 @@ def test_subset_size_frame(x):
         _process_data(
             X, subset_size='count', sum_over='x', **kw)
 
-    # check subset_size='auto' or 'legacy' with sum_over=str => sum
-    for subset_size in ['auto', 'legacy']:
-        df, intersections, totals = _process_data(
-            X, subset_size=subset_size, sum_over='x', **kw)
-        assert_frame_equal(df, df_sum)
-        assert_series_equal(intersections, intersections_sum)
-        assert_series_equal(totals, totals_sum)
+    # check subset_size='auto' with sum_over=str => sum
+    total, df, intersections, totals = _process_data(
+        X, subset_size='auto', sum_over='x', **kw)
+    assert total == intersections.sum()
+    assert_frame_equal(df, df_sum)
+    assert_series_equal(intersections, intersections_sum)
+    assert_series_equal(totals, totals_sum)
 
     # check subset_size='auto' with sum_over=None => count
-    df, intersections, totals = _process_data(
+    total, df, intersections, totals = _process_data(
         X, subset_size='auto', sum_over=None, **kw)
-    assert_frame_equal(df, df_count)
-    assert_series_equal(intersections, intersections_count)
-    assert_series_equal(totals, totals_count)
-
-    # check legacy use of sum_over=False
-    with pytest.warns(DeprecationWarning, match='sum_over=False'):
-        df, intersections, totals = _process_data(
-            X, subset_size='legacy', sum_over=False, **kw)
+    assert total == intersections.sum()
     assert_frame_equal(df, df_count)
     assert_series_equal(intersections, intersections_count)
     assert_series_equal(totals, totals_count)
@@ -266,12 +247,13 @@ def test_not_unique(sort_by, sort_categories_by):
           'subset_size': 'sum',
           'sum_over': None}
     Xagg = generate_counts()
-    df1, intersections1, totals1 = _process_data(Xagg, **kw)
+    total1, df1, intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_samples()['value']
     Xunagg.loc[:] = 1
-    df2, intersections2, totals2 = _process_data(Xunagg, **kw)
+    total2, df2, intersections2, totals2 = _process_data(Xunagg, **kw)
     assert_series_equal(intersections1, intersections2,
                         check_dtype=False)
+    assert total2 == intersections2.sum()
     assert_series_equal(totals1, totals2, check_dtype=False)
     assert set(df1.columns) == {'_value', '_bin'}
     assert set(df2.columns) == {'_value', '_bin'}
@@ -281,7 +263,6 @@ def test_not_unique(sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},
-                                {'sort_by': None},
                                 {'sort_categories_by': 'blah'},
                                 {'sort_categories_by': True}])
 def test_param_validation(kw):
@@ -292,12 +273,23 @@ def test_param_validation(kw):
 
 @pytest.mark.parametrize('kw', [{},
                                 {'element_size': None},
-                                {'orientation': 'vertical'}])
+                                {'orientation': 'vertical'},
+                                {'intersection_plot_elements': 0},
+                                {'facecolor': 'red'},
+                                {'shading_color': 'lightgrey',
+                                 'other_dots_color': 'pink'}])
 def test_plot_smoke_test(kw):
     fig = matplotlib.figure.Figure()
     X = generate_counts(n_samples=100)
-    plot(X, fig, **kw)
+    axes = plot(X, fig, **kw)
     fig.savefig(io.BytesIO(), format='png')
+
+    attr = ('get_xlim'
+            if kw.get('orientation', 'horizontal') == 'horizontal'
+            else 'get_ylim')
+    lim = getattr(axes['matrix'], attr)()
+    expected_width = len(X)
+    assert expected_width == lim[1] - lim[0]
 
     # Also check fig is optional
     n_nums = len(plt.get_fignums())
@@ -317,15 +309,6 @@ def test_two_sets(set1, set2):
                        'set1': set1,
                        'set2': set2}).set_index(['set1', 'set2'])['val'],
          fig, subset_size='sum')
-
-
-def test_dataframe_raises():
-    fig = matplotlib.figure.Figure()
-    df = pd.DataFrame({'val': [5, 7],
-                       'set1': [False, True],
-                       'set2': [True, True]}).set_index(['set1', 'set2'])
-    with pytest.raises(ValueError, match='Please specify subset_size or '):
-        plot(df, fig)
 
 
 def test_vertical():
@@ -360,7 +343,8 @@ def test_element_size():
     assert np.all(np.diff(figwidths) > 0)
     aspect = np.divide(figwidths, figheights)
     # Font size stays constant, so aspect ratio decreases
-    assert np.all(np.diff(aspect) < 0)
+    assert np.all(np.diff(aspect) <= 1e-8)  # allow for near-equality
+    assert np.any(np.diff(aspect) < 1e-4)  # require some significant decrease
     # But doesn't decrease by much
     assert np.all(aspect[:-1] / aspect[1:] < 1.1)
 
@@ -371,6 +355,7 @@ def test_element_size():
     assert figsize_before == figsize_after
 
     # TODO: make sure axes are all within figure
+    # TODO: make sure text does not overlap axes, even with element_size=None
 
 
 def _walk_artists(el):
@@ -388,22 +373,43 @@ def _count_descendants(el):
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
-    X = generate_counts(n_samples=100)
-    plot(X, fig)
+    X = generate_counts(n_samples=10000)
+    plot(X, fig, orientation=orientation)
     n_artists_no_sizes = _count_descendants(fig)
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts=True)
+    plot(X, fig, orientation=orientation, show_counts=True)
     n_artists_yes_sizes = _count_descendants(fig)
     assert n_artists_yes_sizes - n_artists_no_sizes > 6
+    assert '9547' in get_all_texts(fig)  # set size
+    assert '283' in get_all_texts(fig)   # intersection size
 
     fig = matplotlib.figure.Figure()
-    plot(X, fig, show_counts='%0.2g')
+    plot(X, fig, orientation=orientation, show_counts='%0.2g')
     assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '9.5e+03' in get_all_texts(fig)
+    assert '2.8e+02' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_percentages=True)
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '95.5%' in get_all_texts(fig)
+    assert '2.8%' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_counts=True,
+         show_percentages=True)
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    if orientation == 'vertical':
+        assert '9547\n(95.5%)' in get_all_texts(fig)
+        assert '283 (2.8%)' in get_all_texts(fig)
+    else:
+        assert '9547 (95.5%)' in get_all_texts(fig)
+        assert '283\n(2.8%)' in get_all_texts(fig)
 
     with pytest.raises(ValueError):
         fig = matplotlib.figure.Figure()
-        plot(X, fig, show_counts='%0.2h')
+        plot(X, fig, orientation=orientation, show_counts='%0.2h')
 
 
 def test_add_catplot():
@@ -439,3 +445,108 @@ def test_add_catplot():
     upset.add_catplot('foobar', value='foo')
     with pytest.raises(AttributeError):
         upset.plot(fig)
+
+
+@pytest.mark.parametrize('x', [
+    generate_counts(),
+])
+def test_index_must_be_bool(x):
+    # Truthy ints are okay
+    x = x.reset_index()
+    x[['cat0', 'cat2', 'cat2']] = x[['cat0', 'cat1', 'cat2']].astype(int)
+    x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
+
+    UpSet(x)
+
+    # other ints are not
+    x = x.reset_index()
+    x[['cat0', 'cat2', 'cat2']] = x[['cat0', 'cat1', 'cat2']] + 1
+    x = x.set_index(['cat0', 'cat1', 'cat2']).iloc[:, 0]
+    with pytest.raises(ValueError, match='not boolean'):
+        UpSet(x)
+
+
+@pytest.mark.parametrize(
+    "filter_params, expected",
+    [
+        ({"min_subset_size": 623},
+         {(True, False, False): 884,
+          (True, True, False): 1547,
+          (True, False, True): 623,
+          (True, True, True): 990,
+          }),
+        ({"min_subset_size": 800, "max_subset_size": 990},
+         {(True, False, False): 884,
+          (True, True, True): 990,
+          }),
+        ({"min_degree": 2},
+         {(True, True, False): 1547,
+          (True, False, True): 623,
+          (False, True, True): 258,
+          (True, True, True): 990,
+          }),
+        ({"min_degree": 2, "max_degree": 2},
+         {(True, True, False): 1547,
+          (True, False, True): 623,
+          (False, True, True): 258,
+          }),
+        ({"max_subset_size": 500, "max_degree": 2},
+         {(False, False, False): 220,
+          (False, True, False): 335,
+          (False, False, True): 143,
+          (False, True, True): 258,
+          }),
+    ]
+)
+@pytest.mark.parametrize('sort_by', ['cardinality', 'degree'])
+def test_filter_subsets(filter_params, expected, sort_by):
+    data = generate_samples(seed=0, n_samples=5000, n_categories=3)
+    # data =
+    #   cat1   cat0   cat2
+    #   False  False  False     220
+    #   True   False  False     884
+    #   False  True   False     335
+    #          False  True      143
+    #   True   True   False    1547
+    #          False  True      623
+    #   False  True   True      258
+    #   True   True   True      990
+    upset_full = UpSet(data, subset_size='auto', sort_by=sort_by)
+    upset_filtered = UpSet(data, subset_size='auto',
+                           sort_by=sort_by,
+                           **filter_params)
+    intersections = upset_full.intersections
+    df = upset_full._df
+    # check integrity of expected, just to be sure
+    for key, value in expected.items():
+        assert intersections.loc[key] == value
+    subset_intersections = intersections[
+        intersections.index.isin(list(expected.keys()))]
+    subset_df = df[df.index.isin(list(expected.keys()))]
+    assert len(subset_intersections) < len(intersections)
+    assert_series_equal(upset_filtered.intersections, subset_intersections)
+    assert_frame_equal(upset_filtered._df.drop("_bin", axis=1),
+                       subset_df.drop("_bin", axis=1))
+    # category totals should not be affected
+    assert_series_equal(upset_full.totals, upset_filtered.totals)
+
+
+@pytest.mark.parametrize('x', [
+    generate_counts(n_categories=3),
+    generate_counts(n_categories=8),
+    generate_counts(n_categories=15),
+])
+@pytest.mark.parametrize('orientation', [
+    'horizontal',
+    'vertical',
+])
+def test_matrix_plot_margins(x, orientation):
+    """Non-regression test addressing a bug where there is are large whitespace
+       margins around the matrix when the number of intersections is large"""
+    axes = plot(x, orientation=orientation)
+
+    # Expected behavior is that each matrix column takes up one unit on x-axis
+    expected_width = len(x)
+    attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
+    lim = getattr(axes['matrix'], attr)()
+    assert expected_width == lim[1] - lim[0]

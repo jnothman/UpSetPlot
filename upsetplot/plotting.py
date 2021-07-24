@@ -1,12 +1,10 @@
 from __future__ import print_function, division, absolute_import
 
-import warnings
-import itertools
-
 import numpy as np
 import pandas as pd
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib import colors
 from matplotlib.tight_layout import get_renderer
 
 from .data import CategorizedCounts
@@ -59,7 +57,7 @@ def _aggregate_data(df, subset_size, sum_over):
     aggregated : Series
         aggregates
     """
-    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum', 'legacy']
+    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum']
     if subset_size not in _SUBSET_SIZE_VALUES:
         raise ValueError('subset_size should be one of %s. Got %r'
                          % (_SUBSET_SIZE_VALUES, subset_size))
@@ -68,15 +66,9 @@ def _aggregate_data(df, subset_size, sum_over):
         input_name = df.name
         df = pd.DataFrame({'_value': df})
 
-        if not df.index.is_unique:
-            if subset_size == 'legacy':
-                warnings.warn('From version 0.4, passing a Series as data '
-                              'with non-unqiue groups will raise an error '
-                              'unless subset_size="sum" or "count".',
-                              FutureWarning)
-            if subset_size == 'auto':
-                raise ValueError('subset_size="auto" cannot be used for a '
-                                 'Series with non-unique groups.')
+        if subset_size == 'auto' and not df.index.is_unique:
+            raise ValueError('subset_size="auto" cannot be used for a '
+                             'Series with non-unique groups.')
         if sum_over is not None:
             raise ValueError('sum_over is not applicable when the input is a '
                              'Series')
@@ -86,17 +78,8 @@ def _aggregate_data(df, subset_size, sum_over):
             sum_over = '_value'
     else:
         # DataFrame
-        if subset_size == 'legacy' and sum_over is None:
-            raise ValueError('Please specify subset_size or sum_over for a '
-                             'DataFrame.')
-        elif subset_size == 'legacy' and sum_over is False:
-            warnings.warn('sum_over=False will not be supported from version '
-                          '0.4. Use subset_size="auto" or "count" '
-                          'instead.', DeprecationWarning)
-        elif subset_size in ('auto', 'sum') and sum_over is False:
-            # remove this after deprecation
-            raise ValueError('sum_over=False is not supported when '
-                             'subset_size=%r' % subset_size)
+        if sum_over is False:
+            raise ValueError('Unsupported value for sum_over: False')
         elif subset_size == 'auto' and sum_over is None:
             sum_over = False
         elif subset_size == 'count':
@@ -110,7 +93,7 @@ def _aggregate_data(df, subset_size, sum_over):
                                  'subset_size="sum" and a DataFrame is '
                                  'provided.')
 
-    gb = df.groupby(level=list(range(df.index.nlevels)))
+    gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
     if sum_over is False:
         aggregated = gb.size()
         aggregated.name = 'size'
@@ -125,16 +108,83 @@ def _aggregate_data(df, subset_size, sum_over):
     return df, aggregated
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
+def _check_index(df):
+    # check all indices are boolean
+    if not all(set([True, False]) >= set(level)
+               for level in df.index.levels):
+        raise ValueError('The DataFrame has values in its index that are not '
+                         'boolean')
+    df = df.copy(deep=False)
+    # XXX: this may break if input is not MultiIndex
+    kw = {'levels': [x.astype(bool) for x in df.index.levels],
+          'names': df.index.names,
+          }
+    if hasattr(df.index, 'codes'):
+        # compat for pandas <= 0.20
+        kw['codes'] = df.index.codes
+    else:
+        kw['labels'] = df.index.labels
+    df.index = pd.MultiIndex(**kw)
+    return df
+
+
+def _filter_subsets(df, agg,
+                    min_subset_size, max_subset_size,
+                    min_degree, max_degree):
+    subset_mask = True
+    if min_subset_size is not None:
+        subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
+    if max_subset_size is not None:
+        subset_mask = np.logical_and(subset_mask, agg <= max_subset_size)
+    if (min_degree is not None and min_degree >= 0) or max_degree is not None:
+        degree = agg.index.to_frame().sum(axis=1)
+        if min_degree is not None:
+            subset_mask = np.logical_and(subset_mask, degree >= min_degree)
+        if max_degree is not None:
+            subset_mask = np.logical_and(subset_mask, degree <= max_degree)
+
+    if subset_mask is True:
+        return df, agg
+
+    agg = agg[subset_mask]
+    df = df[df.index.isin(agg.index)]
+    return df, agg
+
+
+def _process_data(df, sort_by, sort_categories_by, subset_size,
+                  sum_over, min_subset_size=None, max_subset_size=None,
+                  min_degree=None, max_degree=None):
     df, agg = _aggregate_data(df, subset_size, sum_over)
+    total = agg.sum()
+    df = _check_index(df)
+    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
+              for name in agg.index.names]
+    totals = pd.Series(totals, index=agg.index.names)
 
-    agg = CategorizedCounts(agg).sort(sort_by=sort_by,
-                                      sort_categories_by=sort_categories_by)
-    agg = agg.counts  # remove later
+    # filter subsets:
+    df, agg = _filter_subsets(df, agg,
+                              min_subset_size, max_subset_size,
+                              min_degree, max_degree)
 
-    min_value = 0
-    max_value = np.inf
-    agg = agg[np.logical_and(agg >= min_value, agg <= max_value)]
+    # sort:
+    if sort_categories_by == 'cardinality':
+        totals.sort_values(ascending=False, inplace=True)
+    elif sort_categories_by is not None:
+        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
+    df = df.reorder_levels(totals.index.values)
+    agg = agg.reorder_levels(totals.index.values)
+
+    if sort_by == 'cardinality':
+        agg = agg.sort_values(ascending=False)
+    elif sort_by == 'degree':
+        index_tuples = sorted(agg.index,
+                              key=lambda x: (sum(x),) + tuple(reversed(x)))
+        agg = agg.reindex(pd.MultiIndex.from_tuples(index_tuples,
+                                                    names=agg.index.names))
+    elif sort_by is None:
+        pass
+    else:
+        raise ValueError('Unknown sort_by: %r' % sort_by)
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -151,8 +201,13 @@ def _process_data(df, sort_by, sort_categories_by, subset_size, sum_over):
     df['_bin'] = pd.Series(df_packed).map(
         pd.Series(np.arange(len(data_packed)),
                   index=data_packed))
+    return total, df, agg, totals
 
-    return df, agg, totals
+
+def _multiply_alpha(c, mult):
+    r, g, b, a = colors.to_rgba(c)
+    a *= mult
+    return colors.to_hex((r, g, b, a), keep_alpha=True)
 
 
 class _Transposed:
@@ -198,6 +253,12 @@ class _Transposed:
         'set_figheight': 'set_figwidth',
         'set_xlabel': 'set_ylabel',
         'set_ylabel': 'set_xlabel',
+        'set_xlim': 'set_ylim',
+        'set_ylim': 'set_xlim',
+        'get_xlim': 'get_ylim',
+        'get_ylim': 'get_xlim',
+        'set_autoscalex_on': 'set_autoscaley_on',
+        'set_autoscaley_on': 'set_autoscalex_on',
     }
 
 
@@ -226,20 +287,23 @@ class UpSet:
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
-    sort_by : {'cardinality', 'degree'}
+    sort_by : {'cardinality', 'degree', None}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
-        intersected.
+        intersected. If None, the order they appear in the data input is
+        used.
+
+        .. versionchanged: 0.5
+            Setting None was added.
     sort_categories_by : {'cardinality', None}
         Whether to sort the categories by total cardinality, or leave them
         in the provided order.
 
         .. versionadded: 0.3
-            Replaces sort_sets_by
     subset_size : {'auto', 'count', 'sum'}
         Configures how to calculate the size of a subset. Choices are:
 
-        'auto'
+        'auto' (default)
             If `data` is a DataFrame, count the number of rows in each group,
             unless `sum_over` is specified.
             If `data` is a Series with at most one row for each group, use
@@ -250,19 +314,45 @@ class UpSet:
         'sum'
             Sum the value of the `data` Series, or the DataFrame field
             specified by `sum_over`.
-
-        Until version 0.4, the default is 'legacy' which uses `sum_over` to
-        control this behaviour. From version 0.4, 'auto' will be default.
     sum_over : str or None
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
+    min_subset_size : int, optional
+        Minimum size of a subset to be shown in the plot. All subsets with
+        a size smaller than this threshold will be omitted from plotting.
+        Size may be a sum of values, see `subset_size`.
 
-        If `subset_size='legacy'`, `sum_over` must be specified when `data` is
-        a DataFrame. If False, the intersection plot will show the count of
-        each subset. Otherwise, it shows the sum of the specified field.
-    facecolor : str
-        Color for bar charts and dots.
+        .. versionadded: 0.5
+    max_subset_size : int, optional
+        Maximum size of a subset to be shown in the plot. All subsets with
+        a size greater than this threshold will be omitted from plotting.
+
+        .. versionadded: 0.5
+    min_degree : int, optional
+        Minimum degree of a subset to be shown in the plot.
+
+        .. versionadded: 0.5
+    max_degree : int, optional
+        Maximum degree of a subset to be shown in the plot.
+
+        .. versionadded: 0.5
+    facecolor : 'auto' or matplotlib color or float
+        Color for bar charts and active dots. Defaults to black if
+        axes.facecolor is a light color, otherwise white.
+
+        .. versionchanged: 0.6
+            Before 0.6, the default was 'black'
+    other_dots_color : matplotlib color or float
+        Color for shading of inactive dots, or opacity (between 0 and 1)
+        applied to facecolor.
+
+        .. versionadded: 0.6
+    shading_color : matplotlib color or float
+        Color for shading of odd rows in matrix and totals, or opacity (between
+        0 and 1) applied to facecolor.
+
+        .. versionadded: 0.6
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple
         categories being intersected.
@@ -270,7 +360,10 @@ class UpSet:
         Side length in pt. If None, size is estimated to fit figure
     intersection_plot_elements : int
         The intersections plot should be large enough to fit this many matrix
-        elements.
+        elements. Set to 0 to disable intersection size bars.
+
+        .. versionchanged: 0.4
+            Setting to 0 is handled.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements.
@@ -278,43 +371,60 @@ class UpSet:
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
         For example, '%d' is equivalent to True.
-    sort_sets_by
-        .. deprecated: 0.3
-            Replaced by sort_categories_by, this parameter will be removed in
-            version 0.4.
+    show_percentages : bool, default=False
+        Whether to label the intersection size bars with the percentage
+        of the intersection relative to the total dataset.
+        This may be applied with or without show_counts.
+
+        .. versionadded: 0.4
     """
     _default_figsize = (10, 6)
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
                  sort_categories_by='cardinality',
-                 subset_size='legacy', sum_over=None,
-                 facecolor='black',
+                 subset_size='auto', sum_over=None,
+                 min_subset_size=None, max_subset_size=None,
+                 min_degree=None, max_degree=None,
+                 facecolor='auto', other_dots_color=.18, shading_color=.05,
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', sort_sets_by='deprecated'):
+                 show_counts='', show_percentages=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
+        if facecolor == 'auto':
+            bgcolor = matplotlib.rcParams.get('axes.facecolor', 'white')
+            r, g, b, a = colors.to_rgba(bgcolor)
+            lightness = colors.rgb_to_hsv((r, g, b))[-1] * a
+            facecolor = 'black' if lightness >= .5 else 'white'
         self._facecolor = facecolor
+        self._shading_color = (_multiply_alpha(facecolor, shading_color)
+                               if isinstance(shading_color, float)
+                               else shading_color)
+        self._other_dots_color = (_multiply_alpha(facecolor, other_dots_color)
+                                  if isinstance(other_dots_color, float)
+                                  else other_dots_color)
         self._with_lines = with_lines
         self._element_size = element_size
         self._totals_plot_elements = totals_plot_elements
         self._subset_plots = [{'type': 'default',
                                'id': 'intersections',
                                'elements': intersection_plot_elements}]
+        if not intersection_plot_elements:
+            self._subset_plots.pop()
         self._show_counts = show_counts
+        self._show_percentages = show_percentages
 
-        if sort_sets_by != 'deprecated':
-            sort_categories_by = sort_sets_by
-            warnings.warn('sort_sets_by was deprecated in version 0.3 and '
-                          'will be removed in version 0.4', DeprecationWarning)
-
-        (self._df, self.intersections,
+        (self.total, self._df, self.intersections,
          self.totals) = _process_data(data,
                                       sort_by=sort_by,
                                       sort_categories_by=sort_categories_by,
                                       subset_size=subset_size,
-                                      sum_over=sum_over)
+                                      sum_over=sum_over,
+                                      min_subset_size=min_subset_size,
+                                      max_subset_size=max_subset_size,
+                                      min_degree=min_degree,
+                                      max_degree=max_degree)
         if not self._horizontal:
             self.intersections = self.intersections[::-1]
 
@@ -374,6 +484,7 @@ class UpSet:
         else:
             kw['orient'] = 'h'
             kw['x'] = value
+            df = df.assign(_bin=df["_bin"].max() - df["_bin"])
             kw['y'] = '_bin'
         import seaborn
         kw['ax'] = ax
@@ -401,34 +512,36 @@ class UpSet:
 
         # Determine text size to determine figure size / spacing
         r = get_renderer(fig)
-        t = fig.text(0, 0, '\n'.join(self.totals.index.values))
+        text_kw = {"size": matplotlib.rcParams['xtick.labelsize']}
+        # adding "x" ensures a margin
+        t = fig.text(0, 0, '\n'.join(str(label) + "x"
+                                     for label in self.totals.index.values),
+                     **text_kw)
         textw = t.get_window_extent(renderer=r).width
         t.remove()
 
-        MAGIC_MARGIN = 10  # FIXME
         figw = self._reorient(fig.get_window_extent(renderer=r)).width
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
+        fig = self._reorient(fig)
 
+        non_text_nelems = len(self.intersections) + self._totals_plot_elements
         if self._element_size is None:
-            colw = (figw - textw - MAGIC_MARGIN) / (len(self.intersections) +
-                                                    self._totals_plot_elements)
+            colw = (figw - textw) / non_text_nelems
         else:
-            fig = self._reorient(fig)
             render_ratio = figw / fig.get_figwidth()
             colw = self._element_size / 72 * render_ratio
-            figw = (colw * (len(self.intersections) +
-                            self._totals_plot_elements) +
-                    MAGIC_MARGIN + textw)
+            figw = colw * (non_text_nelems + np.ceil(textw / colw) + 1)
             fig.set_figwidth(figw / render_ratio)
             fig.set_figheight((colw * (n_cats + sizes.sum())) /
                               render_ratio)
 
-        text_nelems = int(np.ceil(figw / colw - (len(self.intersections) +
-                                                 self._totals_plot_elements)))
+        text_nelems = int(np.ceil(figw / colw - non_text_nelems))
+        # print('textw', textw, 'figw', figw, 'colw', colw,
+        #       'ncols', figw/colw, 'text_nelems', text_nelems)
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
-        gridspec = GS(*self._swapaxes(n_cats + sizes.sum(),
+        gridspec = GS(*self._swapaxes(n_cats + (sizes.sum() or 0),
                                       n_inters + text_nelems +
                                       self._totals_plot_elements),
                       hspace=1)
@@ -449,8 +562,8 @@ class UpSet:
             cumsizes = np.cumsum(sizes)
             for start, stop, plot in zip(np.hstack([[0], cumsizes]), cumsizes,
                                          self._subset_plots):
-                out[plot['id']] = gridspec[-n_inters:,
-                                           start + n_cats:stop + n_cats]
+                out[plot['id']] = \
+                    gridspec[-n_inters:, start + n_cats:stop + n_cats]
         return out
 
     def plot_matrix(self, ax):
@@ -461,7 +574,7 @@ class UpSet:
         n_cats = data.index.nlevels
 
         idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array(['lightgrey'] * len(data) * n_cats, dtype='O')
+        c = np.array([self._other_dots_color] * len(data) * n_cats, dtype='O')
         c[idx] = self._facecolor
         x = np.repeat(np.arange(len(data)), n_cats)
         y = np.tile(np.arange(n_cats), len(data))
@@ -489,11 +602,14 @@ class UpSet:
         if not self._horizontal:
             ax.yaxis.set_ticks_position('top')
         ax.set_frame_on(False)
+        ax.set_xlim(-.5, x[-1] + .5, auto=False)
+        ax.grid(False)
 
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
         """
         ax = self._reorient(ax)
+        ax.set_autoscalex_on(False)
         rects = ax.bar(np.arange(len(self.intersections)), self.intersections,
                        .5, color=self._facecolor, zorder=10, align='center')
 
@@ -508,16 +624,43 @@ class UpSet:
         ax.set_ylabel('Intersection size')
 
     def _label_sizes(self, ax, rects, where):
-        if not self._show_counts:
+        if not self._show_counts and not self._show_percentages:
             return
-        fmt = '%d' if self._show_counts is True else self._show_counts
+        if self._show_counts is True:
+            count_fmt = "%d"
+        else:
+            count_fmt = self._show_counts
+        if self._show_percentages is True:
+            pct_fmt = "%.1f%%"
+        else:
+            pct_fmt = self._show_percentages
+
+        if count_fmt and pct_fmt:
+            if where == 'top':
+                fmt = '%s\n(%s)' % (count_fmt, pct_fmt)
+            else:
+                fmt = '%s (%s)' % (count_fmt, pct_fmt)
+
+            def make_args(val):
+                return val, 100 * val / self.total
+        elif count_fmt:
+            fmt = count_fmt
+
+            def make_args(val):
+                return val,
+        else:
+            fmt = pct_fmt
+
+            def make_args(val):
+                return 100 * val / self.total,
+
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
                 width = rect.get_width()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
+                        fmt % make_args(width),
                         ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -525,14 +668,15 @@ class UpSet:
                 width = rect.get_width()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % width,
+                        fmt % make_args(width),
                         ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
                 height = rect.get_height()
                 ax.text(rect.get_x() + rect.get_width() * .5,
-                        height + margin, fmt % height,
+                        height + margin,
+                        fmt % make_args(height),
                         ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)
@@ -553,6 +697,7 @@ class UpSet:
             ax.spines[self._reorient(x)].set_visible(False)
         ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
+        ax.yaxis.grid(False)
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
@@ -560,7 +705,7 @@ class UpSet:
         for i in range(0, len(self.totals), 2):
             rect = plt.Rectangle(self._swapaxes(0, i - .4),
                                  *self._swapaxes(*(1, .8)),
-                                 facecolor='#f5f5f5', lw=0, zorder=0)
+                                 facecolor=self._shading_color, lw=0, zorder=0)
             ax.add_patch(rect)
         ax.set_frame_on(False)
         ax.tick_params(
@@ -572,6 +717,7 @@ class UpSet:
             top=False,
             labelbottom=False,
             labelleft=False)
+        ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_xticklabels([])

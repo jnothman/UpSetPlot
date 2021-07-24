@@ -1,3 +1,62 @@
+What's new in version 0.6
+-------------------------
+
+[In Development]
+
+- Improved ability to control colors, and added a new example of same.
+  Parameters ``other_dots_color`` and ``shading_color`` were added.
+  ``facecolor`` will now default to white if
+  ``matplotlib.rcParams['axes.facecolor']`` is dark. (:issue:`138`)
+
+What's new in version 0.5
+-------------------------
+
+- Support using input intersection order with ``sort_by=None`` (:issue:`133`
+  with thanks to :user:`Brandon B <outlace>`).
+- Add parameters for filtering by subset size (with thanks to
+  :user:`Sichong Peng <SichongP>`) and degree. (:issue:`134`)
+- Fixed an issue where tick labels were not given enough space and overlapped
+  category totals. (:issue:`132`)
+- Fixed an issue where our implementation of ``sort_by='degree'`` apparently
+  gave incorrect results for some inputs and versions of Pandas. (:issue:`134`)
+
+What's new in version 0.4.4
+---------------------------
+
+- Fixed a regresion which caused the first column to be hidden
+  (:issue:`125`)
+
+What's new in version 0.4.3
+---------------------------
+
+- Fixed issue with the order of catplots being reversed for vertical plots
+  (:issue:`122` with thanks to :user:`Enrique Fernandez-Blanco <ennanco>`)
+- Fixed issue with the x limits of vertical plots (:issue:`121`).
+
+What's new in version 0.4.2
+---------------------------
+
+- Fixed large x-axis plot margins with high number of unique intersections
+  (:issue:`106` with thanks to :user:`Yidi Huang <huangy6>`)
+
+What's new in version 0.4.1
+---------------------------
+
+- Fixed the calculation of percentage which was broken in 0.4.0. (:issue:`101`)
+
+What's new in version 0.4
+-------------------------
+
+- Added option to display both the absolute frequency and the percentage of
+  the total for each intersection and category. (:issue:`89` with thanks to
+  :user:`Carlos Melus <maziello>` and :user:`Aaron Rosenfeld <arosenfeld>`)
+- Improved efficiency where there are many categories, but valid combinations
+  are sparse, if `sort_by='degree'`. (:issue:`82`)
+- Permit truthy (not necessarily bool) values in index.
+  (:issue:`74` with thanks to :user:`ZaxR`)
+- `intersection_plot_elements` can now be set to 0 to hide the intersection
+  size plot when `add_catplot` is used. (:issue:`80`)
+
 What's new in version 0.3
 -------------------------
 
