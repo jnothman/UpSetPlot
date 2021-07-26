@@ -269,6 +269,24 @@ def from_contents(contents, data=None, id_column='id'):
 
 # TODO: Test use of CategorizedData and CategorizedCounts passed to plot()
 
+
+# Minimal data representation is:
+# * data with unique index
+# * indexed binary-packed masks
+# * category names
+# * a function to reorder categories by operating on binary-packed masks
+
+def _pack_bitmask(X):
+    X = pd.DataFrame(X)
+    if X.shape[1] <= 8:
+        return np.packbits(X.values.astype(bool), axis=1) >> (8 - X.shape[1])
+    out = 0
+    for i, (_, col) in enumerate(X.items()):
+        out *= 2
+        out += col
+    return out
+
+
 class CategorizedData:
     """Represents data where each sample is assigned to one or more categories
 
@@ -288,46 +306,50 @@ class CategorizedData:
     data : DataFrame
     """
 
-    def __init__(self, categories, data=None):
-        data = pd.DataFrame(data)
+    def __init__(self, indicators, data=None, category_names=None):
+        indicators = pd.DataFrame(indicators)
+        if indicators.shape[1] == 1 and category_names is not None and indicators.dtypes[0].kind in 'iu':
+            # already a bit mask?
+            if indicators.max() >= 2 ** len(category_names) or indicators.max() < 0:
+                raise ValueError("Got something that looked like a bit mask, "
+                                 "but its values were out of "
+                                 "[0, 2 ** n_categories - 1]")
+            indicators = indicators.loc[:, 0]
+        else:
+            if category_names is not None:
+                indicators.columns = category_names
+            else:
+                category_names = indicator.columns
 
-        if hasattr(categories, 'dtype'):
-            categories = pd.DataFrame(categories)
-
-            invalid = set(categories.columns) & set(data.columns)
-            if invalid:
-                raise ValueError('Category names and data columns must be '
-                                 'unique. Got overlap: %r' % sorted(invalid))
-
-            not_in_data = categories.drop(data.index, axis=0, errors='ignore')
-            if len(not_in_data):
-                raise ValueError('Found identifiers in categories that are '
-                                 'not in data: %r' % not_in_data.index.values)
-
-            data = _concat([categories, data])
-            categories = categories.columns
-
+            if not all(dtype.kind == 'b' for dtype in indicators.dtypes) and not all(
+                set([True, False]) >= set(indicators[col].unique()) for col in indicators.columns):
+                raise ValueError('The indicators must all be boolean')
+                
+            indicators = _pack_bitmask(indicators)
+        indicators.index = getattr(data, 'index', None)
+        self.indicator_bitmask = indicators
         self.data = data
-        self.categories = categories
-        if not categories:
-            raise ValueError('Need at least one entry in categories')
-        if not (set(categories) <= set(data.columns)):
-            missing = sorted(set(data.columns) - set(categories))
-            raise ValueError('categories should be a subset of '
-                             'data.columns. '
-                             'Not in data.columns: {!r}'.format(missing))
-        for col in categories:
-            if data[col].dtype.kind != 'b':
-                raise ValueError('categories should have boolean '
-                                 'dtype. Column {!r} has dtype {!r}.'.format(
-                                     col, data[col].dtype.kind))
+        self.category_names = category_names
+
+    @classmethod
+    def from_indicator_columns(cls, indicators, data=None):
+        """
+
+        Pulls out category columns from data
+        """
+        if isinstance(indicators[0], (str, int)):
+            assert data is not None
+            assert all(column in data for column in indicators)
+            indicators = data[indicators]
+
+        return cls(indicators=indicators, data=data)
 
     @classmethod
     def from_memberships(cls, memberships, data=None):
         indicators = _memberships_to_indicators(memberships)
         if data is None:
             data = indicators[[]]
-        return cls(data=data, categories=indicators)
+        return cls(data=data, indicators=indicators)
 
     @classmethod
     def from_memberships_str(cls, memberships, data=None,
@@ -345,10 +367,24 @@ class CategorizedData:
         indicators = _contents_to_indicators(contents)
         if data is None:
             data = indicators[[]]
-        return cls(data=data, categories=indicators)
+        return cls(data=data, indicators=indicators)
 
-    def _get_legacy_frame(self):
-        return self.data.set_index(self.categories)
+    def to_frame_indexed_by_indicators(self):
+        """Represent self as a DataFrame indexed by category indicators
+        """
+        return self.data.set_index(self._get_unpack_map().loc[self.indicator_bitmask])
+
+    def _get_unpack_map(self):
+        assert len(self.category_names) < 8
+        return pd.DataFrame(np.unpackbits(self.indicator_bitmask).reshape(-1, 8).astype(bool),
+                            columns=self.category_names)
+
+    def reorder_categories(self, new_order):
+        """Create a new CategorizedData with the same data but reordered categories
+        """
+        new_bitmask = _pack_bitmask(self._get_unpack_map()[list(new_order)])
+        return type(self)(indicators=new_bitmask, data=self.data,
+                          category_names=new_order)
 
     def get_counts(self, weight=None):
         """
@@ -357,7 +393,7 @@ class CategorizedData:
         weight : str
             Column to use as weight
         """
-        gb = self.frame.groupby(self.categories)
+        gb = self.frame.groupby(self.indicator_bitmask)
         if weight is None:
             return CategorizedCounts(gb.size())
         else:
@@ -367,7 +403,7 @@ class CategorizedData:
 class CategorizedCounts:
 
     def __init__(self, counts):
-        # TODO: check index is boolean and unique
+        # TODO: handle indicator bitmask
         assert all(set([True, False]) >= set(level)
                    for level in counts.index.levels)
         assert counts.index.is_unique
@@ -413,9 +449,6 @@ class CategorizedCounts:
             self.counts = self.counts.reindex(index=o.index, copy=False)
         else:
             raise ValueError('Unknown sort_by: %r' % sort_by)
-
-    def clip(self, lower=0, upper=np.inf, inplace=False):
-        
 
 
 class OldVennData:
