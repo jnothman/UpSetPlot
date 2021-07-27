@@ -85,6 +85,91 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
                                 n_categories=n_sets)['value']
 
 
+def from_indicators(indicators, data=None):
+    """Load category membership indicated by a boolean indicator matrix
+
+    Parameters
+    ----------
+    indicators : DataFrame-like of booleans, Sequence of str, or callable
+        Specifies the category indicators (boolean mask arrays) within
+        ``data``, i.e. which records in ``data`` belong to which categories.
+
+        If 'index', then ``data.index`` must be a MultiIndex where each level
+        is binary, corresponding to category membership.
+
+        If a list of strings, these should be column names found in ``data``
+        whose values are boolean mask arrays.
+
+        If a DataFrame, its columns should correspond to categories, and its
+        index should match those in ``data``, values should be True where
+        a data record is in that category, and False or NA otherwise.
+
+        If callable, it will be applied to ``data`` after the latter is
+        converted to a Series or DataFrame.
+
+    data : Series-like or DataFrame-like, optional
+        If given, the index of category membership is attached to this data.
+        It must have the same length as `indicators`.
+        If not given, the series will contain the value 1.
+    """
+    if data is not None:
+        data = _convert_to_pandas(data)
+
+    if callable(indicators):
+        if data is None:
+            raise ValueError("data must be provided when indicators is "
+                             "callable")
+        indicators = indicators(data)
+
+    if isinstance(indicators, str) and indicators == "index":
+        if data is None:
+            raise ValueError("data must be provided when indicators is "
+                             "specified as 'index'")
+        indicators = data.index
+
+    try:
+        indicators[0]
+    except (TypeError, IndexError):
+        pass
+    else:
+        if isinstance(indicators[0], (str, int)):
+            if data is None:
+                raise ValueError("data must be provided when indicators are "
+                                 "specified as a list of columns")
+            # column array
+            indicators = indicators.loc[:, indicators]
+
+    indicators = pd.DataFrame(indicators).fillna(False).infer_objects()
+
+    if not all(dtype.kind == 'b' for dtype in indicators.dtypes):
+        raise ValueError('The indicators must all be boolean')
+
+    if data is not None:
+        if not (isinstance(indicators.index, pd.RangeIndex)
+                and indicators.index.start == 0
+                and indicators.index.stop == len(data)):
+            # index is specified on indicators. Need to align it to data
+            indicators = indicators.reindex(index=data.index, fill_value=False)
+    else:
+        data = pd.Series(np.ones(len(indicators)), name="ones")
+
+    indicators = indicators.set_index(indicators.columns)
+    data.index = indicators
+
+    return data
+
+
+def _convert_to_pandas(data, copy=True):
+    if hasattr(data, 'loc'):
+        if copy:
+            data = data.copy(deep=False)
+    elif len(data) and isinstance(data[0], Number):
+        data = pd.Series(data)
+    else:
+        data = pd.DataFrame(data)
+    return data
+
+
 def from_memberships(memberships, data=None):
     """Load data where each sample has a collection of category names
 
@@ -151,12 +236,7 @@ def from_memberships(memberships, data=None):
     if data is None:
         return df.assign(ones=1)['ones']
 
-    if hasattr(data, 'loc'):
-        data = data.copy(deep=False)
-    elif len(data) and isinstance(data[0], Number):
-        data = pd.Series(data)
-    else:
-        data = pd.DataFrame(data)
+    data = _convert_to_pandas(data)
     if len(data) != len(df):
         raise ValueError('memberships and data must have the same length. '
                          'Got len(memberships) == %d, len(data) == %d'

@@ -242,8 +242,6 @@ class UpSet:
     data : pandas.Series or pandas.DataFrame
         Elements associated with categories (a DataFrame), or the size of each
         subset of categories (a Series).
-        Should have MultiIndex where each level is binary,
-        corresponding to category membership.
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
@@ -337,6 +335,19 @@ class UpSet:
         This may be applied with or without show_counts.
 
         .. versionadded: 0.4
+    indicators : 'index', Sequence of str or DataFrame-like of booleans
+        Specifies the category indicators (boolean mask arrays) within
+        ``data``, i.e. which records in ``data`` belong to which categories.
+
+        If 'index', then ``data.index`` must be a MultiIndex where each level
+        is binary, corresponding to category membership.
+
+        If a list of strings, these should be column names found in ``data``
+        whose values are boolean mask arrays.
+
+        If a DataFrame, its columns should correspond to categories, and its
+        index should match those in ``data``, values should be True where
+        a data record is in that category, and False or NA otherwise.
     """
     _default_figsize = (10, 6)
 
