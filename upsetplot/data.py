@@ -94,9 +94,6 @@ def from_indicators(indicators, data=None):
         Specifies the category indicators (boolean mask arrays) within
         ``data``, i.e. which records in ``data`` belong to which categories.
 
-        If 'index', then ``data.index`` must be a MultiIndex where each level
-        is binary, corresponding to category membership.
-
         If a list of strings, these should be column names found in ``data``
         whose values are boolean mask arrays.
 
@@ -111,6 +108,16 @@ def from_indicators(indicators, data=None):
         If given, the index of category membership is attached to this data.
         It must have the same length as `indicators`.
         If not given, the series will contain the value 1.
+
+    Returns
+    -------
+    DataFrame or Series
+        `data` is returned with its index indicating category membership.
+        It will be a Series if `data` is a Series or 1d numeric array or None.
+
+    Notes
+    -----
+    Categories with indicators that are all False will be removed.
     """
     if data is not None:
         data = _convert_to_pandas(data)
@@ -129,7 +136,7 @@ def from_indicators(indicators, data=None):
 
     try:
         indicators[0]
-    except (TypeError, IndexError):
+    except Exception:
         pass
     else:
         if isinstance(indicators[0], (str, int)):
@@ -137,9 +144,11 @@ def from_indicators(indicators, data=None):
                 raise ValueError("data must be provided when indicators are "
                                  "specified as a list of columns")
             # column array
-            indicators = indicators.loc[:, indicators]
+            indicators = data.loc[:, indicators]
 
     indicators = pd.DataFrame(indicators).fillna(False).infer_objects()
+    # drop all-False (should we be dropping all-True also? making an option?)
+    indicators = indicators.loc[:, indicators.any(axis=0)]
 
     if not all(dtype.kind == 'b' for dtype in indicators.dtypes):
         raise ValueError('The indicators must all be boolean')
@@ -153,8 +162,8 @@ def from_indicators(indicators, data=None):
     else:
         data = pd.Series(np.ones(len(indicators)), name="ones")
 
-    indicators = indicators.set_index(indicators.columns)
-    data.index = indicators
+    indicators.set_index(list(indicators.columns), inplace=True)
+    data.index = indicators.index
 
     return data
 

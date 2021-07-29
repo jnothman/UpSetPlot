@@ -7,6 +7,10 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib.tight_layout import get_renderer
 
+from .data import from_indicators
+
+__all__ = ["UpSet", "plot"]
+
 
 def _aggregate_data(df, subset_size, sum_over):
     """
@@ -335,7 +339,7 @@ class UpSet:
         This may be applied with or without show_counts.
 
         .. versionadded: 0.4
-    indicators : 'index', Sequence of str or DataFrame-like of booleans
+    indicators : 'index', list of str, DataFrame of booleans, or callable
         Specifies the category indicators (boolean mask arrays) within
         ``data``, i.e. which records in ``data`` belong to which categories.
 
@@ -348,6 +352,9 @@ class UpSet:
         If a DataFrame, its columns should correspond to categories, and its
         index should match those in ``data``, values should be True where
         a data record is in that category, and False or NA otherwise.
+
+        If callable, it will be applied to ``data`` after the latter is
+        converted to a Series or DataFrame.
     """
     _default_figsize = (10, 6)
 
@@ -359,7 +366,7 @@ class UpSet:
                  facecolor='auto', other_dots_color=.18, shading_color=.05,
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False):
+                 show_counts='', show_percentages=False, indicators="index"):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -385,6 +392,9 @@ class UpSet:
             self._subset_plots.pop()
         self._show_counts = show_counts
         self._show_percentages = show_percentages
+
+        if not isinstance(indicators, str) or indicators != "index":
+            data = from_indicators(indicators, data)
 
         (self.total, self._df, self.intersections,
          self.totals) = _process_data(data,

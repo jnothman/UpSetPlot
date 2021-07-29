@@ -5,8 +5,8 @@ Plot the distribution of missing values
 
 UpSet plots are often used to show which variables are missing together.
 
-Passing a callable ``indicators`` to :class:`UpSet` or :func:`plot` is an
-easy way to categorise a record by the variables that are missing in it.
+Passing a callable ``indicators=pd.isna`` to :class:`UpSet` or :func:`plot` is
+an easy way to categorise a record by the variables that are missing in it.
 """
 
 from matplotlib import pyplot as plt
