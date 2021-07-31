@@ -5,7 +5,8 @@ import numpy as np
 from distutils.version import LooseVersion
 from pandas.util.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
-from upsetplot import from_memberships, from_contents, generate_data
+from upsetplot import (from_memberships, from_contents, from_indicators,
+                       generate_data)
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
@@ -172,6 +173,37 @@ def test_from_contents_invalid(id_column):
         from_contents({'cat1': ['aa']},
                       data=pd.DataFrame([[1]]),
                       id_column=id_column)
+
+
+@pytest.mark.parametrize('indicators,data,exc_type,match', [
+    (["a", "b"], None, ValueError, "data must be provided"),
+    (lambda df: [True, False, True], None, ValueError,
+     "data must be provided"),
+    (["a", "unknown_col"], {"a": [1, 2, 3]}, KeyError, "unknown_col"),
+    ({"cat1": [0, 1, 1]}, {"a": [1, 2, 3]}, ValueError, "must all be boolean"),
+    (pd.DataFrame({"cat1": [True, False, True]}, index=["a", "b", "c"]),
+     {"A": [1, 2, 3]},
+     ValueError, "all its values must be present"),
+])
+def test_from_indicators_invalid(indicators, data, exc_type, match):
+    with pytest.raises(exc_type, match=match):
+        from_indicators(indicators=indicators, data=data)
+
+
+@pytest.mark.parametrize('indicators', [
+    pd.DataFrame({"cat1": [False, True, False]}),
+    pd.DataFrame({"cat1": [False, True, False]}, dtype="O"),
+    {"cat1": [False, True, False]},
+    lambda data: {"cat1": {pd.DataFrame(data).index.values[1]: True}},
+])
+@pytest.mark.parametrize('data', [
+    pd.DataFrame({"val1": [3, 4, 5]}),
+    pd.DataFrame({"val1": [3, 4, 5]}, index=["a", "b", "c"]),
+    {"val1": [3, 4, 5]},
+])
+def test_from_indicators_equivalence(indicators, data):
+    assert_frame_equal(from_indicators(indicators, data),
+                       from_memberships([[], ["cat1"], []], data))
 
 
 def test_generate_data_warning():

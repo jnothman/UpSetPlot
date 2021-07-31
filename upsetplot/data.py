@@ -101,8 +101,8 @@ def from_indicators(indicators, data=None):
         whose values are boolean mask arrays.
 
         If a DataFrame, its columns should correspond to categories, and its
-        index should match those in ``data``, values should be True where
-        a data record is in that category, and False or NA otherwise.
+        index should be a subset of those in ``data``, values should be True
+        where a data record is in that category, and False or NA otherwise.
 
         If callable, it will be applied to ``data`` after the latter is
         converted to a Series or DataFrame.
@@ -139,7 +139,7 @@ def from_indicators(indicators, data=None):
     False  False  False    1.0
     Name: ones, dtype: float64
 
-    Where indicators are included within data, specifying indicators by name
+    Where indicators are included within data, specifying columns by name
     >>> data = pd.DataFrame({"value": [5, 4, 6, 4], **indicators})
     >>> from_indicators(["cat1", "cat3"], data=data)
                  value   cat1   cat2   cat3
@@ -179,12 +179,6 @@ def from_indicators(indicators, data=None):
                              "callable")
         indicators = indicators(data)
 
-    if isinstance(indicators, str) and indicators == "index":
-        if data is None:
-            raise ValueError("data must be provided when indicators is "
-                             "specified as 'index'")
-        indicators = data.index
-
     try:
         indicators[0]
     except Exception:
@@ -209,6 +203,10 @@ def from_indicators(indicators, data=None):
                 and indicators.index.start == 0
                 and indicators.index.stop == len(data)):
             # index is specified on indicators. Need to align it to data
+            if not indicators.index.isin(data.index).all():
+                raise ValueError("If indicators.index is not the default, "
+                                 "all its values must be present in "
+                                 "data.index")
             indicators = indicators.reindex(index=data.index, fill_value=False)
     else:
         data = pd.Series(np.ones(len(indicators)), name="ones")
@@ -220,10 +218,17 @@ def from_indicators(indicators, data=None):
 
 
 def _convert_to_pandas(data, copy=True):
+    is_series = False
     if hasattr(data, 'loc'):
         if copy:
             data = data.copy(deep=False)
-    elif len(data) and isinstance(data[0], Number):
+        is_series = data.ndim == 1
+    elif len(data):
+        try:
+            is_series = isinstance(data[0], Number)
+        except KeyError:
+            is_series = False
+    if is_series:
         data = pd.Series(data)
     else:
         data = pd.DataFrame(data)
