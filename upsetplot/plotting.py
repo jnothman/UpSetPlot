@@ -78,7 +78,7 @@ def _check_index(df):
     # XXX: this may break if input is not MultiIndex
     kw = {'levels': [x.astype(bool) for x in df.index.levels],
           'names': df.index.names,
-          'labels': df.index.labels,
+          'codes': df.index.codes,
           }
     df.index = pd.MultiIndex(**kw)
     return df
