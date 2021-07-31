@@ -204,8 +204,8 @@ def from_indicators(indicators, data=None):
 
     if data is not None:
         if not (isinstance(indicators.index, pd.RangeIndex)
-                and indicators.index.start == 0
-                and indicators.index.stop == len(data)):
+                and indicators.index[0] == 0
+                and indicators.index[-1] == len(data)):
             # index is specified on indicators. Need to align it to data
             if not indicators.index.isin(data.index).all():
                 raise ValueError("If indicators.index is not the default, "
