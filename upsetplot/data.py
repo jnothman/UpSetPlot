@@ -88,6 +88,9 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
 def from_indicators(indicators, data=None):
     """Load category membership indicated by a boolean indicator matrix
 
+    This loader also supports the case where the indicator columns can be
+    derived from `data`.
+
     Parameters
     ----------
     indicators : DataFrame-like of booleans, Sequence of str, or callable
@@ -118,6 +121,54 @@ def from_indicators(indicators, data=None):
     Notes
     -----
     Categories with indicators that are all False will be removed.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from upsetplot import from_indicators
+
+    Just indicators
+    >>> indicators = {"cat1": [True, False, True, False],
+    ...               "cat2": [False, True, False, False],
+    ...               "cat3": [True, True, False, False]}
+    >>> from_indicators(indicators)
+    cat1   cat2   cat3
+    True   False  True     1.0
+    False  True   True     1.0
+    True   False  False    1.0
+    False  False  False    1.0
+    Name: ones, dtype: float64
+
+    Where indicators are included within data, specifying indicators by name
+    >>> data = pd.DataFrame({"value": [5, 4, 6, 4], **indicators})
+    >>> from_indicators(["cat1", "cat3"], data=data)
+                 value   cat1   cat2   cat3
+    cat1  cat3
+    True  True       5   True  False   True
+    False True       4  False   True   True
+    True  False      6   True  False  False
+    False False      4  False  False  False
+
+    Making indicators out of all boolean columns
+    >>> from_indicators(lambda data: data.select_dtypes(bool), data=data)
+                       value   cat1   cat2   cat3
+    cat1  cat2  cat3
+    True  False True       5   True  False   True
+    False True  True       4  False   True   True
+    True  False False      6   True  False  False
+    False False False      4  False  False  False
+
+    Using a dataset with missing data, we can use missingness as an indicator
+    >>> data = pd.DataFrame({"val1": [pd.NA, .7, pd.NA, .9],
+    ...                      "val2": ["male", pd.NA, "female", "female"],
+    ...                      "val3": [pd.NA, pd.NA, 23000, 78000]})
+    >>> from_indicators(pd.isna, data=data)
+                       val1    val2   val3
+    val1  val2  val3
+    True  False True   <NA>    male   <NA>
+    False True  True    0.7    <NA>   <NA>
+    True  False False  <NA>  female  23000
+    False False False   0.9  female  78000
     """
     if data is not None:
         data = _convert_to_pandas(data)
