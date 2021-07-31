@@ -11,7 +11,8 @@ from upsetplot import UpSet
 from matplotlib import pyplot as plt
 from matplotlib import cm
 
-df = pd.read_csv('http://bit.ly/titanic-data-csv')
+TITANIC_URL = 'https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv'  # noqa
+df = pd.read_csv(TITANIC_URL)
 # Show UpSet on survival and first classs
 df = df.set_index(df.Survived == 1).set_index(df.Pclass == 1, append=True)
 
