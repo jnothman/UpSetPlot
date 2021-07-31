@@ -180,6 +180,7 @@ def test_from_contents_invalid(id_column):
     (lambda df: [True, False, True], None, ValueError,
      "data must be provided"),
     (["a", "unknown_col"], {"a": [1, 2, 3]}, KeyError, "unknown_col"),
+    (("a",), {"a": [1, 2, 3]}, ValueError, "tuple"),
     ({"cat1": [0, 1, 1]}, {"a": [1, 2, 3]}, ValueError, "must all be boolean"),
     (pd.DataFrame({"cat1": [True, False, True]}, index=["a", "b", "c"]),
      {"A": [1, 2, 3]},

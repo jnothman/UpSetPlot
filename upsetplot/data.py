@@ -190,8 +190,10 @@ def from_indicators(indicators, data=None):
             if data is None:
                 raise ValueError("data must be provided when indicators are "
                                  "specified as a list of columns")
+            if isinstance(indicators, tuple):
+                raise ValueError("indicators as tuple is not supported")
             # column array
-            indicators = data.loc[:, indicators]
+            indicators = data[indicators]
 
     indicators = pd.DataFrame(indicators).fillna(False).infer_objects()
     # drop all-False (should we be dropping all-True also? making an option?)
