@@ -23,7 +23,7 @@ following::
 
     >>> from upsetplot import generate_counts
     >>> example = generate_counts()
-    >>> example  # doctest: +NORMALIZE_WHITESPACE
+    >>> example
     cat0   cat1   cat2
     False  False  False      56
                   True      283
@@ -96,7 +96,7 @@ membership::
     ...      ],
     ...      data=[56, 283, 1279, 5882, 24, 90, 429, 1957]
     ... )
-    >>> example  # doctest: +NORMALIZE_WHITESPACE
+    >>> example
     cat0   cat1   cat2
     False  False  False      56
                   True      283

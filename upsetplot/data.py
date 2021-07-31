@@ -260,7 +260,7 @@ def from_memberships(memberships, data=None):
     ...     ['cat2', 'cat3'],
     ...     ['cat1'],
     ...     []
-    ... ])  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+    ... ])
     cat1   cat2   cat3
     True   False  True     1
     False  True   True     1
@@ -274,7 +274,7 @@ def from_memberships(memberships, data=None):
     ...     ['cat2', 'cat3'],
     ...     ['cat1'],
     ...     []
-    ... ], data=np.arange(12).reshape(4, 3))  # doctest: +NORMALIZE_WHITESPACE
+    ... ], data=np.arange(12).reshape(4, 3))
                        0   1   2
     cat1  cat2  cat3
     True  False True   0   1   2
@@ -337,7 +337,7 @@ def from_contents(contents, data=None, id_column='id'):
     >>> contents = {'cat1': ['a', 'b', 'c'],
     ...             'cat2': ['b', 'd'],
     ...             'cat3': ['e']}
-    >>> from_contents(contents)  # doctest: +NORMALIZE_WHITESPACE
+    >>> from_contents(contents)
                       id
     cat1  cat2  cat3
     True  False False  a
@@ -351,7 +351,7 @@ def from_contents(contents, data=None, id_column='id'):
     ...             'cat3': [4]}
     >>> data = pd.DataFrame({'favourite': ['green', 'red', 'red',
     ...                                    'yellow', 'blue']})
-    >>> from_contents(contents, data=data)  # doctest: +NORMALIZE_WHITESPACE
+    >>> from_contents(contents, data=data)
                        id favourite
     cat1  cat2  cat3
     True  False False   0     green
