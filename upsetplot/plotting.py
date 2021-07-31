@@ -78,12 +78,8 @@ def _check_index(df):
     # XXX: this may break if input is not MultiIndex
     kw = {'levels': [x.astype(bool) for x in df.index.levels],
           'names': df.index.names,
+          'labels': df.index.labels,
           }
-    if hasattr(df.index, 'codes'):
-        # compat for pandas <= 0.20
-        kw['codes'] = df.index.codes
-    else:
-        kw['labels'] = df.index.labels
     df.index = pd.MultiIndex(**kw)
     return df
 
