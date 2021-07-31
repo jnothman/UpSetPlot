@@ -12,10 +12,14 @@ more readable. Documentation is at https://upsetplot.readthedocs.io.
 This ``upsetplot`` library tries to provide a simple interface backed by an
 extensible, object-oriented design.
 
-The basic input format is a `pandas.Series` containing counts corresponding to
-subset sizes, where each subset is an intersection of named categories.  The
-index of the Series indicates which rows pertain to which categories, by having
-multiple boolean indices, like ``example`` in the following::
+There are many ways to represent the categorisation of data, as covered in
+our [Data Format Guide](https://upsetplot.readthedocs.io/en/stable/formats.html).
+
+Our internal input format uses a `pandas.Series` containing counts
+corresponding to subset sizes, where each subset is an intersection of named
+categories.  The index of the Series indicates which rows pertain to which
+categories, by having multiple boolean indices, like ``example`` in the
+following::
 
     >>> from upsetplot import generate_counts
     >>> example = generate_counts()
@@ -104,7 +108,10 @@ membership::
                   True     1957
     dtype: int64
 
-See also `from_contents`, another way to describe categorised data.
+See also `from_contents`, another way to describe categorised data, and
+`from_indicators` which allows each category to be indicated by a column in
+the data frame (or a function of the column's data such as whether it is a
+missing value).
 
 Installation
 ------------

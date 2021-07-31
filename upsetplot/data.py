@@ -85,6 +85,160 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
                                 n_categories=n_sets)['value']
 
 
+def from_indicators(indicators, data=None):
+    """Load category membership indicated by a boolean indicator matrix
+
+    This loader also supports the case where the indicator columns can be
+    derived from `data`.
+
+    .. versionadded: 0.6
+
+    Parameters
+    ----------
+    indicators : DataFrame-like of booleans, Sequence of str, or callable
+        Specifies the category indicators (boolean mask arrays) within
+        ``data``, i.e. which records in ``data`` belong to which categories.
+
+        If a list of strings, these should be column names found in ``data``
+        whose values are boolean mask arrays.
+
+        If a DataFrame, its columns should correspond to categories, and its
+        index should be a subset of those in ``data``, values should be True
+        where a data record is in that category, and False or NA otherwise.
+
+        If callable, it will be applied to ``data`` after the latter is
+        converted to a Series or DataFrame.
+
+    data : Series-like or DataFrame-like, optional
+        If given, the index of category membership is attached to this data.
+        It must have the same length as `indicators`.
+        If not given, the series will contain the value 1.
+
+    Returns
+    -------
+    DataFrame or Series
+        `data` is returned with its index indicating category membership.
+        It will be a Series if `data` is a Series or 1d numeric array or None.
+
+    Notes
+    -----
+    Categories with indicators that are all False will be removed.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from upsetplot import from_indicators
+
+    Just indicators
+    >>> indicators = {"cat1": [True, False, True, False],
+    ...               "cat2": [False, True, False, False],
+    ...               "cat3": [True, True, False, False]}
+    >>> from_indicators(indicators)
+    cat1   cat2   cat3
+    True   False  True     1.0
+    False  True   True     1.0
+    True   False  False    1.0
+    False  False  False    1.0
+    Name: ones, dtype: float64
+
+    Where indicators are included within data, specifying columns by name
+    >>> data = pd.DataFrame({"value": [5, 4, 6, 4], **indicators})
+    >>> from_indicators(["cat1", "cat3"], data=data)
+                 value   cat1   cat2   cat3
+    cat1  cat3
+    True  True       5   True  False   True
+    False True       4  False   True   True
+    True  False      6   True  False  False
+    False False      4  False  False  False
+
+    Making indicators out of all boolean columns
+    >>> from_indicators(lambda data: data.select_dtypes(bool), data=data)
+                       value   cat1   cat2   cat3
+    cat1  cat2  cat3
+    True  False True       5   True  False   True
+    False True  True       4  False   True   True
+    True  False False      6   True  False  False
+    False False False      4  False  False  False
+
+    Using a dataset with missing data, we can use missingness as an indicator
+    >>> data = pd.DataFrame({"val1": [pd.NA, .7, pd.NA, .9],
+    ...                      "val2": ["male", pd.NA, "female", "female"],
+    ...                      "val3": [pd.NA, pd.NA, 23000, 78000]})
+    >>> from_indicators(pd.isna, data=data)
+                       val1    val2   val3
+    val1  val2  val3
+    True  False True   <NA>    male   <NA>
+    False True  True    0.7    <NA>   <NA>
+    True  False False  <NA>  female  23000
+    False False False   0.9  female  78000
+    """
+    if data is not None:
+        data = _convert_to_pandas(data)
+
+    if callable(indicators):
+        if data is None:
+            raise ValueError("data must be provided when indicators is "
+                             "callable")
+        indicators = indicators(data)
+
+    try:
+        indicators[0]
+    except Exception:
+        pass
+    else:
+        if isinstance(indicators[0], (str, int)):
+            if data is None:
+                raise ValueError("data must be provided when indicators are "
+                                 "specified as a list of columns")
+            if isinstance(indicators, tuple):
+                raise ValueError("indicators as tuple is not supported")
+            # column array
+            indicators = data[indicators]
+
+    indicators = pd.DataFrame(indicators).fillna(False).infer_objects()
+    # drop all-False (should we be dropping all-True also? making an option?)
+    indicators = indicators.loc[:, indicators.any(axis=0)]
+
+    if not all(dtype.kind == 'b' for dtype in indicators.dtypes):
+        raise ValueError('The indicators must all be boolean')
+
+    if data is not None:
+        if not (isinstance(indicators.index, pd.RangeIndex)
+                and indicators.index[0] == 0
+                and indicators.index[-1] == len(data) - 1):
+            # index is specified on indicators. Need to align it to data
+            if not indicators.index.isin(data.index).all():
+                raise ValueError("If indicators.index is not the default, "
+                                 "all its values must be present in "
+                                 "data.index")
+            indicators = indicators.reindex(index=data.index, fill_value=False)
+    else:
+        data = pd.Series(np.ones(len(indicators)), name="ones")
+
+    indicators.set_index(list(indicators.columns), inplace=True)
+    data.index = indicators.index
+
+    return data
+
+
+def _convert_to_pandas(data, copy=True):
+    is_series = False
+    if hasattr(data, 'loc'):
+        if copy:
+            data = data.copy(deep=False)
+        is_series = data.ndim == 1
+    elif len(data):
+        try:
+            is_series = isinstance(data[0], Number)
+        except KeyError:
+            is_series = False
+    if is_series:
+        data = pd.Series(data)
+    else:
+        data = pd.DataFrame(data)
+    return data
+
+
 def from_memberships(memberships, data=None):
     """Load data where each sample has a collection of category names
 
@@ -151,12 +305,7 @@ def from_memberships(memberships, data=None):
     if data is None:
         return df.assign(ones=1)['ones']
 
-    if hasattr(data, 'loc'):
-        data = data.copy(deep=False)
-    elif len(data) and isinstance(data[0], Number):
-        data = pd.Series(data)
-    else:
-        data = pd.DataFrame(data)
+    data = _convert_to_pandas(data)
     if len(data) != len(df):
         raise ValueError('memberships and data must have the same length. '
                          'Got len(memberships) == %d, len(data) == %d'
