@@ -93,9 +93,16 @@ def _check_index(df):
     return df
 
 
-def _filter_subsets(df, agg,
-                    min_subset_size, max_subset_size,
-                    min_degree, max_degree):
+def _scalar_to_list(val):
+    if not isinstance(val, (typing.Sequence, set)) or isinstance(val, str):
+        val = [val]
+    return val
+
+
+def _get_subset_mask(agg, min_subset_size, max_subset_size,
+                     min_degree, max_degree,
+                     include, exclude):
+    """Get a mask over subsets based on size, degree or category presence"""
     subset_mask = True
     if min_subset_size is not None:
         subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
@@ -107,6 +114,26 @@ def _filter_subsets(df, agg,
             subset_mask = np.logical_and(subset_mask, degree >= min_degree)
         if max_degree is not None:
             subset_mask = np.logical_and(subset_mask, degree <= max_degree)
+    if include is not None:
+        for col in _scalar_to_list(include):
+            subset_mask = np.logical_and(subset_mask,
+                                         agg.index.get_level_values(col))
+    if exclude is not None:
+        for col in _scalar_to_list(exclude):
+            exclude_mask = ~(agg.index.get_level_values(col).values)
+            subset_mask = np.logical_and(subset_mask, exclude_mask)
+    return subset_mask
+
+
+def _filter_subsets(df, agg,
+                    min_subset_size, max_subset_size,
+                    min_degree, max_degree):
+    subset_mask = _get_subset_mask(agg,
+                                   min_subset_size=min_subset_size,
+                                   max_subset_size=max_subset_size,
+                                   min_degree=min_degree,
+                                   max_degree=max_degree,
+                                   include=None, exclude=None)
 
     if subset_mask is True:
         return df, agg
@@ -393,11 +420,32 @@ class UpSet:
                                       min_degree=min_degree,
                                       max_degree=max_degree,
                                       reverse=not self._horizontal)
+        self.subset_styles = [{"facecolor": facecolor}
+                              for i in range(len(self.intersections))]
 
     def _swapaxes(self, x, y):
         if self._horizontal:
             return x, y
         return y, x
+
+    def style_subsets(self, include=None, exclude=None,
+                      min_subset_size=None, max_subset_size=None,
+                      min_degree=None, max_degree=None,
+                      facecolor=None, edgecolor=None, hatch=None,
+                      linewidth=None, linestyle=None):
+        """Updates the style of selected subsets' bars and matrix dots
+        """
+        style = {"facecolor": facecolor, "edgecolor": edgecolor,
+                 "hatch": hatch,
+                 "linewidth": linewidth, "linestyle": linestyle}
+        style = {k: v for k, v in style.items() if v is not None}
+        mask = _get_subset_mask(self.intersections,
+                                include=include, exclude=exclude,
+                                min_subset_size=min_subset_size,
+                                max_subset_size=max_subset_size,
+                                min_degree=min_degree, max_degree=max_degree)
+        for idx in np.flatnonzero(mask):
+            self.subset_styles[idx].update(style)
 
     def _plot_bars(self, ax, data, title, colors=None, use_labels=False):
         ax = self._reorient(ax)
@@ -417,12 +465,14 @@ class UpSet:
 
         x = np.arange(len(data_df))
         cum_y = None
+        all_rects = []
         for (name, y), color in zip(data_df.items(), colors):
             rects = ax.bar(x, y, .5, cum_y,
                            color=color, zorder=10,
                            label=name if use_labels else None,
                            align='center')
             cum_y = y if cum_y is None else cum_y + y
+            all_rects.extend(rects)
 
         self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
 
@@ -433,6 +483,7 @@ class UpSet:
         tick_axis = ax.yaxis
         tick_axis.grid(True)
         ax.set_ylabel(title)
+        return all_rects
 
     def _plot_stacked_bars(self, ax, by, sum_over, colors, title):
         df = self._df.set_index("_bin").set_index(by, append=True, drop=False)
@@ -692,8 +743,12 @@ class UpSet:
     def plot_intersections(self, ax):
         """Plot bars indicating intersection size
         """
-        self._plot_bars(ax, self.intersections, title='Intersection size',
-                        colors=self._facecolor)
+        rects = self._plot_bars(ax, self.intersections,
+                                title='Intersection size',
+                                colors=self._facecolor)
+        for style, rect in zip(self.subset_styles, rects):
+            for attr, val in style.items():
+                getattr(rect, "set_" + attr)(val)
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts and not self._show_percentages:
