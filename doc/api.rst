@@ -19,7 +19,7 @@ Dataset loading and generation
 
 .. autofunction:: from_contents
 
-.. autofunction:: from_indictors
+.. autofunction:: from_indicators
 
 .. autofunction:: from_memberships
 
