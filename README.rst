@@ -13,7 +13,7 @@ This ``upsetplot`` library tries to provide a simple interface backed by an
 extensible, object-oriented design.
 
 There are many ways to represent the categorisation of data, as covered in
-our [Data Format Guide](https://upsetplot.readthedocs.io/en/stable/formats.html).
+our `Data Format Guide <https://upsetplot.readthedocs.io/en/stable/formats.html>`_.
 
 Our internal input format uses a `pandas.Series` containing counts
 corresponding to subset sizes, where each subset is an intersection of named
