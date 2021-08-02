@@ -10,6 +10,7 @@ import pandas as pd
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from matplotlib import patches
 from matplotlib.tight_layout import get_renderer
 
 
@@ -422,6 +423,7 @@ class UpSet:
                                       reverse=not self._horizontal)
         self.subset_styles = [{"facecolor": facecolor}
                               for i in range(len(self.intersections))]
+        self.subset_legend = []  # pairs of (style, label)
 
     def _swapaxes(self, x, y):
         if self._horizontal:
@@ -432,8 +434,43 @@ class UpSet:
                       min_subset_size=None, max_subset_size=None,
                       min_degree=None, max_degree=None,
                       facecolor=None, edgecolor=None, hatch=None,
-                      linewidth=None, linestyle=None):
+                      linewidth=None, linestyle=None, label=None):
         """Updates the style of selected subsets' bars and matrix dots
+
+        Parameters are either used to select subsets, or to style them with
+        attributes of :class:`matplotlib.patches.Patch`, apart from label,
+        which adds a legend entry.
+
+        Parameters
+        ----------
+        include : str or list of str, optional
+            Category or categories that must be present in subsets for styling.
+        exclude : str or list of str, optional
+            Category or categories that must not be present in subsets for
+            styling.
+        min_subset_size : int, optional
+            Minimum size of a subset to be styled.
+        max_subset_size : int, optional
+            Maximum size of a subset to be styled.
+        min_degree : int, optional
+            Minimum degree of a subset to be styled.
+        max_degree : int, optional
+            Maximum degree of a subset to be styled.
+
+        facecolor : str or matplotlib color, optional
+            Override the default UpSet facecolor for selected subsets.
+        edgecolor : str or matplotlib color, optional
+            Set the edgecolor for bars, dots, and the line between dots.
+        hatch : str, optional
+            Set the hatch. This will apply to intersection size bars, but not
+            to matrix dots.
+        linewidth : int, optional
+            Line width in points for edges.
+        linestyle : str, optional
+            Line style for edges.
+
+        label : str, optional
+            If provided, a legend will be added
         """
         style = {"facecolor": facecolor, "edgecolor": edgecolor,
                  "hatch": hatch,
@@ -446,6 +483,16 @@ class UpSet:
                                 min_degree=min_degree, max_degree=max_degree)
         for idx in np.flatnonzero(mask):
             self.subset_styles[idx].update(style)
+
+        if label is not None:
+            if "facecolor" not in style:
+                style["facecolor"] = self._facecolor
+            for i, (other_style, other_label) in self.subset_legend:
+                if other_style == style:
+                    self.subset_legend[i] = (style, other_label + '; ' + label)
+                    break
+            else:
+                self.subset_legend.append((style, label))
 
     def _plot_bars(self, ax, data, title, colors=None, use_labels=False):
         ax = self._reorient(ax)
@@ -708,26 +755,57 @@ class UpSet:
         data = self.intersections
         n_cats = data.index.nlevels
 
-        idx = np.flatnonzero(data.index.to_frame()[data.index.names].values)
-        c = np.array([self._other_dots_color] * len(data) * n_cats, dtype='O')
-        c[idx] = self._facecolor
+        inclusion = data.index.to_frame().values
+
+        # Prepare styling
+        styles = [[self.subset_styles[i]
+                  if inclusion[i, j]
+                  else {"facecolor": self._other_dots_color}
+                  for j in range(n_cats)]
+                  for i in range(len(data))
+                  ]
+        styles = sum(styles, [])
+        style_columns = {"facecolor": "facecolors",
+                         "edgecolor": "edgecolors",
+                         "linewidth": "linewidths",
+                         "linestyle": "linestyles",
+                         "hatch": "hatch"}
+        styles = pd.DataFrame(styles).reindex(columns=style_columns.keys())
+        styles["linewidth"].fillna(0 if pd.isna(styles["edgecolor"]).all()
+                                   else 1, inplace=True)
+        styles["facecolor"].fillna(self._facecolor, inplace=True)
+        styles["edgecolor"].fillna(styles["facecolor"], inplace=True)
+        styles["linestyle"].fillna("solid", inplace=True)
+        del styles["hatch"]  # not supported in matrix (currently)
+
         x = np.repeat(np.arange(len(data)), n_cats)
         y = np.tile(np.arange(n_cats), len(data))
+
+        # Plot dots
         if self._element_size is not None:
             s = (self._element_size * .35) ** 2
         else:
             # TODO: make s relative to colw
             s = 200
-        ax.scatter(*self._swapaxes(x, y), c=c.tolist(), linewidth=0, s=s)
+        ax.scatter(*self._swapaxes(x, y), s=s, zorder=10,
+                   **styles.rename(columns=style_columns))
 
+        # Plot lines
         if self._with_lines:
+            idx = np.flatnonzero(inclusion)
             line_data = (pd.Series(y[idx], index=x[idx])
                          .groupby(level=0)
                          .aggregate(['min', 'max']))
+            colors = pd.Series([style.get("edgecolor", style["facecolor"])
+                                for style in self.subset_styles],
+                               name="color")
+            line_data = line_data.join(colors)
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
-                      lw=2, colors=self._facecolor)
+                      lw=2, colors=line_data["color"],
+                      zorder=5)
 
+        # Ticks and axes
         tick_axis = ax.yaxis
         tick_axis.set_ticks(np.arange(n_cats))
         tick_axis.set_ticklabels(data.index.names,
@@ -749,6 +827,11 @@ class UpSet:
         for style, rect in zip(self.subset_styles, rects):
             for attr, val in style.items():
                 getattr(rect, "set_" + attr)(val)
+
+        if self.subset_legend:
+            styles, labels = zip(*self.subset_legend)
+            styles = [patches.Patch(**style) for style in styles]
+            ax.legend(styles, labels)
 
     def _label_sizes(self, ax, rects, where):
         if not self._show_counts and not self._show_percentages:
