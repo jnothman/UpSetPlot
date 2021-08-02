@@ -10,7 +10,7 @@ What's new in version 0.6
   Parameters ``other_dots_color`` and ``shading_color`` were added.
   ``facecolor`` will now default to white if
   ``matplotlib.rcParams['axes.facecolor']`` is dark. (:issue:`138`)
-- Added :meth:`UpSet.style_subsets` to colour intersection size bars and matrix
+- Added `style_subsets` to colour intersection size bars and matrix
   dots in the plot according to a specified query. (:issue:`152`)
 - Added `from_indicators` to allow yet another data input format. This
   allows category membership to be easily derived from a DataFrame, such as
