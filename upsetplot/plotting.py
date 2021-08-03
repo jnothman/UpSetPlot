@@ -487,7 +487,7 @@ class UpSet:
         if label is not None:
             if "facecolor" not in style:
                 style["facecolor"] = self._facecolor
-            for i, (other_style, other_label) in self.subset_legend:
+            for i, (other_style, other_label) in enumerate(self.subset_legend):
                 if other_style == style:
                     self.subset_legend[i] = (style, other_label + '; ' + label)
                     break
