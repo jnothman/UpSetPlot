@@ -3,7 +3,8 @@
 Highlighting selected subsets
 =============================
 
-
+Demonstrates use of the `style_subsets` method to mark some subsets as
+different.
 
 """
 
