@@ -141,7 +141,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
             X, sort_by=sort_by, sort_categories_by=sort_categories_by,
             sum_over='a', subset_size='auto')
     assert df is not X
-    assert total == intersections.sum()
+    assert total == pytest.approx(intersections.sum())
 
     # check equivalence to Series
     total1, df1, intersections1, totals1 = _process_data(
@@ -158,7 +158,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     total2, df2, intersections2, totals2 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='a', subset_size='auto')
-    assert total2 == intersections2.sum()
+    assert total2 == pytest.approx(intersections2.sum())
     assert_series_equal(intersections, intersections2)
     assert_series_equal(totals, totals2)
     assert_frame_equal(df, df2.drop('b', axis=1))
@@ -169,7 +169,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     total3, df3, intersections3, totals3 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='c', subset_size='auto')
-    assert total3 == intersections3.sum()
+    assert total3 == pytest.approx(intersections3.sum())
     assert_series_equal(intersections, intersections3, check_names=False)
     assert intersections.name == 'a'
     assert intersections3.name == 'c'
@@ -185,7 +185,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     total5, df5, intersections5, totals5 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         subset_size='count', sum_over=None)
-    assert total5 == intersections5.sum()
+    assert total5 == pytest.approx(intersections5.sum())
     assert_series_equal(intersections4, intersections5, check_names=False)
     assert intersections4.name == 'b'
     assert intersections5.name == 'size'
