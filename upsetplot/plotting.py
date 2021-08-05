@@ -117,11 +117,13 @@ def _get_subset_mask(agg, min_subset_size, max_subset_size,
             subset_mask = np.logical_and(subset_mask, degree <= max_degree)
     if include is not None:
         for col in _scalar_to_list(include):
-            subset_mask = np.logical_and(subset_mask,
-                                         agg.index.get_level_values(col))
+            subset_mask = np.logical_and(
+                subset_mask,
+                agg.index.get_level_values(col).values)
     if exclude is not None:
         for col in _scalar_to_list(exclude):
-            exclude_mask = ~(agg.index.get_level_values(col).values)
+            exclude_mask = np.logical_not(
+                agg.index.get_level_values(col).values)
             subset_mask = np.logical_and(subset_mask, exclude_mask)
     return subset_mask
 
@@ -489,7 +491,9 @@ class UpSet:
                 style["facecolor"] = self._facecolor
             for i, (other_style, other_label) in enumerate(self.subset_legend):
                 if other_style == style:
-                    self.subset_legend[i] = (style, other_label + '; ' + label)
+                    if other_label != label:
+                        self.subset_legend[i] = (style,
+                                                 other_label + '; ' + label)
                     break
             else:
                 self.subset_legend.append((style, label))

@@ -693,3 +693,105 @@ def test_matrix_plot_margins(x, orientation):
     attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
     lim = getattr(axes['matrix'], attr)()
     assert expected_width == lim[1] - lim[0]
+
+
+def _make_facecolor_list(colors):
+    return [{"facecolor": c} for c in colors]
+
+
+CAT1_2_RED_STYLES = _make_facecolor_list(["blue", "blue", "blue", "blue",
+                                          "red", "blue", "blue", "red"])
+CAT1_RED_STYLES = _make_facecolor_list(["blue", "red", "blue", "blue",
+                                        "red", "red", "blue", "red"])
+CAT_NOT1_RED_STYLES = _make_facecolor_list(["red", "blue", "red", "red",
+                                            "blue", "blue", "red", "blue"])
+CAT1_NOT2_RED_STYLES = _make_facecolor_list(["blue", "red", "blue", "blue",
+                                             "blue", "red", "blue", "blue"])
+CAT_NOT1_2_RED_STYLES = _make_facecolor_list(["red", "blue", "blue", "red",
+                                              "blue", "blue", "blue", "blue"])
+
+
+@pytest.mark.parametrize(
+    "kwarg_list,expected_subset_styles,expected_legend",
+    [
+        # Different forms of including two categories
+        ([{"include": ["cat1", "cat2"], "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        ([{"include": {"cat1", "cat2"}, "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        ([{"include": ("cat1", "cat2"), "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        # with legend
+        ([{"include": ("cat1", "cat2"), "facecolor": "red", "label": "foo"}],
+         CAT1_2_RED_STYLES, [({"facecolor": "red"}, "foo")]),
+        # Include only cat1
+        ([{"include": ("cat1",), "facecolor": "red"}],
+         CAT1_RED_STYLES, []),
+        ([{"include": "cat1", "facecolor": "red"}],
+         CAT1_RED_STYLES, []),
+        # Some uses of exclude
+        ([{"exclude": "cat1", "facecolor": "red"}],
+         CAT_NOT1_RED_STYLES, []),
+        ([{"include": "cat1", "exclude": ["cat2"], "facecolor": "red"}],
+         CAT1_NOT2_RED_STYLES, []),
+        ([{"exclude": ["cat2", "cat1"], "facecolor": "red"}],
+         CAT_NOT1_2_RED_STYLES, []),
+        # min/max args
+        ([{"include": ["cat1", "cat2"], "min_degree": 3, "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 7 + ["red"]), []),
+        ([{"include": ["cat1", "cat2"], "max_subset_size": 3000,
+           "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 7 + ["red"]), []),
+        ([{"include": ["cat1", "cat2"], "max_degree": 2, "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 4 + ["red"] + ["blue"] * 3), []),
+        ([{"include": ["cat1", "cat2"], "min_subset_size": 3000,
+           "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 4 + ["red"] + ["blue"] * 3), []),
+        # cat1 _or_ cat2
+        ([{"include": "cat1", "facecolor": "red"},
+          {"include": "cat2", "facecolor": "red"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]), []),
+        # With multiple uses of label
+        ([{"include": "cat1", "facecolor": "red", "label": "foo"},
+          {"include": "cat2", "facecolor": "red", "label": "bar"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]),
+         [({"facecolor": "red"}, "foo; bar")]),
+        ([{"include": "cat1", "facecolor": "red", "label": "foo"},
+          {"include": "cat2", "facecolor": "red", "label": "foo"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]),
+         [({"facecolor": "red"}, "foo")]),
+        # With multiple colours, the latest overrides
+        ([{"include": "cat1", "facecolor": "red", "label": "foo"},
+          {"include": "cat2", "facecolor": "green", "label": "bar"}],
+         _make_facecolor_list(["blue", "red", "green", "blue",
+                               "green", "red", "green", "green"]),
+         [({"facecolor": "red"}, "foo"),
+          ({"facecolor": "green"}, "bar")]),
+        # Combining multiple style properties
+        ([{"include": "cat1", "facecolor": "red", "hatch": "//"},
+          {"include": "cat2", "edgecolor": "green", "linestyle": "dotted"}],
+         [{"facecolor": "blue"},
+          {"facecolor": "red", "hatch": "//"},
+          {"facecolor": "blue", "edgecolor": "green", "linestyle": "dotted"},
+          {"facecolor": "blue"},
+          {"facecolor": "red", "hatch": "//", "edgecolor": "green",
+           "linestyle": "dotted"},
+          {"facecolor": "red", "hatch": "//"},
+          {"facecolor": "blue", "edgecolor": "green",
+           "linestyle": "dotted"},
+          {"facecolor": "red", "hatch": "//", "edgecolor": "green",
+           "linestyle": "dotted"},
+          ],
+         []),
+    ])
+def test_style_subsets(kwarg_list, expected_subset_styles, expected_legend):
+    data = generate_counts()
+    upset = UpSet(data, facecolor="blue")
+    for kw in kwarg_list:
+        upset.style_subsets(**kw)
+    actual_subset_styles = upset.subset_styles
+    assert actual_subset_styles == expected_subset_styles
+    assert upset.subset_legend == expected_legend
