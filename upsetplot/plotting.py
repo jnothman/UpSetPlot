@@ -800,9 +800,10 @@ class UpSet:
             line_data = (pd.Series(y[idx], index=x[idx])
                          .groupby(level=0)
                          .aggregate(['min', 'max']))
-            colors = pd.Series([style.get("edgecolor", style["facecolor"])
-                                for style in self.subset_styles],
-                               name="color")
+            colors = pd.Series([
+                style.get("edgecolor", style.get("facecolor", self._facecolor))
+                for style in self.subset_styles],
+                name="color")
             line_data = line_data.join(colors)
             ax.vlines(line_data.index.values,
                       line_data['min'], line_data['max'],
