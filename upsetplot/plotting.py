@@ -102,7 +102,7 @@ def _scalar_to_list(val):
 
 def _get_subset_mask(agg, min_subset_size, max_subset_size,
                      min_degree, max_degree,
-                     include, exclude):
+                     present, absent):
     """Get a mask over subsets based on size, degree or category presence"""
     subset_mask = True
     if min_subset_size is not None:
@@ -115,13 +115,13 @@ def _get_subset_mask(agg, min_subset_size, max_subset_size,
             subset_mask = np.logical_and(subset_mask, degree >= min_degree)
         if max_degree is not None:
             subset_mask = np.logical_and(subset_mask, degree <= max_degree)
-    if include is not None:
-        for col in _scalar_to_list(include):
+    if present is not None:
+        for col in _scalar_to_list(present):
             subset_mask = np.logical_and(
                 subset_mask,
                 agg.index.get_level_values(col).values)
-    if exclude is not None:
-        for col in _scalar_to_list(exclude):
+    if absent is not None:
+        for col in _scalar_to_list(absent):
             exclude_mask = np.logical_not(
                 agg.index.get_level_values(col).values)
             subset_mask = np.logical_and(subset_mask, exclude_mask)
@@ -136,7 +136,7 @@ def _filter_subsets(df, agg,
                                    max_subset_size=max_subset_size,
                                    min_degree=min_degree,
                                    max_degree=max_degree,
-                                   include=None, exclude=None)
+                                   present=None, absent=None)
 
     if subset_mask is True:
         return df, agg
@@ -432,7 +432,7 @@ class UpSet:
             return x, y
         return y, x
 
-    def style_subsets(self, include=None, exclude=None,
+    def style_subsets(self, present=None, absent=None,
                       min_subset_size=None, max_subset_size=None,
                       min_degree=None, max_degree=None,
                       facecolor=None, edgecolor=None, hatch=None,
@@ -445,9 +445,9 @@ class UpSet:
 
         Parameters
         ----------
-        include : str or list of str, optional
+        present : str or list of str, optional
             Category or categories that must be present in subsets for styling.
-        exclude : str or list of str, optional
+        absent : str or list of str, optional
             Category or categories that must not be present in subsets for
             styling.
         min_subset_size : int, optional
@@ -479,7 +479,7 @@ class UpSet:
                  "linewidth": linewidth, "linestyle": linestyle}
         style = {k: v for k, v in style.items() if v is not None}
         mask = _get_subset_mask(self.intersections,
-                                include=include, exclude=exclude,
+                                present=present, absent=absent,
                                 min_subset_size=min_subset_size,
                                 max_subset_size=max_subset_size,
                                 min_degree=min_degree, max_degree=max_degree)

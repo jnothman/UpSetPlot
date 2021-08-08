@@ -18,7 +18,7 @@ example = generate_counts()
 # can be optionally generated.
 
 upset = UpSet(example)
-upset.style_subsets(include=["cat1", "cat2"],
+upset.style_subsets(present=["cat1", "cat2"],
                     facecolor="blue",
                     label="special")
 upset.plot()
@@ -29,7 +29,7 @@ plt.show()
 # ... or styling can be applied by the categories absent in a subset.
 
 upset = UpSet(example, orientation="vertical")
-upset.style_subsets(include="cat2", exclude="cat1", edgecolor="red",
+upset.style_subsets(present="cat2", absent="cat1", edgecolor="red",
                     linewidth=2)
 upset.plot()
 plt.suptitle("Border for subsets including cat2 but not cat1")
@@ -52,9 +52,9 @@ plt.show()
 
 
 upset = UpSet(example, facecolor="gray")
-upset.style_subsets(include="cat0", label="Contains cat0", facecolor="blue")
-upset.style_subsets(include="cat1", label="Contains cat1", hatch="xx")
-upset.style_subsets(include="cat2", label="Contains cat2", edgecolor="red")
+upset.style_subsets(present="cat0", label="Contains cat0", facecolor="blue")
+upset.style_subsets(present="cat1", label="Contains cat1", hatch="xx")
+upset.style_subsets(present="cat2", label="Contains cat2", edgecolor="red")
 
 # reduce legend size:
 params = {'legend.fontsize': 8}
