@@ -449,17 +449,27 @@ def test_add_catplot():
         upset.plot(fig)
 
 
-def _get_patch_data(axes, swap=False):
+def _get_patch_data(axes, is_vertical):
     out = [{"y": patch.get_y(), "x": patch.get_x(),
             "h": patch.get_height(), "w": patch.get_width(),
-            "c": patch.get_facecolor()}
+            "fc": patch.get_facecolor(),
+            "ec": patch.get_edgecolor(),
+            "lw": patch.get_linewidth(),
+            "ls": patch.get_linestyle(),
+            "hatch": patch.get_hatch(),
+            }
            for patch in axes.patches]
-    if swap:
-        out = [{"y": patch["x"], "x": patch["y"],
+    if is_vertical:
+        out = [{"y": patch["x"], "x": 6.5 - patch["y"],
                 "h": patch["w"], "w": patch["h"],
-                "c": patch["c"]}
+                "fc": patch["fc"],
+                "ec": patch["ec"],
+                "lw": patch["lw"],
+                "ls": patch["ls"],
+                "hatch": patch["hatch"],
+                }
                for patch in out]
-    return pd.DataFrame(out)
+    return pd.DataFrame(out).sort_values("x").reset_index(drop=True)
 
 
 def _get_color_to_label_from_legend(ax):
@@ -487,8 +497,8 @@ def test_add_stacked_bars(orientation, show_counts):
     stacked_axes = upset_axes["extra1"]
 
     is_vertical = orientation == 'vertical'
-    int_rects = _get_patch_data(int_axes, swap=is_vertical)
-    stacked_rects = _get_patch_data(stacked_axes, swap=is_vertical)
+    int_rects = _get_patch_data(int_axes, is_vertical)
+    stacked_rects = _get_patch_data(stacked_axes, is_vertical)
 
     # check bar heights match between int_rects and stacked_rects
     assert_series_equal(int_rects.groupby("x")["h"].sum(),
@@ -499,7 +509,7 @@ def test_add_stacked_bars(orientation, show_counts):
             [elem.get_text() for elem in stacked_axes.texts])
 
     color_to_label = _get_color_to_label_from_legend(stacked_axes)
-    stacked_rects["label"] = stacked_rects["c"].map(color_to_label)
+    stacked_rects["label"] = stacked_rects["fc"].map(color_to_label)
     # check totals for each label
     assert_series_equal(stacked_rects.groupby("label")["h"].sum(),
                         df.groupby("label").size(),
@@ -571,8 +581,8 @@ def test_add_stacked_bars_sum_over(int_sum_over, stack_sum_over, show_counts):
     int_axes = upset_axes["intersections"]
     stacked_axes = upset_axes["extra1"]
 
-    int_rects = _get_patch_data(int_axes)
-    stacked_rects = _get_patch_data(stacked_axes)
+    int_rects = _get_patch_data(int_axes, is_vertical=False)
+    stacked_rects = _get_patch_data(stacked_axes, is_vertical=False)
 
     if int_sum_over == stack_sum_over:
         # check bar heights match between int_rects and stacked_rects
@@ -693,3 +703,202 @@ def test_matrix_plot_margins(x, orientation):
     attr = 'get_xlim' if orientation == 'horizontal' else 'get_ylim'
     lim = getattr(axes['matrix'], attr)()
     assert expected_width == lim[1] - lim[0]
+
+
+def _make_facecolor_list(colors):
+    return [{"facecolor": c} for c in colors]
+
+
+CAT1_2_RED_STYLES = _make_facecolor_list(["blue", "blue", "blue", "blue",
+                                          "red", "blue", "blue", "red"])
+CAT1_RED_STYLES = _make_facecolor_list(["blue", "red", "blue", "blue",
+                                        "red", "red", "blue", "red"])
+CAT_NOT1_RED_STYLES = _make_facecolor_list(["red", "blue", "red", "red",
+                                            "blue", "blue", "red", "blue"])
+CAT1_NOT2_RED_STYLES = _make_facecolor_list(["blue", "red", "blue", "blue",
+                                             "blue", "red", "blue", "blue"])
+CAT_NOT1_2_RED_STYLES = _make_facecolor_list(["red", "blue", "blue", "red",
+                                              "blue", "blue", "blue", "blue"])
+
+
+@pytest.mark.parametrize(
+    "kwarg_list,expected_subset_styles,expected_legend",
+    [
+        # Different forms of including two categories
+        ([{"present": ["cat1", "cat2"], "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        ([{"present": {"cat1", "cat2"}, "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        ([{"present": ("cat1", "cat2"), "facecolor": "red"}],
+         CAT1_2_RED_STYLES, []),
+        # with legend
+        ([{"present": ("cat1", "cat2"), "facecolor": "red", "label": "foo"}],
+         CAT1_2_RED_STYLES, [({"facecolor": "red"}, "foo")]),
+        # present only cat1
+        ([{"present": ("cat1",), "facecolor": "red"}],
+         CAT1_RED_STYLES, []),
+        ([{"present": "cat1", "facecolor": "red"}],
+         CAT1_RED_STYLES, []),
+        # Some uses of absent
+        ([{"absent": "cat1", "facecolor": "red"}],
+         CAT_NOT1_RED_STYLES, []),
+        ([{"present": "cat1", "absent": ["cat2"], "facecolor": "red"}],
+         CAT1_NOT2_RED_STYLES, []),
+        ([{"absent": ["cat2", "cat1"], "facecolor": "red"}],
+         CAT_NOT1_2_RED_STYLES, []),
+        # min/max args
+        ([{"present": ["cat1", "cat2"], "min_degree": 3, "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 7 + ["red"]), []),
+        ([{"present": ["cat1", "cat2"], "max_subset_size": 3000,
+           "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 7 + ["red"]), []),
+        ([{"present": ["cat1", "cat2"], "max_degree": 2, "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 4 + ["red"] + ["blue"] * 3), []),
+        ([{"present": ["cat1", "cat2"], "min_subset_size": 3000,
+           "facecolor": "red"}],
+         _make_facecolor_list(["blue"] * 4 + ["red"] + ["blue"] * 3), []),
+        # cat1 _or_ cat2
+        ([{"present": "cat1", "facecolor": "red"},
+          {"present": "cat2", "facecolor": "red"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]), []),
+        # With multiple uses of label
+        ([{"present": "cat1", "facecolor": "red", "label": "foo"},
+          {"present": "cat2", "facecolor": "red", "label": "bar"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]),
+         [({"facecolor": "red"}, "foo; bar")]),
+        ([{"present": "cat1", "facecolor": "red", "label": "foo"},
+          {"present": "cat2", "facecolor": "red", "label": "foo"}],
+         _make_facecolor_list(["blue", "red", "red", "blue",
+                               "red", "red", "red", "red"]),
+         [({"facecolor": "red"}, "foo")]),
+        # With multiple colours, the latest overrides
+        ([{"present": "cat1", "facecolor": "red", "label": "foo"},
+          {"present": "cat2", "facecolor": "green", "label": "bar"}],
+         _make_facecolor_list(["blue", "red", "green", "blue",
+                               "green", "red", "green", "green"]),
+         [({"facecolor": "red"}, "foo"),
+          ({"facecolor": "green"}, "bar")]),
+        # Combining multiple style properties
+        ([{"present": "cat1", "facecolor": "red", "hatch": "//"},
+          {"present": "cat2", "edgecolor": "green", "linestyle": "dotted"}],
+         [{"facecolor": "blue"},
+          {"facecolor": "red", "hatch": "//"},
+          {"facecolor": "blue", "edgecolor": "green", "linestyle": "dotted"},
+          {"facecolor": "blue"},
+          {"facecolor": "red", "hatch": "//", "edgecolor": "green",
+           "linestyle": "dotted"},
+          {"facecolor": "red", "hatch": "//"},
+          {"facecolor": "blue", "edgecolor": "green",
+           "linestyle": "dotted"},
+          {"facecolor": "red", "hatch": "//", "edgecolor": "green",
+           "linestyle": "dotted"},
+          ],
+         []),
+    ])
+def test_style_subsets(kwarg_list, expected_subset_styles, expected_legend):
+    data = generate_counts()
+    upset = UpSet(data, facecolor="blue")
+    for kw in kwarg_list:
+        upset.style_subsets(**kw)
+    actual_subset_styles = upset.subset_styles
+    assert actual_subset_styles == expected_subset_styles
+    assert upset.subset_legend == expected_legend
+
+
+def _dots_to_dataframe(ax, is_vertical):
+    matrix_path_collection = ax.collections[0]
+    matrix_dots = pd.DataFrame(
+        matrix_path_collection.get_offsets(), columns=["x", "y"]
+    ).join(
+        pd.DataFrame(matrix_path_collection.get_facecolors(),
+                     columns=["fc_r", "fc_g", "fc_b", "fc_a"]),
+    ).join(
+        pd.DataFrame(matrix_path_collection.get_edgecolors(),
+                     columns=["ec_r", "ec_g", "ec_b", "ec_a"]),
+    ).assign(
+        lw=matrix_path_collection.get_linewidths(),
+        ls=matrix_path_collection.get_linestyles(),
+        hatch=matrix_path_collection.get_hatch(),
+    )
+
+    matrix_dots["ls_offset"] = matrix_dots["ls"].map(
+        lambda tup: tup[0]).astype(float)
+    matrix_dots["ls_seq"] = matrix_dots["ls"].map(
+        lambda tup: None if tup[1] is None else tuple(tup[1]))
+    del matrix_dots["ls"]
+
+    if is_vertical:
+        matrix_dots[["x", "y"]] = matrix_dots[["y", "x"]]
+        matrix_dots["x"] = 7 - matrix_dots["x"]
+    return matrix_dots
+
+
+@pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
+def test_style_subsets_artists(orientation):
+    # Check that subset_styles are all appropriately reflected in matplotlib
+    # artists.
+    # This may be a bit overkill, and too coupled with implementation details.
+    is_vertical = orientation == 'vertical'
+    data = generate_counts()
+    upset = UpSet(data, orientation=orientation)
+    subset_styles = [
+        {"facecolor": "black"},
+        {"facecolor": "red"},
+        {"edgecolor": "red"},
+        {"edgecolor": "red", "linewidth": 4},
+        {"linestyle": "dotted"},
+        {"edgecolor": "red", "facecolor": "blue", "hatch": "//"},
+        {"facecolor": "blue"},
+        {},
+    ]
+
+    if is_vertical:
+        upset.subset_styles = subset_styles[::-1]
+    else:
+        upset.subset_styles = subset_styles
+
+    upset_axes = upset.plot()
+
+    int_rects = _get_patch_data(upset_axes["intersections"], is_vertical)
+    int_rects[["fc_r", "fc_g", "fc_b", "fc_a"]] = (
+        int_rects.pop("fc").apply(lambda x: pd.Series(x)))
+    int_rects[["ec_r", "ec_g", "ec_b", "ec_a"]] = (
+        int_rects.pop("ec").apply(lambda x: pd.Series(x)))
+    int_rects["ls_is_solid"] = int_rects.pop("ls").map(
+        lambda x: x == "solid" or pd.isna(x))
+    expected = pd.DataFrame({
+        "fc_r": [0, 1, 0, 0, 0, 0, 0, 0],
+        "fc_g": [0, 0, 0, 0, 0, 0, 0, 0],
+        "fc_b": [0, 0, 0, 0, 0, 1, 1, 0],
+        "ec_r": [0, 1, 1, 1, 0, 1, 0, 0],
+        "ec_g": [0, 0, 0, 0, 0, 0, 0, 0],
+        "ec_b": [0, 0, 0, 0, 0, 0, 1, 0],
+        "lw": [1, 1, 1, 4, 1, 1, 1, 1],
+        "ls_is_solid": [True, True, True, True, False, True, True, True],
+    })
+
+    assert_frame_equal(expected, int_rects[expected.columns],
+                       check_dtype=False)
+
+    styled_dots = _dots_to_dataframe(upset_axes["matrix"], is_vertical)
+    baseline_dots = _dots_to_dataframe(
+        UpSet(data, orientation=orientation).plot()["matrix"],
+        is_vertical
+    )
+    inactive_dot_mask = (baseline_dots[["fc_a"]] < 1).values.ravel()
+    assert_frame_equal(baseline_dots.loc[inactive_dot_mask],
+                       styled_dots.loc[inactive_dot_mask])
+
+    styled_dots = styled_dots.loc[~inactive_dot_mask]
+
+    styled_dots = styled_dots.drop(columns="y").groupby("x").apply(
+        lambda df: df.drop_duplicates())
+    styled_dots["ls_is_solid"] = styled_dots.pop("ls_seq").isna()
+    assert_frame_equal(expected.iloc[1:].reset_index(drop=True),
+                       styled_dots[expected.columns].reset_index(drop=True),
+                       check_dtype=False)
+
+    # TODO: check lines between dots
+    # matrix_line_collection = upset_axes["matrix"].collections[1]

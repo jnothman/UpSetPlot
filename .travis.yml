@@ -27,7 +27,7 @@ env:
 matrix:
   include:
     - env: CONDA_DEPS="python=2.7 pandas matplotlib"
-    - env: CONDA_DEPS="python=3.5 pandas=0.23 matplotlib=2.0.2 numpy=1.9.3"
+    - env: CONDA_DEPS="python=3.5 pandas=0.23 matplotlib=2.1.2 numpy=1.9.3"
     - env: CONDA_DEPS="python=3.6 pandas matplotlib seaborn"
     - env: CONDA_DEPS="python pandas matplotlib seaborn scikit-learn"  # extra deps to run examples
 
