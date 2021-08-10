@@ -3,6 +3,9 @@ What's new in version 0.6
 
 [In Development]
 
+What's new in version 0.6
+-------------------------
+
 - Added `add_stacked_bars`, similar to `add_catplot` but to add stacked bar
   charts to show discrete variable distributions within each subset.
   (:issue:`137`)
