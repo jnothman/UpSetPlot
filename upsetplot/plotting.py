@@ -764,7 +764,7 @@ class UpSet:
         # Prepare styling
         styles = [[self.subset_styles[i]
                   if inclusion[i, j]
-                  else {"facecolor": self._other_dots_color}
+                  else {"facecolor": self._other_dots_color, "linewidth": 0}
                   for j in range(n_cats)]
                   for i in range(len(data))
                   ]
@@ -775,8 +775,7 @@ class UpSet:
                          "linestyle": "linestyles",
                          "hatch": "hatch"}
         styles = pd.DataFrame(styles).reindex(columns=style_columns.keys())
-        styles["linewidth"].fillna(0 if pd.isna(styles["edgecolor"]).all()
-                                   else 1, inplace=True)
+        styles["linewidth"].fillna(1, inplace=True)
         styles["facecolor"].fillna(self._facecolor, inplace=True)
         styles["edgecolor"].fillna(styles["facecolor"], inplace=True)
         styles["linestyle"].fillna("solid", inplace=True)
@@ -830,6 +829,9 @@ class UpSet:
                                 title='Intersection size',
                                 colors=self._facecolor)
         for style, rect in zip(self.subset_styles, rects):
+            style = style.copy()
+            style.setdefault("edgecolor",
+                             style.get("facecolor", self._facecolor))
             for attr, val in style.items():
                 getattr(rect, "set_" + attr)(val)
 
