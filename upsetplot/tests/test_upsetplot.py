@@ -887,7 +887,7 @@ def test_style_subsets_artists(orientation):
         UpSet(data, orientation=orientation).plot()["matrix"],
         is_vertical
     )
-    inactive_dot_mask = (baseline_dots[["fc_a"]] < 1).values
+    inactive_dot_mask = (baseline_dots[["fc_a"]] < 1).values.ravel()
     assert_frame_equal(baseline_dots.loc[inactive_dot_mask],
                        styled_dots.loc[inactive_dot_mask])
 
