@@ -863,9 +863,9 @@ def test_style_subsets_artists(orientation):
 
     int_rects = _get_patch_data(upset_axes["intersections"], is_vertical)
     int_rects[["fc_r", "fc_g", "fc_b", "fc_a"]] = (
-        int_rects.pop("fc").explode().values.reshape(-1, 4))
+        int_rects.pop("fc").apply(lambda x: pd.Series(x)))
     int_rects[["ec_r", "ec_g", "ec_b", "ec_a"]] = (
-        int_rects.pop("ec").explode().values.reshape(-1, 4))
+        int_rects.pop("ec").apply(lambda x: pd.Series(x)))
     int_rects["ls_is_solid"] = int_rects.pop("ls").map(
         lambda x: x == "solid" or pd.isna(x))
     expected = pd.DataFrame({

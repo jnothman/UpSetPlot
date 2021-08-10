@@ -762,13 +762,16 @@ class UpSet:
         inclusion = data.index.to_frame().values
 
         # Prepare styling
-        styles = [[self.subset_styles[i]
-                  if inclusion[i, j]
-                  else {"facecolor": self._other_dots_color, "linewidth": 0}
-                  for j in range(n_cats)]
-                  for i in range(len(data))
-                  ]
-        styles = sum(styles, [])
+        styles = [
+            [
+                self.subset_styles[i]
+                if inclusion[i, j]
+                else {"facecolor": self._other_dots_color, "linewidth": 0}
+                for j in range(n_cats)
+            ]
+            for i in range(len(data))
+        ]
+        styles = sum(styles, [])  # flatten nested list
         style_columns = {"facecolor": "facecolors",
                          "edgecolor": "edgecolors",
                          "linewidth": "linewidths",
