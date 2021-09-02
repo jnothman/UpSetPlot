@@ -223,6 +223,10 @@ def query(data, present=None, absent=None,
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
+
+    Returns
+    -------
+    QueryResult
     """
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
