@@ -840,7 +840,7 @@ class UpSet:
 
         if self.subset_legend:
             styles, labels = zip(*self.subset_legend)
-            styles = [patches.Patch(**style) for style in styles]
+            styles = [patches.Patch(**patch_style) for patch_style in styles]
             ax.legend(styles, labels)
 
     def _label_sizes(self, ax, rects, where):
