@@ -26,3 +26,8 @@ Dataset loading and generation
 .. autofunction:: generate_counts
 
 .. autofunction:: generate_samples
+
+Data querying and transformation
+--------------------------------
+
+.. autofunction:: query
