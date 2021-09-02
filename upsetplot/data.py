@@ -91,7 +91,7 @@ def from_indicators(indicators, data=None):
     This loader also supports the case where the indicator columns can be
     derived from `data`.
 
-    .. versionadded: 0.6
+    .. versionadded:: 0.6
 
     Parameters
     ----------

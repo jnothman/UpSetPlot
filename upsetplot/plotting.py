@@ -290,13 +290,13 @@ class UpSet:
         intersected. If None, the order they appear in the data input is
         used.
 
-        .. versionchanged: 0.5
+        .. versionchanged:: 0.5
             Setting None was added.
     sort_categories_by : {'cardinality', None}
         Whether to sort the categories by total cardinality, or leave them
         in the provided order.
 
-        .. versionadded: 0.3
+        .. versionadded:: 0.3
     subset_size : {'auto', 'count', 'sum'}
         Configures how to calculate the size of a subset. Choices are:
 
@@ -320,36 +320,36 @@ class UpSet:
         a size smaller than this threshold will be omitted from plotting.
         Size may be a sum of values, see `subset_size`.
 
-        .. versionadded: 0.5
+        .. versionadded:: 0.5
     max_subset_size : int, optional
         Maximum size of a subset to be shown in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
 
-        .. versionadded: 0.5
+        .. versionadded:: 0.5
     min_degree : int, optional
         Minimum degree of a subset to be shown in the plot.
 
-        .. versionadded: 0.5
+        .. versionadded:: 0.5
     max_degree : int, optional
         Maximum degree of a subset to be shown in the plot.
 
-        .. versionadded: 0.5
+        .. versionadded:: 0.5
     facecolor : 'auto' or matplotlib color or float
         Color for bar charts and active dots. Defaults to black if
         axes.facecolor is a light color, otherwise white.
 
-        .. versionchanged: 0.6
+        .. versionchanged:: 0.6
             Before 0.6, the default was 'black'
     other_dots_color : matplotlib color or float
         Color for shading of inactive dots, or opacity (between 0 and 1)
         applied to facecolor.
 
-        .. versionadded: 0.6
+        .. versionadded:: 0.6
     shading_color : matplotlib color or float
         Color for shading of odd rows in matrix and totals, or opacity (between
         0 and 1) applied to facecolor.
 
-        .. versionadded: 0.6
+        .. versionadded:: 0.6
     with_lines : bool
         Whether to show lines joining dots in the matrix, to mark multiple
         categories being intersected.
@@ -359,7 +359,7 @@ class UpSet:
         The intersections plot should be large enough to fit this many matrix
         elements. Set to 0 to disable intersection size bars.
 
-        .. versionchanged: 0.4
+        .. versionchanged:: 0.4
             Setting to 0 is handled.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
@@ -373,7 +373,7 @@ class UpSet:
         of the intersection relative to the total dataset.
         This may be applied with or without show_counts.
 
-        .. versionadded: 0.4
+        .. versionadded:: 0.4
     """
     _default_figsize = (10, 6)
 
@@ -570,7 +570,7 @@ class UpSet:
 
         Used to plot categorical variable distributions within each subset.
 
-        .. versionadded: 0.6
+        .. versionadded:: 0.6
 
         Parameters
         ----------
