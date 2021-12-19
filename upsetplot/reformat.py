@@ -173,6 +173,8 @@ def query(data, present=None, absent=None,
           subset_size='auto', sum_over=None):
     """Transform and filter a categorised dataset
 
+    Retrieve the set of items and totals corresponding to subsets of interest.
+
     Parameters
     ----------
     data : pandas.Series or pandas.DataFrame
