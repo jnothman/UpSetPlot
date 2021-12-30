@@ -1,3 +1,4 @@
+
 import pytest
 import pandas as pd
 from pandas.util.testing import assert_series_equal, assert_frame_equal
@@ -18,6 +19,11 @@ from upsetplot import query
     [{"present": "cat1"}, {"absent": "cat1"}],
     [{"max_degree": 0}, {"min_degree": 1, "max_degree": 2}, {"min_degree": 3}],
     [{"max_subset_size": 30}, {"min_subset_size": 31}],
+    [{"present": "cat1", "max_subset_size": 30},
+     {"absent": "cat1", "max_subset_size": 30},
+     {"present": "cat1", "min_subset_size": 31},
+     {"absent": "cat1", "min_subset_size": 31},
+     ],
 ])
 def test_mece_queries(data, param_set):
     unfiltered_results = query(data)
