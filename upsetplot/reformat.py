@@ -268,7 +268,6 @@ def query(data, present=None, absent=None,
            True   False     3
     False  True   False     1
     Name: size, dtype: int64
-    >>> query(data, min_degree=1, sort_by="cardinality").data.iloc[-1]
     """
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
