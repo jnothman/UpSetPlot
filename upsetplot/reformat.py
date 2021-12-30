@@ -204,6 +204,8 @@ def query(data, present=None, absent=None,
         If 'degree', they are listed in order of the number of categories
         intersected. If None, the order they appear in the data input is
         used.
+
+        Note this affects ``subset_sizes`` but not ``data``.
     sort_categories_by : {'cardinality', None}
         Whether to sort the categories by total cardinality, or leave them
         in the provided order.
@@ -229,6 +231,44 @@ def query(data, present=None, absent=None,
     Returns
     -------
     QueryResult
+        Including filtered ``data``, filtered and sorted ``subset_sizes`` and
+        overall ``category_totals``.
+
+    Examples
+    --------
+    >>> from upsetplot import query, generate_samples
+    >>> data = generate_samples(n_samples=20)
+    >>> result = query(data, present="cat1", max_subset_size=4)
+    >>> result.category_totals
+    cat1    14
+    cat2     4
+    cat0     0
+    dtype: int64
+    >>> result.subset_sizes
+    cat1  cat2  cat0
+    True  True  False    3
+    Name: size, dtype: int64
+    >>> result.data
+                     index     value
+    cat1 cat2 cat0
+    True True False      0  2.04...
+              False      2  2.05...
+              False     10  2.55...
+
+    # sorting
+    >>> query(data, min_degree=1, sort_by="degree").subset_sizes
+    cat1   cat2   cat0
+    True   False  False    11
+    False  True   False     1
+    True   True   False     3
+    Name: size, dtype: int64
+    >>> query(data, min_degree=1, sort_by="cardinality").subset_sizes
+    cat1   cat2   cat0
+    True   False  False    11
+           True   False     3
+    False  True   False     1
+    Name: size, dtype: int64
+    >>> query(data, min_degree=1, sort_by="cardinality").data.iloc[-1]
     """
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
