@@ -13,173 +13,23 @@ from matplotlib import colors
 from matplotlib import patches
 from matplotlib.tight_layout import get_renderer
 
-
-def _aggregate_data(df, subset_size, sum_over):
-    """
-    Returns
-    -------
-    df : DataFrame
-        full data frame
-    aggregated : Series
-        aggregates
-    """
-    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum']
-    if subset_size not in _SUBSET_SIZE_VALUES:
-        raise ValueError('subset_size should be one of %s. Got %r'
-                         % (_SUBSET_SIZE_VALUES, subset_size))
-    if df.ndim == 1:
-        # Series
-        input_name = df.name
-        df = pd.DataFrame({'_value': df})
-
-        if subset_size == 'auto' and not df.index.is_unique:
-            raise ValueError('subset_size="auto" cannot be used for a '
-                             'Series with non-unique groups.')
-        if sum_over is not None:
-            raise ValueError('sum_over is not applicable when the input is a '
-                             'Series')
-        if subset_size == 'count':
-            sum_over = False
-        else:
-            sum_over = '_value'
-    else:
-        # DataFrame
-        if sum_over is False:
-            raise ValueError('Unsupported value for sum_over: False')
-        elif subset_size == 'auto' and sum_over is None:
-            sum_over = False
-        elif subset_size == 'count':
-            if sum_over is not None:
-                raise ValueError('sum_over cannot be set if subset_size=%r' %
-                                 subset_size)
-            sum_over = False
-        elif subset_size == 'sum':
-            if sum_over is None:
-                raise ValueError('sum_over should be a field name if '
-                                 'subset_size="sum" and a DataFrame is '
-                                 'provided.')
-
-    gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
-    if sum_over is False:
-        aggregated = gb.size()
-        aggregated.name = 'size'
-    elif hasattr(sum_over, 'lower'):
-        aggregated = gb[sum_over].sum()
-    else:
-        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
-
-    if aggregated.name == '_value':
-        aggregated.name = input_name
-
-    return df, aggregated
-
-
-def _check_index(df):
-    # check all indices are boolean
-    if not all(set([True, False]) >= set(level)
-               for level in df.index.levels):
-        raise ValueError('The DataFrame has values in its index that are not '
-                         'boolean')
-    df = df.copy(deep=False)
-    # XXX: this may break if input is not MultiIndex
-    kw = {'levels': [x.astype(bool) for x in df.index.levels],
-          'names': df.index.names,
-          }
-    if hasattr(df.index, 'codes'):
-        # compat for pandas <= 0.20
-        kw['codes'] = df.index.codes
-    else:
-        kw['labels'] = df.index.labels
-    df.index = pd.MultiIndex(**kw)
-    return df
-
-
-def _scalar_to_list(val):
-    if not isinstance(val, (typing.Sequence, set)) or isinstance(val, str):
-        val = [val]
-    return val
-
-
-def _get_subset_mask(agg, min_subset_size, max_subset_size,
-                     min_degree, max_degree,
-                     present, absent):
-    """Get a mask over subsets based on size, degree or category presence"""
-    subset_mask = True
-    if min_subset_size is not None:
-        subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
-    if max_subset_size is not None:
-        subset_mask = np.logical_and(subset_mask, agg <= max_subset_size)
-    if (min_degree is not None and min_degree >= 0) or max_degree is not None:
-        degree = agg.index.to_frame().sum(axis=1)
-        if min_degree is not None:
-            subset_mask = np.logical_and(subset_mask, degree >= min_degree)
-        if max_degree is not None:
-            subset_mask = np.logical_and(subset_mask, degree <= max_degree)
-    if present is not None:
-        for col in _scalar_to_list(present):
-            subset_mask = np.logical_and(
-                subset_mask,
-                agg.index.get_level_values(col).values)
-    if absent is not None:
-        for col in _scalar_to_list(absent):
-            exclude_mask = np.logical_not(
-                agg.index.get_level_values(col).values)
-            subset_mask = np.logical_and(subset_mask, exclude_mask)
-    return subset_mask
-
-
-def _filter_subsets(df, agg,
-                    min_subset_size, max_subset_size,
-                    min_degree, max_degree):
-    subset_mask = _get_subset_mask(agg,
-                                   min_subset_size=min_subset_size,
-                                   max_subset_size=max_subset_size,
-                                   min_degree=min_degree,
-                                   max_degree=max_degree,
-                                   present=None, absent=None)
-
-    if subset_mask is True:
-        return df, agg
-
-    agg = agg[subset_mask]
-    df = df[df.index.isin(agg.index)]
-    return df, agg
+from .reformat import query, _get_subset_mask
 
 
 def _process_data(df, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=None, max_subset_size=None,
                   min_degree=None, max_degree=None, reverse=False):
-    df, agg = _aggregate_data(df, subset_size, sum_over)
-    total = agg.sum()
-    df = _check_index(df)
-    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
-              for name in agg.index.names]
-    totals = pd.Series(totals, index=agg.index.names)
 
-    # filter subsets:
-    df, agg = _filter_subsets(df, agg,
-                              min_subset_size, max_subset_size,
-                              min_degree, max_degree)
+    results = query(df, sort_by=sort_by, sort_categories_by=sort_categories_by,
+                    subset_size=subset_size, sum_over=sum_over,
+                    min_subset_size=min_subset_size,
+                    max_subset_size=max_subset_size,
+                    min_degree=min_degree, max_degree=max_degree)
 
-    # sort:
-    if sort_categories_by == 'cardinality':
-        totals.sort_values(ascending=False, inplace=True)
-    elif sort_categories_by is not None:
-        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
-    df = df.reorder_levels(totals.index.values)
-    agg = agg.reorder_levels(totals.index.values)
-
-    if sort_by == 'cardinality':
-        agg = agg.sort_values(ascending=False)
-    elif sort_by == 'degree':
-        index_tuples = sorted(agg.index,
-                              key=lambda x: (sum(x),) + tuple(reversed(x)))
-        agg = agg.reindex(pd.MultiIndex.from_tuples(index_tuples,
-                                                    names=agg.index.names))
-    elif sort_by is None:
-        pass
-    else:
-        raise ValueError('Unknown sort_by: %r' % sort_by)
+    df = results.data
+    agg = results.subset_sizes
+    totals = results.category_totals
+    total = totals.sum()
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -198,6 +48,8 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
                   index=data_packed))
     if reverse:
         agg = agg[::-1]
+
+    total = agg.sum()
     return total, df, agg, totals
 
 
