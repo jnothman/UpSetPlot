@@ -29,7 +29,7 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     df = results.data
     agg = results.subset_sizes
     totals = results.category_totals
-    total = totals.sum()
+    total = agg.sum()
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
