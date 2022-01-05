@@ -49,7 +49,6 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     if reverse:
         agg = agg[::-1]
 
-    total = agg.sum()
     return total, df, agg, totals
 
 
