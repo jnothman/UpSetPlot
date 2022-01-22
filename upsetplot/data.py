@@ -1,7 +1,7 @@
 from __future__ import print_function, division, absolute_import
 from numbers import Number
 import functools
-import distutils
+from distutils.version import LooseVersion
 import warnings
 
 import pandas as pd
@@ -375,7 +375,7 @@ def from_contents(contents, data=None, id_column='id'):
         raise ValueError('Got duplicate ids in a category')
 
     concat = pd.concat
-    if distutils.version.LooseVersion(pd.__version__) >= '0.23.0':
+    if LooseVersion(pd.__version__) >= '0.23.0':
         # silence the warning
         concat = functools.partial(concat, sort=False)
 
