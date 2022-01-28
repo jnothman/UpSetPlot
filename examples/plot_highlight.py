@@ -3,7 +3,8 @@
 Highlighting selected subsets
 =============================
 
-Demonstrates use of the `style_subsets` and `style_axes` method to mark some subsets or style axes differently.
+Demonstrates use of the `style_subsets` and `style_axes` method
+to mark some subsets or style axes differently.
 
 """
 

@@ -275,7 +275,8 @@ class UpSet:
                                       min_degree=min_degree,
                                       max_degree=max_degree,
                                       reverse=not self._horizontal)
-        self.axes_styles = {k: {"facecolor": self._shading_color} for k in self.totals.index}
+        self.axes_styles = {k: {"facecolor": self._shading_color}
+                            for k in self.totals.index}
         self.subset_styles = [{"facecolor": facecolor}
                               for i in range(len(self.intersections))]
         self.subset_legend = []  # pairs of (style, label)
@@ -784,12 +785,14 @@ class UpSet:
             ls = "-"
             lw = 0
             if name in self.axes_styles:
-                shading_color = self.axes_styles[name].get("facecolor", self._shading_color)
+                shading_color = self.axes_styles[name].get(
+                    "facecolor", self._shading_color)
                 ls = self.axes_styles[name].get("linestyle", "-")
                 lw = self.axes_styles[name].get("linewidth", 0)
                 if lw:
                     start += (lw / (self._default_figsize[0] * self.DPI))
-                    end -= (lw / (self._default_figsize[0] * self.DPI)) * 3  # 2 is not enough, 3 is visually more appealing.
+                    # 2 is not enough, 3 is visually more appealing.
+                    end -= (lw / (self._default_figsize[0] * self.DPI)) * 3
                 edgecolor = self.axes_styles[name].get("edgecolor", None)
                 visible = 1
             rect = plt.Rectangle(
@@ -823,14 +826,16 @@ class UpSet:
                    edgecolor=None, linewidth=None, linestyle=None):
         """Updates the style of axes names
 
-        Parameters are either used to select them by name, or to style them with
-        attributes of :class:`matplotlib.patches.Patch`.
+        Parameters are either used to select them by name, or to style them 
+        with attributes of :class:`matplotlib.patches.Patch`.
 
         Parameters
         ----------
         axes_names : list[str] axes index names.
             Axes names where the changed style is applied.
-        facecolor : str or RGBA matplotlib color tuple, optional. RGBA (red, green, blue, alpha) tuple of float values in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
+        facecolor : str or RGBA matplotlib color tuple, optional. 
+            RGBA (red, green, blue, alpha) tuple of float values 
+            in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
             Override the default UpSet facecolor for selected subsets.
         edgecolor : str or matplotlib color, optional
             Set the edgecolor for bars, dots, and the line between dots.
