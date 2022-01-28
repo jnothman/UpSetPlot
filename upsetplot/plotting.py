@@ -227,6 +227,7 @@ class UpSet:
         .. versionadded:: 0.4
     """
     _default_figsize = (10, 6)
+    DPI = 100  # standard matplotlib value
 
     def __init__(self, data, orientation='horizontal', sort_by='degree',
                  sort_categories_by='cardinality',
@@ -274,6 +275,7 @@ class UpSet:
                                       min_degree=min_degree,
                                       max_degree=max_degree,
                                       reverse=not self._horizontal)
+        self.axes_styles = {k: {"facecolor": self._shading_color} for k in self.totals.index}
         self.subset_styles = [{"facecolor": facecolor}
                               for i in range(len(self.intersections))]
         self.subset_legend = []  # pairs of (style, label)
@@ -772,11 +774,35 @@ class UpSet:
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
-        # alternating row shading (XXX: use add_patch(Rectangle)?)
-        for i in range(0, len(self.totals), 2):
-            rect = plt.Rectangle(self._swapaxes(0, i - .4),
-                                 *self._swapaxes(*(1, .8)),
-                                 facecolor=self._shading_color, lw=0, zorder=0)
+        # shade all rows, set every second row to zero visibility
+        for i, name in enumerate(self.totals.index):
+            start = 0
+            end = 1
+            shading_color = self._shading_color
+            edgecolor = None
+            visible = i % 2 == 0
+            ls = "-"
+            lw = 0
+            if name in self.axes_styles:
+                shading_color = self.axes_styles[name].get("facecolor", self._shading_color)
+                ls = self.axes_styles[name].get("linestyle", "-")
+                lw = self.axes_styles[name].get("linewidth", 0)
+                if lw:
+                    start += (lw / (self._default_figsize[0] * self.DPI))
+                    end -= (lw / (self._default_figsize[0] * self.DPI)) * 3  # 2 is not enough, 3 is visually more appealing.
+                edgecolor = self.axes_styles[name].get("edgecolor", None)
+                visible = 1
+            rect = plt.Rectangle(
+                self._swapaxes(start, i - 0.4),
+                *self._swapaxes(*(end, 0.8)),
+                facecolor=shading_color,
+                edgecolor=edgecolor,
+                ls=ls,
+                lw=lw,
+                zorder=0,
+                visible=visible,
+            )
+
             ax.add_patch(rect)
         ax.set_frame_on(False)
         ax.tick_params(
@@ -793,6 +819,29 @@ class UpSet:
         ax.set_yticks([])
         ax.set_xticklabels([])
         ax.set_yticklabels([])
+
+    def style_axes(self, axes_names: list[str], facecolor=None,
+                   edgecolor=None, linewidth=None, linestyle=None):
+        """Updates the style of axes names
+
+        Parameters are either used to select them by name, or to style them with
+        attributes of :class:`matplotlib.patches.Patch`.
+
+        Parameters
+        ----------
+        facecolor : str or RGBA matplotlib color tuple, optional. RGBA (red, green, blue, alpha) tuple of float values in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
+            Override the default UpSet facecolor for selected subsets.
+        edgecolor : str or matplotlib color, optional
+            Set the edgecolor for bars, dots, and the line between dots.
+        linewidth : int, optional
+            Line width in points for edges.
+        linestyle : str, optional
+            Line style for edges.
+        """
+        style = {"facecolor": facecolor, "edgecolor": edgecolor,
+                 "linewidth": linewidth, "linestyle": linestyle}
+        style = {k: v for k, v in style.items() if v is not None}
+        self.axes_styles.update({axes_name: style for axes_name in axes_names})
 
     def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure
