@@ -800,8 +800,7 @@ class UpSet:
                 ls=ls,
                 lw=lw,
                 zorder=0,
-                visible=visible,
-            )
+                visible=visible)
 
             ax.add_patch(rect)
         ax.set_frame_on(False)
