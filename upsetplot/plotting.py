@@ -819,7 +819,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def style_axes(self, axes_names: list[str], facecolor=None,
+    def style_axes(self, axes_names, facecolor=None,
                    edgecolor=None, linewidth=None, linestyle=None):
         """Updates the style of axes names
 
@@ -828,6 +828,8 @@ class UpSet:
 
         Parameters
         ----------
+        axes_names : list[str] axes index names.
+            Axes names where the changed style is applied.
         facecolor : str or RGBA matplotlib color tuple, optional. RGBA (red, green, blue, alpha) tuple of float values in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
             Override the default UpSet facecolor for selected subsets.
         edgecolor : str or matplotlib color, optional
