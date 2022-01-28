@@ -826,15 +826,15 @@ class UpSet:
                    edgecolor=None, linewidth=None, linestyle=None):
         """Updates the style of axes names
 
-        Parameters are either used to select them by name, or to style them 
+        Parameters are either used to select them by name, or to style them
         with attributes of :class:`matplotlib.patches.Patch`.
 
         Parameters
         ----------
         axes_names : list[str] axes index names.
             Axes names where the changed style is applied.
-        facecolor : str or RGBA matplotlib color tuple, optional. 
-            RGBA (red, green, blue, alpha) tuple of float values 
+        facecolor : str or RGBA matplotlib color tuple, optional.
+            RGBA (red, green, blue, alpha) tuple of float values
             in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
             Override the default UpSet facecolor for selected subsets.
         edgecolor : str or matplotlib color, optional
