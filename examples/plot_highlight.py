@@ -69,44 +69,47 @@ plt.show()
 # ... with fill color
 
 upset = UpSet(example)
-upset.style_axes(axes_names=["cat2"],
-                 facecolor=(0, 0, 1, 0.3))
-plt.suptitle("Paint axes with fill color")
+upset.style_categories(category_names=["cat2"],
+                       facecolor=(0, 0, 1, 0.3))
 upset.plot()
+plt.suptitle("Style categories with fill color")
+plt.show()
 
 ##########################################################################
 # ... or edgecolor.
 
 upset = UpSet(example)
-upset.style_axes(axes_names=["cat0"],
-                 facecolor=(0, 1, 0, 0.3),
-                 edgecolor="red",
-                 linestyle="-",
-                 linewidth=2)
-upset.style_axes(axes_names=["cat1"],
-                 facecolor=(1, 0, 0, 0.3),
-                 edgecolor="green",
-                 linestyle="--",
-                 linewidth=1)
-plt.suptitle("Border for axes")
+upset.style_categories(category_names=["cat0"],
+                       facecolor=(0, 1, 0, 0.3),
+                       edgecolor="red",
+                       linestyle="-",
+                       linewidth=2)
+upset.style_categories(category_names=["cat1"],
+                       facecolor=(1, 0, 0, 0.3),
+                       edgecolor="green",
+                       linestyle="--",
+                       linewidth=1)
 upset.plot()
+plt.suptitle("Border styles for categories")
+plt.show()
 
 ##########################################################################
 # Multiple stylings can be applied with different criteria in the same
 # plot.
 
 upset = UpSet(example)
-upset.style_axes(axes_names=["cat2"],
-                 facecolor=(0, 0, 1, 0.3))
-upset.style_axes(axes_names=["cat0"],
-                 facecolor=(0, 1, 0, 0.3),
-                 edgecolor="red",
-                 linestyle="-",
-                 linewidth=2)
-upset.style_axes(axes_names=["cat1"],
-                 facecolor=(1, 0, 0, 0.3),
-                 edgecolor="green",
-                 linestyle="--",
-                 linewidth=1)
-plt.suptitle("Combine all the stylings!")
+upset.style_categories(category_names=["cat2"],
+                       facecolor=(0, 0, 1, 0.3))
+upset.style_categories(category_names=["cat0"],
+                       facecolor=(0, 1, 0, 0.3),
+                       edgecolor="red",
+                       linestyle="-",
+                       linewidth=2)
+upset.style_categories(category_names=["cat1"],
+                       facecolor=(1, 0, 0, 0.3),
+                       edgecolor="green",
+                       linestyle="--",
+                       linewidth=1)
 upset.plot()
+plt.suptitle("Combine all the stylings!")
+plt.show()
