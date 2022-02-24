@@ -25,3 +25,16 @@ plt.show()
 plot(example, orientation='vertical', show_counts='%d', show_percentages=True)
 plt.suptitle('With counts and percentages shown')
 plt.show()
+
+#########################################################################
+
+from upsetplot import plotting
+
+# An UpSetplot with additional plots on vertical and tuning some visual parameters
+fig = plotting.UpSet(example, orientation='vertical', show_counts=True, facecolor="grey", element_size=75)
+fig.add_catplot('swarm', 'value', palette='colorblind')
+fig.add_catplot('swarm', 'value1', palette='colorblind')
+fig.add_catplot('swarm', 'value2', palette='colorblind')
+fig.plot()
+plt.show()
+

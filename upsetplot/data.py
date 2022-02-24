@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-def generate_samples(seed=0, n_samples=10000, n_categories=3):
+def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
     """Generate artificial samples assigned to set intersections
 
     Parameters
@@ -25,6 +25,7 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
     DataFrame
         Field 'value' is a weight or score for each element.
         Field 'index' is a unique id for each element.
+        Field(s) 'value{i}' additional values for multiple-feature samples
         Index includes a boolean indicator mask for each category.
 
         Note: Further fields may be added in future versions.
@@ -35,18 +36,21 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
         corresponding to these samples.
     """
     rng = np.random.RandomState(seed)
-    df = pd.DataFrame({'value': np.zeros(n_samples)})
+    df = pd.DataFrame(np.zeros((n_samples, len_samples)))
+    valuename_lst = [f'value{i}' if i >0 else 'value' for i in range(len_samples)]
+    df.columns = valuename_lst
+
     for i in range(n_categories):
-        r = rng.rand(n_samples)
-        df['cat%d' % i] = r > rng.rand()
-        df['value'] += r
+        r = rng.rand(n_samples, len_samples)
+        df[f'cat{i}'] = r[:,0] > rng.rand()
+        df[valuename_lst] += r
 
     df.reset_index(inplace=True)
-    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
+    df.set_index([f'cat{i}' for i in range(n_categories)], inplace=True)
     return df
 
 
-def generate_counts(seed=0, n_samples=10000, n_categories=3):
+def generate_counts(seed=0, n_samples=10000, n_categories=3, len_samples=1):
     """Generate artificial counts corresponding to set intersections
 
     Parameters
@@ -69,8 +73,9 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3):
         derived from.
     """
     df = generate_samples(seed=seed, n_samples=n_samples,
-                          n_categories=n_categories)
-    return df.value.groupby(level=list(range(n_categories))).count()
+                          n_categories=n_categories, len_samples=len_samples)
+    df.drop('index', axis=1, inplace=True)
+    return df.groupby(level=list(range(n_categories))).count()
 
 
 def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
@@ -79,7 +84,7 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
                   DeprecationWarning)
     if aggregated:
         return generate_counts(seed=seed, n_samples=n_samples,
-                               n_categories=n_sets)
+                               n_categories=n_sets)['value']
     else:
         return generate_samples(seed=seed, n_samples=n_samples,
                                 n_categories=n_sets)['value']
