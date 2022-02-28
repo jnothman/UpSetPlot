@@ -61,6 +61,8 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, len_samples=1):
         Number of samples to generate statistics over
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
+    len_samples: int
+        Number of features for each sample (value, value1, value2, ...)
 
     Returns
     -------

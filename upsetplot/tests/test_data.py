@@ -7,6 +7,7 @@ from pandas.util.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
 from upsetplot import (from_memberships, from_contents, from_indicators,
                        generate_data)
+from upsetplot.data import generate_samples, generate_counts
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
@@ -206,7 +207,61 @@ def test_from_indicators_equivalence(indicators, data):
     assert_frame_equal(from_indicators(indicators, data),
                        from_memberships([[], ["cat1"], []], data))
 
+class TestGenerateData:
+    def test_generate_data_warning(self):
+        '''
+           Check the warning araised by the function
+        '''
+        with pytest.warns(DeprecationWarning):
+            generate_data()
 
-def test_generate_data_warning():
-    with pytest.warns(DeprecationWarning):
-        generate_data()
+    def test_generate_default(self):
+        '''
+           Check that the generated data by default, fullfills the
+           correct dimensions of the data
+        '''
+        result = generate_data()
+        assert len(result.index[0]) == 3
+        assert result.shape == (10_000,)
+
+    def test_generate_samples_reproductibility(self):
+       '''
+          This test explores the reproducibility of the results
+          when a random seed has been set
+       '''
+       import numpy as np
+       seed = np.random.randint(0,100)
+       assert generate_samples(seed=seed).equals(generate_samples(seed=seed))
+
+    @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
+    @pytest.mark.parametrize("n_categories", [1,3])
+    @pytest.mark.parametrize("len_samples", [1,3])
+    def test_generate_samples_shapes(self, n_samples,n_categories, len_samples):
+        '''
+           Check the generations of different sample sizes with different
+           arguments
+           NOTICE: the generate_samples funcition has one extra column due to index,
+           unless it is unused and it is removed
+        '''
+        result = generate_samples(n_samples=n_samples,
+                                  n_categories=n_categories,
+                                  len_samples=len_samples)
+
+        if type(result.index[0]) is tuple:
+            assert len(result.index[0]) == n_categories
+        else:
+            assert result.index.is_boolean()
+
+        assert result.shape == (n_samples, len_samples+1)
+
+    @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
+    @pytest.mark.parametrize("len_samples", [1,3])
+    def test_generate_counts (self, n_samples, len_samples):
+        '''
+           Test of the function generate_counts which internally uses generate_samples
+        '''
+        result = generate_counts(n_samples=n_samples, len_samples=len_samples)
+        assert len(result.columns) == len_samples
+        assert (result.sum(axis=0) == n_samples).all()
+
+
