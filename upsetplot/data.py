@@ -42,7 +42,7 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
 
     for i in range(n_categories):
         r = rng.rand(n_samples, len_samples)
-        df[f'cat{i}'] = r[:,0] > rng.rand()
+        df['cat%d'%i] = r[:,0] > rng.rand()
         df[valuename_lst] += r
 
     df.reset_index(inplace=True)
