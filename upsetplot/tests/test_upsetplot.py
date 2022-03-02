@@ -38,7 +38,8 @@ def get_all_texts(mpl_artist):
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
-    assert x.name == 'value'
+    assert 'value' in x.columns
+    x = x.value
     for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):
@@ -93,7 +94,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
-    generate_counts(),
+    generate_counts()['value'],
 ])
 def test_subset_size_series(x):
     kw = {'sort_by': 'cardinality',
@@ -195,7 +196,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
-    generate_counts(),
+    generate_counts()['value'],
 ])
 def test_subset_size_frame(x):
     kw = {'sort_by': 'cardinality',
@@ -248,7 +249,7 @@ def test_not_unique(sort_by, sort_categories_by):
           'sort_categories_by': sort_categories_by,
           'subset_size': 'sum',
           'sum_over': None}
-    Xagg = generate_counts()
+    Xagg = generate_counts().value
     total1, df1, intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_samples()['value']
     Xunagg.loc[:] = 1
@@ -375,7 +376,7 @@ def _count_descendants(el):
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
-    X = generate_counts(n_samples=10000)
+    X = generate_counts(n_samples=10000).value
     plot(X, fig, orientation=orientation)
     n_artists_no_sizes = _count_descendants(fig)
 
@@ -416,7 +417,7 @@ def test_show_counts(orientation):
 
 def test_add_catplot():
     pytest.importorskip('seaborn')
-    X = generate_counts(n_samples=100)
+    X = generate_counts(n_samples=100).value
     upset = UpSet(X)
     # smoke test
     upset.add_catplot('violin')
@@ -430,7 +431,7 @@ def test_add_catplot():
     # check the above add_catplot did not break the state
     upset.plot(fig)
 
-    X = generate_counts(n_samples=100)
+    X = generate_counts(n_samples=100).value
     X.name = 'foo'
     X = X.to_frame()
     upset = UpSet(X, subset_size='count')
