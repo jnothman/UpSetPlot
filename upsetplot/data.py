@@ -37,7 +37,7 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
     """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame(np.zeros((n_samples, len_samples)))
-    valuename_lst = [f'value{i}' if i >0 else 'value' for i in range(len_samples)]
+    valuename_lst = ['value%d'%i if i >0 else 'value' for i in range(len_samples)]
     df.columns = valuename_lst
 
     for i in range(n_categories):
@@ -46,7 +46,7 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
         df[valuename_lst] += r
 
     df.reset_index(inplace=True)
-    df.set_index([f'cat{i}' for i in range(n_categories)], inplace=True)
+    df.set_index(['cat%d'%i for i in range(n_categories)], inplace=True)
     return df
 
 
