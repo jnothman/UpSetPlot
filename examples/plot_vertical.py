@@ -7,7 +7,7 @@ This illustrates the effect of orientation='vertical'.
 """
 
 from matplotlib import pyplot as plt
-from upsetplot import generate_counts, plot
+from upsetplot import generate_counts, plot, plotting
 
 example = generate_counts()
 plot(example, orientation='vertical')
@@ -28,9 +28,8 @@ plt.show()
 
 #########################################################################
 
-from upsetplot import plotting
-
 # An UpSetplot with additional plots on vertical and tuning some visual parameters
+example = generate_counts(len_samples=3)
 fig = plotting.UpSet(example, orientation='vertical', show_counts=True, facecolor="grey", element_size=75)
 fig.add_catplot('swarm', 'value', palette='colorblind')
 fig.add_catplot('swarm', 'value1', palette='colorblind')

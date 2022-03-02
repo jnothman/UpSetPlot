@@ -10,7 +10,7 @@ This illustrates the use of ``min_subset_size``, ``max_subset_size``,
 from matplotlib import pyplot as plt
 from upsetplot import generate_counts, plot
 
-example = generate_counts()
+example = generate_counts().value
 
 plot(example, show_counts=True)
 plt.suptitle('Nothing hidden')

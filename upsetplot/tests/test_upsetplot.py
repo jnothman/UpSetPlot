@@ -799,7 +799,7 @@ CAT_NOT1_2_RED_STYLES = _make_facecolor_list(["red", "blue", "blue", "red",
          []),
     ])
 def test_style_subsets(kwarg_list, expected_subset_styles, expected_legend):
-    data = generate_counts()
+    data = generate_counts().value
     upset = UpSet(data, facecolor="blue")
     for kw in kwarg_list:
         upset.style_subsets(**kw)
