@@ -207,6 +207,7 @@ def test_from_indicators_equivalence(indicators, data):
     assert_frame_equal(from_indicators(indicators, data),
                        from_memberships([[], ["cat1"], []], data))
 
+
 class TestGenerateData:
     def test_generate_data_warning(self):
         '''
@@ -230,18 +231,19 @@ class TestGenerateData:
           when a random seed has been set
        '''
        import numpy as np
-       seed = np.random.randint(0,100)
+       seed = np.random.randint(0, 100)
        assert generate_samples(seed=seed).equals(generate_samples(seed=seed))
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
     @pytest.mark.parametrize("n_categories", [1,3])
     @pytest.mark.parametrize("len_samples", [1,3])
-    def test_generate_samples_shapes(self, n_samples,n_categories, len_samples):
+    def test_generate_samples_shapes(self, n_samples,n_categories,
+                                     len_samples):
         '''
            Check the generations of different sample sizes with different
            arguments
-           NOTICE: the generate_samples funcition has one extra column due to index,
-           unless it is unused and it is removed
+           NOTICE: the generate_samples funcition has one extra
+           column due to index, unless it is unused and it is removed
         '''
         result = generate_samples(n_samples=n_samples,
                                   n_categories=n_categories,
@@ -252,15 +254,17 @@ class TestGenerateData:
         else:
             assert result.index.is_boolean()
 
-        assert result.shape == (n_samples, len_samples+1)
+        assert result.shape == (n_samples, len_samples + 1)
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
     @pytest.mark.parametrize("extra_columns", [0,2])
     def test_generate_counts (self, n_samples, extra_columns):
         '''
-           Test of the function generate_counts which internally uses generate_samples
+           Test of the function generate_counts
+           which internally uses generate_samples
         '''
-        result = generate_counts(n_samples=n_samples, extra_columns=extra_columns)
+        result = generate_counts(n_samples=n_samples,
+                                 extra_columns=extra_columns)
         if extra_columns:
             assert len(result.columns) == extra_columns + 1
         assert (result.sum(axis=0) == n_samples).all()

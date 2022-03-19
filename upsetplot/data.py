@@ -37,12 +37,13 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
     """
     rng = np.random.RandomState(seed)
     df = pd.DataFrame(np.zeros((n_samples, len_samples)))
-    valuename_lst = [f'value{i}' if i >0 else 'value' for i in range(len_samples)]
+    valuename_lst = [f'value{i}' if i > 0 else 'value' for i in
+                     range(len_samples)]
     df.columns = valuename_lst
 
     for i in range(n_categories):
         r = rng.rand(n_samples, len_samples)
-        df[f'cat{i}'] = r[:,0] > rng.rand()
+        df[f'cat{i}'] = r[:, 0] > rng.rand()
         df[valuename_lst] += r
 
     df.reset_index(inplace=True)
@@ -75,7 +76,8 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
         derived from.
     """
     df = generate_samples(seed=seed, n_samples=n_samples,
-                          n_categories=n_categories, len_samples=1+extra_columns)
+                          n_categories=n_categories,
+                          len_samples=1+extra_columns)
     df.drop('index', axis=1, inplace=True)
     df = df if extra_columns > 0 else df.value
     return df.groupby(level=list(range(n_categories))).count()
