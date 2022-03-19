@@ -22,7 +22,7 @@ categories, by having multiple boolean indices, like ``example`` in the
 following::
 
     >>> from upsetplot import generate_counts
-    >>> example = generate_counts().value
+    >>> example = generate_counts()
     >>> example
     cat0   cat1   cat2
     False  False  False      56

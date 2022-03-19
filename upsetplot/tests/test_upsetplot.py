@@ -38,8 +38,6 @@ def get_all_texts(mpl_artist):
 @pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
 @pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
-    assert 'value' in x.columns
-    x = x.value
     for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):
@@ -94,7 +92,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
-    generate_counts()['value'],
+    generate_counts(),
 ])
 def test_subset_size_series(x):
     kw = {'sort_by': 'cardinality',
@@ -196,7 +194,7 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
 
 @pytest.mark.parametrize('x', [
     generate_samples()['value'],
-    generate_counts()['value'],
+    generate_counts(),
 ])
 def test_subset_size_frame(x):
     kw = {'sort_by': 'cardinality',
@@ -249,7 +247,7 @@ def test_not_unique(sort_by, sort_categories_by):
           'sort_categories_by': sort_categories_by,
           'subset_size': 'sum',
           'sum_over': None}
-    Xagg = generate_counts().value
+    Xagg = generate_counts()
     total1, df1, intersections1, totals1 = _process_data(Xagg, **kw)
     Xunagg = generate_samples()['value']
     Xunagg.loc[:] = 1
@@ -376,7 +374,7 @@ def _count_descendants(el):
 @pytest.mark.parametrize('orientation', ['horizontal', 'vertical'])
 def test_show_counts(orientation):
     fig = matplotlib.figure.Figure()
-    X = generate_counts(n_samples=10000).value
+    X = generate_counts(n_samples=10000)
     plot(X, fig, orientation=orientation)
     n_artists_no_sizes = _count_descendants(fig)
 
@@ -417,7 +415,7 @@ def test_show_counts(orientation):
 
 def test_add_catplot():
     pytest.importorskip('seaborn')
-    X = generate_counts(n_samples=100).value
+    X = generate_counts(n_samples=100)
     upset = UpSet(X)
     # smoke test
     upset.add_catplot('violin')
@@ -431,7 +429,7 @@ def test_add_catplot():
     # check the above add_catplot did not break the state
     upset.plot(fig)
 
-    X = generate_counts(n_samples=100).value
+    X = generate_counts(n_samples=100)
     X.name = 'foo'
     X = X.to_frame()
     upset = UpSet(X, subset_size='count')
@@ -799,7 +797,7 @@ CAT_NOT1_2_RED_STYLES = _make_facecolor_list(["red", "blue", "blue", "red",
          []),
     ])
 def test_style_subsets(kwarg_list, expected_subset_styles, expected_legend):
-    data = generate_counts().value
+    data = generate_counts()
     upset = UpSet(data, facecolor="blue")
     for kw in kwarg_list:
         upset.style_subsets(**kw)

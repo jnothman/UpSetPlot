@@ -255,13 +255,14 @@ class TestGenerateData:
         assert result.shape == (n_samples, len_samples+1)
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
-    @pytest.mark.parametrize("len_samples", [1,3])
-    def test_generate_counts (self, n_samples, len_samples):
+    @pytest.mark.parametrize("extra_columns", [0,2])
+    def test_generate_counts (self, n_samples, extra_columns):
         '''
            Test of the function generate_counts which internally uses generate_samples
         '''
-        result = generate_counts(n_samples=n_samples, len_samples=len_samples)
-        assert len(result.columns) == len_samples
+        result = generate_counts(n_samples=n_samples, extra_columns=extra_columns)
+        if extra_columns:
+            assert len(result.columns) == extra_columns + 1
         assert (result.sum(axis=0) == n_samples).all()
 
 
