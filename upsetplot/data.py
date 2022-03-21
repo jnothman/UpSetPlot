@@ -77,7 +77,7 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     """
     df = generate_samples(seed=seed, n_samples=n_samples,
                           n_categories=n_categories,
-                          len_samples=1+extra_columns)
+                          len_samples=1 + extra_columns)
     df.drop('index', axis=1, inplace=True)
     df = df if extra_columns > 0 else df.value
     return df.groupby(level=list(range(n_categories))).count()
