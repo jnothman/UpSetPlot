@@ -230,9 +230,9 @@ class TestGenerateData:
             This test explores the reproducibility of the results
             when a random seed has been set
         '''
-       import numpy as np
-       seed = np.random.randint(0, 100)
-       assert generate_samples(seed=seed).equals(generate_samples(seed=seed))
+        import numpy as np
+        seed = np.random.randint(0, 100)
+        assert generate_samples(seed=seed).equals(generate_samples(seed=seed))
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
     @pytest.mark.parametrize("n_categories", [1, 3])
