@@ -104,7 +104,7 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
                   DeprecationWarning)
     if aggregated:
         return generate_counts(seed=seed, n_samples=n_samples,
-                               n_categories=n_sets)['value']
+                               n_categories=n_sets)
     else:
         return generate_samples(seed=seed, n_samples=n_samples,
                                 n_categories=n_sets)['value']

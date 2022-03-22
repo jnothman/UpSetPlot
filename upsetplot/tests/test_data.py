@@ -3,11 +3,11 @@ import pytest
 import pandas as pd
 import numpy as np
 from distutils.version import LooseVersion
-from pandas.util.testing import (assert_series_equal, assert_frame_equal,
+from pandas.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
 from upsetplot import (from_memberships, from_contents, from_indicators,
                        generate_data)
-from upsetplot.data import generate_samples, generate_counts
+from upsetplot.data import generate_samples, generate_counts, generate_data
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
@@ -268,3 +268,15 @@ class TestGenerateData:
         if extra_columns:
             assert len(result.columns) == extra_columns + 1
         assert (result.sum(axis=0) == n_samples).all()
+
+    @pytest.mark.parametrize("aggregated", [True, False])
+    def test_generate_data(self, aggregated):
+        '''
+           Test the return of the deprecated method
+           generate_data
+        '''
+        data = generate_data(aggregated=aggregated)
+        if aggregated:
+            assert data.equals(generate_counts())
+        else:
+            assert data.equals(generate_samples().value)
