@@ -236,9 +236,9 @@ class TestGenerateData:
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
     @pytest.mark.parametrize("n_categories", [1, 3])
-    @pytest.mark.parametrize("len_samples", [1, 3])
+    @pytest.mark.parametrize("extra_columns", [0, 2])
     def test_generate_samples_shapes(self, n_samples, n_categories,
-                                     len_samples):
+                                     extra_columns):
         '''
            Check the generations of different sample sizes with different
            arguments
@@ -247,14 +247,14 @@ class TestGenerateData:
         '''
         result = generate_samples(n_samples=n_samples,
                                   n_categories=n_categories,
-                                  len_samples=len_samples)
+                                  extra_columns=extra_columns)
 
         if type(result.index[0]) is tuple:
             assert len(result.index[0]) == n_categories
         else:
             assert result.index.is_boolean()
 
-        assert result.shape == (n_samples, len_samples + 1)
+        assert result.shape == (n_samples, extra_columns + 2)
 
     @pytest.mark.parametrize("n_samples", [100, 1_000, 10_000])
     @pytest.mark.parametrize("extra_columns", [0, 2])

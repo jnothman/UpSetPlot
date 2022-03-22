@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
+def generate_samples(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     """Generate artificial samples assigned to set intersections
 
     Parameters
@@ -19,6 +19,9 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
         Number of samples to generate
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
+    extra_columns : int
+        If a vector is required,this would indicated the number of additional
+        columns (named "value", "value1", "value2", ... )
 
     Returns
     -------
@@ -35,7 +38,9 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3, len_samples=1):
     generate_counts : Generates the counts for each subset of categories
         corresponding to these samples.
     """
+    assert extra_columns >= 0, 'extra_columns parameter should be possitive'
     rng = np.random.RandomState(seed)
+    len_samples = 1 + extra_columns
     df = pd.DataFrame(np.zeros((n_samples, len_samples)))
     valuename_lst = [f'value{i}' if i > 0 else 'value' for i in
                      range(len_samples)]
@@ -62,22 +67,32 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
         Number of samples to generate statistics over
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
-    len_samples: int
-        Number of features for each sample (value, value1, value2, ...)
+    extra_coulmns: int
+        Number of addiotional features to be use to generate each sample (value,
+        value1, value2, ...)
 
     Returns
     -------
     Series
-        Counts indexed by boolean indicator mask for each category.
+        (Default) When extra_columns is 0, counts indexed by boolean
+        indicator mask for each category.
+    DataFrame
+        When extra_columns is greater than 0, counts indexed boolean indicator mask
+        for each category and return the sum for each value. It includes the folling
+        fields:
+            Index includes a boolean indicator mask for each category.
+            Field(s) 'value{i}' counts the number of elements in that category according
+            to the mask
 
     See Also
     --------
     generate_samples : Generates a DataFrame of samples that these counts are
         derived from.
     """
+    assert extra_columns >= 0, 'extra_columns parameter should be possitive'
     df = generate_samples(seed=seed, n_samples=n_samples,
                           n_categories=n_categories,
-                          len_samples=1 + extra_columns)
+                          extra_columns=extra_columns)
     df.drop('index', axis=1, inplace=True)
     df = df if extra_columns > 0 else df.value
     return df.groupby(level=list(range(n_categories))).count()
