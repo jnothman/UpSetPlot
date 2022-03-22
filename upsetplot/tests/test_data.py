@@ -7,8 +7,7 @@ from pandas.testing import (assert_series_equal, assert_frame_equal,
                             assert_index_equal)
 from upsetplot import (from_memberships, from_contents, from_indicators,
                        generate_data)
-from upsetplot.data import (generate_samples, generate_counts,
-                            generate_data)
+from upsetplot.data import (generate_samples, generate_counts)
 
 
 @pytest.mark.parametrize('typ', [set, list, tuple, iter])
