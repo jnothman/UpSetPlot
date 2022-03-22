@@ -68,8 +68,8 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
     extra_coulmns: int
-        Number of addiotional features to be use to generate each sample (value,
-        value1, value2, ...)
+        Number of addiotional features to be use to generate each
+        sample (value, value1, value2, ...)
 
     Returns
     -------
@@ -77,12 +77,12 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
         (Default) When extra_columns is 0, counts indexed by boolean
         indicator mask for each category.
     DataFrame
-        When extra_columns is greater than 0, counts indexed boolean indicator mask
-        for each category and return the sum for each value. It includes the folling
-        fields:
+        When extra_columns is greater than 0, counts indexed boolean
+        indicator mask for each category and return the sum for each
+        value. It includes the folling fields:
             Index includes a boolean indicator mask for each category.
-            Field(s) 'value{i}' counts the number of elements in that category according
-            to the mask
+            Field(s) 'value{i}' counts the number of elements in that
+                     category accordingto the mask
 
     See Also
     --------
