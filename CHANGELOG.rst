@@ -1,3 +1,8 @@
+What's new in version 0.6.1
+---------------------------
+
+Fix for latest versions of setuptools, thanks to :user:`Marius Bakke <mbakke>`
+
 What's new in version 0.6
 -------------------------
 
