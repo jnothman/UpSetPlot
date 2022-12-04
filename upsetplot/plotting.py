@@ -561,14 +561,15 @@ class UpSet:
                      **text_kw)
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args['r'] = get_renderer()
-        textw = t.get_window_extent(*window_extent_args).width
+            window_extent_args["renderer"] = get_renderer(fig)
+        textw = t.get_window_extent(**window_extent_args).width
         t.remove()
 
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args['r'] = get_renderer()
-        figw = self._reorient(fig.get_window_extent(*window_extent_args)).width
+            window_extent_args["renderer"] = get_renderer(fig)
+        figw = self._reorient(
+                fig.get_window_extent(**window_extent_args)).width
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
         fig = self._reorient(fig)

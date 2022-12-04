@@ -8,3 +8,5 @@ sphinx-issues
 seaborn
 scikit-learn
 nbsphinx
+sphinx<2
+sphinx-rtd-theme
