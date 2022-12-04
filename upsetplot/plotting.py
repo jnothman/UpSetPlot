@@ -11,15 +11,21 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import patches
-from matplotlib.tight_layout import get_renderer
 
 from .reformat import query, _get_subset_mask
+
+# prevents ImportError on matplotlib versions >3.5.2
+try:
+    from matplotlib.tight_layout import get_renderer
+
+    RENDERER_IMPORTED = True
+except ImportError:
+    RENDERER_IMPORTED = False
 
 
 def _process_data(df, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=None, max_subset_size=None,
                   min_degree=None, max_degree=None, reverse=False):
-
     results = query(df, sort_by=sort_by, sort_categories_by=sort_categories_by,
                     subset_size=subset_size, sum_over=sum_over,
                     min_subset_size=min_subset_size,
@@ -548,16 +554,21 @@ class UpSet:
             fig = plt.gcf()
 
         # Determine text size to determine figure size / spacing
-        r = get_renderer(fig)
         text_kw = {"size": matplotlib.rcParams['xtick.labelsize']}
         # adding "x" ensures a margin
         t = fig.text(0, 0, '\n'.join(str(label) + "x"
                                      for label in self.totals.index.values),
                      **text_kw)
-        textw = t.get_window_extent(renderer=r).width
+        window_extent_args = {}
+        if RENDERER_IMPORTED:
+            window_extent_args['r'] = get_renderer()
+        textw = t.get_window_extent(*window_extent_args).width
         t.remove()
 
-        figw = self._reorient(fig.get_window_extent(renderer=r)).width
+        window_extent_args = {}
+        if RENDERER_IMPORTED:
+            window_extent_args['r'] = get_renderer()
+        figw = self._reorient(fig.get_window_extent(*window_extent_args)).width
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
         fig = self._reorient(fig)
