@@ -1,7 +1,7 @@
-What's new in version 0.6
--------------------------
+What's new in version 0.6.2
+---------------------------
 
-[In Development]
+- Fix support for matplotlib >3.5.2 (:issue:`191`. Thanks :user:`GuyTeichman`)
 
 What's new in version 0.6
 -------------------------
