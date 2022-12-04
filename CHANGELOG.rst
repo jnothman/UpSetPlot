@@ -1,7 +1,8 @@
-What's new in version 0.6
+What's new in version 0.7
 -------------------------
 
-[In Development]
+- Added `query` function to support analysing set-based data.
+- Fixed support for matplotlib >3.5.2 (:issue:`191`. Thanks :user:`GuyTeichman`)
 
 What's new in version 0.6
 -------------------------
