@@ -1,3 +1,8 @@
+What's new in version 0.8
+-------------------------
+
+- Added `subsets` attribute to QueryResult.
+
 What's new in version 0.7
 -------------------------
 
