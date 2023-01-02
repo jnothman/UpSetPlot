@@ -27,10 +27,8 @@ plt.suptitle('With counts and percentages shown')
 plt.show()
 
 #########################################################################
-"""
-    An UpSetplot with additional plots on vertical
-    and tuning some visual parameters
-"""
+# An UpSetplot with additional plots on vertical
+# and tuning some visual parameters
 example = generate_counts(extra_columns=2)
 fig = plotting.UpSet(example, orientation='vertical',
                      show_counts=True, facecolor="grey",
