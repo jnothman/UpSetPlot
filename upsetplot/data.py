@@ -73,7 +73,7 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
 
     Returns
     -------
-    Series
+    Series or DataFrame
         (Default) When extra_columns is 0, counts indexed by boolean
         indicator mask for each category.
     DataFrame
