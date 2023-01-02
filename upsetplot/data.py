@@ -67,7 +67,7 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
         Number of samples to generate statistics over
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
-    extra_coulmns: int
+    extra_columns: int
         Number of addiotional features to be use to generate each
         sample (value, value1, value2, ...)
 
