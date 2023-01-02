@@ -74,15 +74,10 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     Returns
     -------
     Series or DataFrame
-        (Default) When extra_columns is 0, counts indexed by boolean
-        indicator mask for each category.
-    DataFrame
-        When extra_columns is greater than 0, counts indexed boolean
-        indicator mask for each category and return the sum for each
-        value. It includes the folling fields:
-            Index includes a boolean indicator mask for each category.
-            Field(s) 'value{i}' counts the number of elements in that
-                     category accordingto the mask
+        A Series of counts indexed by boolean indicator mask for each category,
+        when ``extra_columns`` is 0. Otherwise a DataFrame with column ``value``
+        equivalent to the value produced when ``extra_columns`` is 0, as well as
+        further random variables ``value1``, ``value2``, for extra columns.
 
     See Also
     --------
