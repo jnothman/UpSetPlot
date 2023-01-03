@@ -177,7 +177,8 @@ def test_process_data_frame(x, sort_by, sort_categories_by):
     assert_array_equal(df3['b'], X['b'])
 
     # check subset_size='count'
-    X = pd.DataFrame({'b': np.ones(len(x), dtype=int), 'c': x})
+    X = pd.DataFrame({'b': np.ones(len(x), dtype='int64'), 'c': x})
+
     total4, df4, intersections4, totals4 = _process_data(
         X, sort_by=sort_by, sort_categories_by=sort_categories_by,
         sum_over='b', subset_size='auto')

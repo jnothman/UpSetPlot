@@ -148,8 +148,8 @@ def from_indicators(indicators, data=None):
     --------
     >>> import pandas as pd
     >>> from upsetplot import from_indicators
-
-    Just indicators
+    >>>
+    >>> # Just indicators:
     >>> indicators = {"cat1": [True, False, True, False],
     ...               "cat2": [False, True, False, False],
     ...               "cat3": [True, True, False, False]}
@@ -160,8 +160,9 @@ def from_indicators(indicators, data=None):
     True   False  False    1.0
     False  False  False    1.0
     Name: ones, dtype: float64
-
-    Where indicators are included within data, specifying columns by name
+    >>>
+    >>> # Where indicators are included within data, specifying
+    >>> # columns by name:
     >>> data = pd.DataFrame({"value": [5, 4, 6, 4], **indicators})
     >>> from_indicators(["cat1", "cat3"], data=data)
                  value   cat1   cat2   cat3
@@ -170,8 +171,8 @@ def from_indicators(indicators, data=None):
     False True       4  False   True   True
     True  False      6   True  False  False
     False False      4  False  False  False
-
-    Making indicators out of all boolean columns
+    >>>
+    >>> # Making indicators out of all boolean columns:
     >>> from_indicators(lambda data: data.select_dtypes(bool), data=data)
                        value   cat1   cat2   cat3
     cat1  cat2  cat3
@@ -179,8 +180,9 @@ def from_indicators(indicators, data=None):
     False True  True       4  False   True   True
     True  False False      6   True  False  False
     False False False      4  False  False  False
-
-    Using a dataset with missing data, we can use missingness as an indicator
+    >>>
+    >>> # Using a dataset with missing data, we can use missingness as
+    >>> # an indicator:
     >>> data = pd.DataFrame({"val1": [pd.NA, .7, pd.NA, .9],
     ...                      "val2": ["male", pd.NA, "female", "female"],
     ...                      "val3": [pd.NA, pd.NA, 23000, 78000]})

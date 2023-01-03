@@ -254,8 +254,8 @@ def query(data, present=None, absent=None,
     True True False      0  2.04...
               False      2  2.05...
               False     10  2.55...
-
-    # sorting
+    >>>
+    >>> # Sorting:
     >>> query(data, min_degree=1, sort_by="degree").subset_sizes
     cat1   cat2   cat0
     True   False  False    11

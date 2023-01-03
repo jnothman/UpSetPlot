@@ -47,6 +47,11 @@ makes:
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_generated_001.png
    :target: ../auto_examples/plot_generated.html
 
+And you can save the image in various formats::
+
+    >>> pyplot.savefig("/path/to/myplot.pdf")  # doctest: +SKIP
+    >>> pyplot.savefig("/path/to/myplot.png")  # doctest: +SKIP
+
 This plot shows the cardinality of every category combination seen in our data.
 The leftmost column counts items absent from any category. The next three
 columns count items only in ``cat1``, ``cat2`` and ``cat3`` respectively, with
