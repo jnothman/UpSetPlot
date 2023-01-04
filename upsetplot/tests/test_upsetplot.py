@@ -394,10 +394,22 @@ def test_show_counts(orientation):
     assert '2.8e+02' in get_all_texts(fig)
 
     fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_counts='{:0.2g}')
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '9.5e+03' in get_all_texts(fig)
+    assert '2.8e+02' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_percentages=True)
     assert n_artists_yes_sizes == _count_descendants(fig)
     assert '95.5%' in get_all_texts(fig)
     assert '2.8%' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_percentages='!{:0.2f}!')
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '!0.95!' in get_all_texts(fig)
+    assert '!0.03!' in get_all_texts(fig)
 
     fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_counts=True,
