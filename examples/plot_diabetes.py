@@ -32,7 +32,7 @@ diabetes_df = pd.DataFrame(diabetes.data, columns=diabetes.feature_names)
 
 # Get five features most correlated with median house value
 correls = diabetes_df.corrwith(pd.Series(diabetes.target),
-                             method='spearman').sort_values()
+                               method='spearman').sort_values()
 top_features = correls.index[-5:]
 
 # Get a binary indicator of whether each top feature is above average
@@ -42,7 +42,7 @@ diabetes_above_avg = diabetes_above_avg.rename(columns=lambda x: x + '>')
 
 # Make this indicator mask an index of diabetes_df
 diabetes_df = pd.concat([diabetes_df, diabetes_above_avg],
-                      axis=1)
+                        axis=1)
 diabetes_df = diabetes_df.set_index(list(diabetes_above_avg.columns))
 
 # Also give us access to the target (median house value)
