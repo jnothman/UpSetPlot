@@ -16,12 +16,12 @@ plt.show()
 
 ##########################################################################
 
-plot(example, orientation='vertical', show_counts='%d')
+plot(example, orientation='vertical', show_counts='{:d}')
 plt.suptitle('A vertical plot with counts shown')
 plt.show()
 
 ##########################################################################
 
-plot(example, orientation='vertical', show_counts='%d', show_percentages=True)
+plot(example, orientation='vertical', show_counts='{:d}', show_percentages=True)
 plt.suptitle('With counts and percentages shown')
 plt.show()

@@ -13,6 +13,7 @@ from matplotlib import colors
 from matplotlib import patches
 
 from .reformat import query, _get_subset_mask
+from . import util
 
 # prevents ImportError on matplotlib versions >3.5.2
 try:
@@ -224,10 +225,14 @@ class UpSet:
     show_counts : bool or str, default=False
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
-        For example, '%d' is equivalent to True.
-    show_percentages : bool, default=False
+        For example, '{:d}' is equivalent to True.
+        Note that, for legacy reasons, if the string does not contain '{',
+        it will be interpreted as a C-style format string, such as '%d'.
+    show_percentages : bool or str, default=False
         Whether to label the intersection size bars with the percentage
         of the intersection relative to the total dataset.
+        When a string, this formats the number representing a fraction of samples.
+        For example, '{:.1%}' is the default, formatting .123 as 12.3%.
         This may be applied with or without show_counts.
 
         .. versionadded:: 0.4
@@ -710,11 +715,14 @@ class UpSet:
         if not self._show_counts and not self._show_percentages:
             return
         if self._show_counts is True:
-            count_fmt = "%d"
+            count_fmt = "{:d}"
         else:
             count_fmt = self._show_counts
+            if '{' not in count_fmt:
+                count_fmt = util.to_new_pos_format(count_fmt)
+
         if self._show_percentages is True:
-            pct_fmt = "%.1f%%"
+            pct_fmt = "{:.1%}"
         else:
             pct_fmt = self._show_percentages
 
@@ -725,7 +733,7 @@ class UpSet:
                 fmt = '%s (%s)' % (count_fmt, pct_fmt)
 
             def make_args(val):
-                return val, 100 * val / self.total
+                return val, val / self.total
         elif count_fmt:
             fmt = count_fmt
 
@@ -735,7 +743,7 @@ class UpSet:
             fmt = pct_fmt
 
             def make_args(val):
-                return 100 * val / self.total,
+                return val / self.total,
 
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -743,7 +751,7 @@ class UpSet:
                 width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % make_args(width),
+                        fmt.format(*make_args(width)),
                         ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -751,7 +759,7 @@ class UpSet:
                 width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % make_args(width),
+                        fmt.format(*make_args(width)),
                         ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
@@ -759,7 +767,7 @@ class UpSet:
                 height = rect.get_height() + rect.get_y()
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         height + margin,
-                        fmt % make_args(height),
+                        fmt.format(*make_args(height)),
                         ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)
