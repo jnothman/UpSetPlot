@@ -173,7 +173,8 @@ class QueryResult:
         return {
             frozenset(categories.take(mask)): subset_data
             for mask, subset_data
-            in self.data.groupby(level=list(range(len(categories))), sort=False)
+            in self.data.groupby(level=list(range(len(categories))),
+                                 sort=False)
         }
 
 
