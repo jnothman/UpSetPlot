@@ -231,7 +231,8 @@ class UpSet:
     show_percentages : bool or str, default=False
         Whether to label the intersection size bars with the percentage
         of the intersection relative to the total dataset.
-        When a string, this formats the number representing a fraction of samples.
+        When a string, this formats the number representing a fraction of
+        samples.
         For example, '{:.1%}' is the default, formatting .123 as 12.3%.
         This may be applied with or without show_counts.
 

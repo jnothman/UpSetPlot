@@ -1,13 +1,15 @@
 """Generic utilities"""
 import re
 
-# The below is adapted from an answer to https://stackoverflow.com/questions/66822945
+# The below is adapted from an answer to
+# https://stackoverflow.com/questions/66822945
 # by Andrius at https://stackoverflow.com/a/66869159/1017546
 # Reproduced under the CC-BY-SA 3.0 licence.
 
 ODD_REPEAT_PATTERN = r'((?<!{c}){c}({c}{c})*(?!{c}))'
 EVEN_REPEAT_PATTERN = r'(?<!{c})({c}{c})+(?!{c})'
 SPECIFIER_PATTERN = r'[^(]*[diouxXeEfFgGcs]'  # TODO: handle r
+
 
 def __to_new_format(fmt: str, named=True):
     def to_named_fmt(fmt):
@@ -33,10 +35,10 @@ def __to_new_format(fmt: str, named=True):
                 'not all arguments converted during string formatting'
             )
         return re.sub(
-                rf"%({SPECIFIER_PATTERN})",
-                lambda sub_match: f'{{:{sub_match.group(1)}}}',
-                fmt
-            )
+            rf"%({SPECIFIER_PATTERN})",
+            lambda sub_match: f'{{:{sub_match.group(1)}}}',
+            fmt
+        )
 
     odd_perc_pattern = ODD_REPEAT_PATTERN.format(c='%')
     # Escape `{` and `}`, because new formatting uses it.
@@ -48,6 +50,7 @@ def __to_new_format(fmt: str, named=True):
         raise ValueError('incomplete format')
     return fmt.replace('%%', '%')
 
+
 def to_new_named_format(fmt: str) -> str:
     """Convert old style named formatting to new style formatting.
     For example: '%(x)s - %%%(y)s' -> '{x} - %{y}'
@@ -57,6 +60,7 @@ def to_new_named_format(fmt: str) -> str:
         new style formatting.
     """
     return __to_new_format(fmt, named=True)
+
 
 def to_new_pos_format(fmt: str) -> str:
     """Convert old style positional formatting to new style formatting.
