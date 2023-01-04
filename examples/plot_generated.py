@@ -26,7 +26,7 @@ plt.show()
 
 ##########################################################################
 
-plot(example, show_counts='%d')
+plot(example, show_counts='{:d}')
 plt.suptitle('With counts shown')
 plt.show()
 
@@ -34,4 +34,10 @@ plt.show()
 
 plot(example, show_counts='%d', show_percentages=True)
 plt.suptitle('With counts and % shown')
+plt.show()
+
+##########################################################################
+
+plot(example, show_percentages="{:.2%}")
+plt.suptitle('With fraction shown in custom format')
 plt.show()
