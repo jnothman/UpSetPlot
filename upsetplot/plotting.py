@@ -715,7 +715,7 @@ class UpSet:
         if not self._show_counts and not self._show_percentages:
             return
         if self._show_counts is True:
-            count_fmt = "{:d}"
+            count_fmt = "{:.0f}"
         else:
             count_fmt = self._show_counts
             if '{' not in count_fmt:
