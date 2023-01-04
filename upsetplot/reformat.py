@@ -150,6 +150,8 @@ class QueryResult:
     data : DataFrame
         Selected samples. The index is a MultiIndex with one boolean level for
         each category.
+    subsets : dict[frozenset, DataFrame]
+        Dataframes for each intersection of categories.
     subset_sizes : Series
         Total size of each selected subset as a series. The index is as
         for `data`.
@@ -164,6 +166,15 @@ class QueryResult:
     def __repr__(self):
         return ("QueryResult(data={data}, subset_sizes={subset_sizes}, "
                 "category_totals={category_totals}".format(**vars(self)))
+
+    @property
+    def subsets(self):
+        categories = np.asarray(self.data.index.names)
+        return {
+            frozenset(categories.take(mask)): subset_data
+            for mask, subset_data
+            in self.data.groupby(level=list(range(len(categories))), sort=False)
+        }
 
 
 def query(data, present=None, absent=None,
@@ -268,6 +279,22 @@ def query(data, present=None, absent=None,
            True   False     3
     False  True   False     1
     Name: size, dtype: int64
+    >>>
+    >>> # Getting each subset's data
+    >>> result = query(data)
+    >>> result.subsets
+    {frozenset({'cat1', 'cat2'}):
+                    index     value
+        cat1  cat2 cat0
+        False True False      3  1.333795,
+    frozenset({'cat1'}):
+                            index     value
+        cat1  cat2  cat0
+        False False False      5  0.918174
+                    False      8  1.948521
+                    False      9  1.086599
+                    False     13  1.105696
+                    False     19  1.339895}
     """
 
     data, agg = _aggregate_data(data, subset_size, sum_over)

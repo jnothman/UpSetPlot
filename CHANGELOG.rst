@@ -3,6 +3,7 @@ What's new in version 0.8
 
 - Allowed ``show_percentages`` to be provided with a custom formatting string,
   for example to show more decimal places. (:issue:`194`)
+- Added `subsets` attribute to QueryResult. (:issue:`198`)
 
 What's new in version 0.7
 -------------------------
