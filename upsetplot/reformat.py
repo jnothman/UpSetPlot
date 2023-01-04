@@ -173,7 +173,8 @@ class QueryResult:
         return {
             frozenset(categories.take(mask)): subset_data
             for mask, subset_data
-            in self.data.groupby(level=list(range(len(categories))), sort=False)
+            in self.data.groupby(level=list(range(len(categories))),
+                                 sort=False)
         }
 
 
@@ -282,19 +283,18 @@ def query(data, present=None, absent=None,
     >>>
     >>> # Getting each subset's data
     >>> result = query(data)
-    >>> result.subsets
-    {frozenset({'cat1', 'cat2'}):
-                    index     value
-        cat1  cat2 cat0
-        False True False      3  1.333795,
-    frozenset({'cat1'}):
-                            index     value
-        cat1  cat2  cat0
-        False False False      5  0.918174
-                    False      8  1.948521
-                    False      9  1.086599
-                    False     13  1.105696
-                    False     19  1.339895}
+    >>> result.subsets[frozenset({"cat1", "cat2"})]
+                index     value
+    cat1  cat2 cat0
+    False True False      3  1.333795
+    >>> result.subsets[frozenset({"cat1"})]
+                        index     value
+    cat1  cat2  cat0
+    False False False      5  0.918174
+                False      8  1.948521
+                False      9  1.086599
+                False     13  1.105696
+                False     19  1.339895
     """
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
