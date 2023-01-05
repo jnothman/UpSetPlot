@@ -37,10 +37,10 @@ def get_all_texts(mpl_artist):
 ])
 @pytest.mark.parametrize(
     'sort_by',
-    ['cardinality', 'degree', '-cardinality', '-degree', None])
+    ['cardinality', 'degree', '-cardinality', '-degree', None, 'input', '-input'])
 @pytest.mark.parametrize(
     'sort_categories_by',
-    [None, 'cardinality', '-cardinality'])
+    [None, 'input', '-input', 'cardinality', '-cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     assert x.name == 'value'
     for subset_size in ['auto', 'sum', 'count']:
@@ -60,8 +60,9 @@ def test_process_data_series(x, sort_by, sort_categories_by):
     assert total == x.sum()
 
     assert intersections.name == 'value'
-    x_reordered = (x
-                   .reorder_levels(intersections.index.names)
+    x_reordered_levels = (x
+                   .reorder_levels(intersections.index.names))
+    x_reordered = (x_reordered_levels
                    .reindex(index=intersections.index))
     assert len(x) == len(x_reordered)
     assert x_reordered.index.is_unique
@@ -77,14 +78,17 @@ def test_process_data_series(x, sort_by, sort_categories_by):
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
-    elif sort_by == 'degree':
+    elif sort_by == '-degree':
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1)[::-1])
     else:
-        find_first_in_orig = x_reordered.index.tolist().index
-        orig_order = list(map(find_first_in_orig,
-                              intersections.index.tolist()))
-        assert orig_order == sorted(orig_order)
+        find_first_in_orig = x_reordered_levels.index.tolist().index
+        orig_order = [find_first_in_orig(key)
+                      for key in intersections.index.tolist()]
+        assert orig_order == sorted(
+            orig_order,
+            reverse=sort_by is not None and sort_by.startswith('-'))
+
     if sort_categories_by == 'cardinality':
         assert is_ascending(totals.values[::-1])
     elif sort_categories_by == '-cardinality':
