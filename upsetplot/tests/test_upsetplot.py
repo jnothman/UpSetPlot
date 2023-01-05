@@ -35,8 +35,12 @@ def get_all_texts(mpl_artist):
     generate_counts(),
     generate_counts().iloc[1:-2],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
-@pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
+@pytest.mark.parametrize(
+    'sort_by',
+    ['cardinality', 'degree', '-cardinality', '-degree', None])
+@pytest.mark.parametrize(
+    'sort_categories_by',
+    [None, 'cardinality', '-cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     assert x.name == 'value'
     for subset_size in ['auto', 'sum', 'count']:
@@ -66,18 +70,25 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
     if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
+    elif sort_by == '-cardinality':
+        assert is_ascending(intersections.values)
     elif sort_by == 'degree':
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
+    elif sort_by == 'degree':
+        # check degree order
+        assert is_ascending(intersections.index.to_frame().sum(axis=1)[::-1])
     else:
         find_first_in_orig = x_reordered.index.tolist().index
         orig_order = list(map(find_first_in_orig,
                               intersections.index.tolist()))
         assert orig_order == sorted(orig_order)
-    if sort_categories_by:
+    if sort_categories_by == 'cardinality':
         assert is_ascending(totals.values[::-1])
+    elif sort_categories_by == '-cardinality':
+        assert is_ascending(totals.values)
 
     assert np.all(totals.index.values == intersections.index.names)
 
@@ -277,7 +288,6 @@ def test_include_empty_subsets():
     assert_series_equal(no_empty_upset.intersections,
                         common_intersections)
     include_empty_upset.plot()  # smoke test
-
 
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},

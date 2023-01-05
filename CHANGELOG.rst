@@ -5,6 +5,8 @@ What's new in version 0.8
   for example to show more decimal places. (:issue:`194`)
 - Added `include_empty_subsets` to `UpSet` and `query` to allow the display of
   all possible subsets. (:issue:`185`)
+- `sort_by` and `sort_categories_by` now accept '-' prefix to their values
+  to sort in reverse. (:issue:`180`)
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
 
 What's new in version 0.7
