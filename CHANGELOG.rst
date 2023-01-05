@@ -8,6 +8,7 @@ What's new in version 0.8
 - `sort_by` and `sort_categories_by` now accept '-' prefix to their values
   to sort in reverse. (:issue:`180`)
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
+- Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
 
 What's new in version 0.7
 -------------------------
