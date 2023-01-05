@@ -6,6 +6,7 @@ What's new in version 0.8
 - Added `include_empty_subsets` to `UpSet` and `query` to allow the display of
   all possible subsets. (:issue:`185`)
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
+- Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
 
 What's new in version 0.7
 -------------------------

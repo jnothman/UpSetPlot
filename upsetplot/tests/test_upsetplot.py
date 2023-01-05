@@ -930,3 +930,15 @@ def test_style_subsets_artists(orientation):
 
     # TODO: check lines between dots
     # matrix_line_collection = upset_axes["matrix"].collections[1]
+
+
+def test_many_categories():
+    # Tests regressions against GH#193
+    n_cats = 250
+    index1 = [True, False] + [False] * (n_cats - 2)
+    index2 = [False, True] + [False] * (n_cats - 2)
+    columns = [chr(i + 33) for i in range(n_cats)]
+    data = pd.DataFrame([index1, index2], columns=columns)
+    data["value"] = 1
+    data = data.set_index(columns)["value"]
+    UpSet(data)
