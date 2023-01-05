@@ -42,7 +42,9 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     # XXX: ugly!
     def _pack_binary(X):
         X = pd.DataFrame(X)
-        out = 0
+        # we use objects when there are many categories for arbitrary precision integers
+        dtype = np.object if X.shape[1] > 63 else np.uint64
+        out = pd.Series(0, index=X.index, dtype=dtype)
         for i, (_, col) in enumerate(X.items()):
             out *= 2
             out += col

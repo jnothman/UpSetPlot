@@ -4,6 +4,7 @@ What's new in version 0.8
 - Allowed ``show_percentages`` to be provided with a custom formatting string,
   for example to show more decimal places. (:issue:`194`)
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
+- Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
 
 What's new in version 0.7
 -------------------------
