@@ -24,14 +24,16 @@ except ImportError:
     RENDERER_IMPORTED = False
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size,
+def _process_data(df, *, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=None, max_subset_size=None,
-                  min_degree=None, max_degree=None, reverse=False):
+                  min_degree=None, max_degree=None, reverse=False,
+                  include_empty_subsets=False):
     results = query(df, sort_by=sort_by, sort_categories_by=sort_categories_by,
                     subset_size=subset_size, sum_over=sum_over,
                     min_subset_size=min_subset_size,
                     max_subset_size=max_subset_size,
-                    min_degree=min_degree, max_degree=max_degree)
+                    min_degree=min_degree, max_degree=max_degree,
+                    include_empty_subsets=include_empty_subsets)
 
     df = results.data
     agg = results.subset_sizes
@@ -237,6 +239,9 @@ class UpSet:
         This may be applied with or without show_counts.
 
         .. versionadded:: 0.4
+    include_empty_subsets : bool (default=False)
+        If True, all possible category combinations will be shown as subsets,
+        even when some are not present in data.
     """
     _default_figsize = (10, 6)
 
@@ -248,7 +253,8 @@ class UpSet:
                  facecolor='auto', other_dots_color=.18, shading_color=.05,
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False):
+                 show_counts='', show_percentages=False,
+                 include_empty_subsets=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -276,16 +282,18 @@ class UpSet:
         self._show_percentages = show_percentages
 
         (self.total, self._df, self.intersections,
-         self.totals) = _process_data(data,
-                                      sort_by=sort_by,
-                                      sort_categories_by=sort_categories_by,
-                                      subset_size=subset_size,
-                                      sum_over=sum_over,
-                                      min_subset_size=min_subset_size,
-                                      max_subset_size=max_subset_size,
-                                      min_degree=min_degree,
-                                      max_degree=max_degree,
-                                      reverse=not self._horizontal)
+         self.totals) = _process_data(
+            data,
+            sort_by=sort_by,
+            sort_categories_by=sort_categories_by,
+            subset_size=subset_size,
+            sum_over=sum_over,
+            min_subset_size=min_subset_size,
+            max_subset_size=max_subset_size,
+            min_degree=min_degree,
+            max_degree=max_degree,
+            reverse=not self._horizontal,
+            include_empty_subsets=include_empty_subsets)
         self.subset_styles = [{"facecolor": facecolor}
                               for i in range(len(self.intersections))]
         self.subset_legend = []  # pairs of (style, label)

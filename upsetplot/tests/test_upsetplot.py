@@ -264,6 +264,21 @@ def test_not_unique(sort_by, sort_categories_by):
     assert df2['_bin'].nunique() == len(intersections2)
 
 
+def test_include_empty_subsets():
+    X = generate_counts(n_samples=2, n_categories=3)
+
+    no_empty_upset = UpSet(X, include_empty_subsets=False)
+    assert len(no_empty_upset.intersections) <= 2
+
+    include_empty_upset = UpSet(X, include_empty_subsets=True)
+    assert len(include_empty_upset.intersections) == 2 ** 3
+    common_intersections = include_empty_upset.intersections.loc[
+        no_empty_upset.intersections.index]
+    assert_series_equal(no_empty_upset.intersections,
+                        common_intersections)
+    include_empty_upset.plot()  # smoke test
+
+
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},
                                 {'sort_categories_by': 'blah'},
