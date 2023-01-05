@@ -211,7 +211,8 @@ def query(data, present=None, absent=None,
         Minimum degree of a subset to be reported.
     max_degree : int, optional
         Maximum degree of a subset to be reported.
-    sort_by : {'cardinality', 'degree', '-cardinality', '-degree', 'input', '-input'}
+    sort_by : {'cardinality', 'degree', '-cardinality', '-degree',
+               'input', '-input'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
         intersected. If 'input', the order they appear in the data input is

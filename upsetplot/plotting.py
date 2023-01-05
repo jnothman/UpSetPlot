@@ -146,7 +146,8 @@ class UpSet:
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
-    sort_by : {'cardinality', 'degree', '-cardinality', '-degree', 'input', '-input'}
+    sort_by : {'cardinality', 'degree', '-cardinality', '-degree',
+               'input', '-input'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
         intersected. If 'input', the order they appear in the data input is

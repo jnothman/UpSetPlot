@@ -37,7 +37,8 @@ def get_all_texts(mpl_artist):
 ])
 @pytest.mark.parametrize(
     'sort_by',
-    ['cardinality', 'degree', '-cardinality', '-degree', None, 'input', '-input'])
+    ['cardinality', 'degree', '-cardinality', '-degree', None,
+     'input', '-input'])
 @pytest.mark.parametrize(
     'sort_categories_by',
     [None, 'input', '-input', 'cardinality', '-cardinality'])
@@ -61,7 +62,7 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
     assert intersections.name == 'value'
     x_reordered_levels = (x
-                   .reorder_levels(intersections.index.names))
+                          .reorder_levels(intersections.index.names))
     x_reordered = (x_reordered_levels
                    .reindex(index=intersections.index))
     assert len(x) == len(x_reordered)
