@@ -182,7 +182,7 @@ def query(data, present=None, absent=None,
           min_subset_size=None, max_subset_size=None,
           min_degree=None, max_degree=None,
           sort_by='degree', sort_categories_by='cardinality',
-          subset_size='auto', sum_over=None):
+          subset_size='auto', sum_over=None, include_empty_subsets=False):
     """Transform and filter a categorised dataset
 
     Retrieve the set of items and totals corresponding to subsets of interest.
@@ -239,6 +239,9 @@ def query(data, present=None, absent=None,
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
+    include_empty_subsets : bool (default=False)
+        If True, all possible category combinations will be returned in
+        subset_sizes, even when some are not present in data.
 
     Returns
     -------
@@ -302,6 +305,20 @@ def query(data, present=None, absent=None,
     totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
               for name in agg.index.names]
     totals = pd.Series(totals, index=agg.index.names)
+
+    if include_empty_subsets:
+        nlevels = len(agg.index.levels)
+        if nlevels > 10:
+            raise ValueError(
+                "include_empty_subsets is supported for at most 10 categories")
+        new_agg = pd.Series(0,
+                            index=pd.MultiIndex.from_product(
+                                [[False, True]] * nlevels,
+                                names=agg.index.names),
+                            dtype=agg.dtype,
+                            name=agg.name)
+        new_agg.update(agg)
+        agg = new_agg
 
     data, agg = _filter_subsets(data, agg,
                                 min_subset_size=min_subset_size,
