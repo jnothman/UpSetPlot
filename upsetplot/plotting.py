@@ -146,19 +146,19 @@ class UpSet:
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
-    sort_by : {'cardinality', 'degree', None}
+    sort_by : {'cardinality', 'degree', '-cardinality', '-degree',
+               'input', '-input'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
-        intersected. If None, the order they appear in the data input is
+        intersected. If 'input', the order they appear in the data input is
         used.
+        Prefix with '-' to reverse the ordering.
 
-        .. versionchanged:: 0.5
-            Setting None was added.
-    sort_categories_by : {'cardinality', None}
+        Note this affects ``subset_sizes`` but not ``data``.
+    sort_categories_by : {'cardinality', '-cardinality', 'input', '-input'}
         Whether to sort the categories by total cardinality, or leave them
-        in the provided order.
-
-        .. versionadded:: 0.3
+        in the input data's provided order (order of index levels).
+        Prefix with '-' to reverse the ordering.
     subset_size : {'auto', 'count', 'sum'}
         Configures how to calculate the size of a subset. Choices are:
 

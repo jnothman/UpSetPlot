@@ -211,16 +211,19 @@ def query(data, present=None, absent=None,
         Minimum degree of a subset to be reported.
     max_degree : int, optional
         Maximum degree of a subset to be reported.
-    sort_by : {'cardinality', 'degree', None}
+    sort_by : {'cardinality', 'degree', '-cardinality', '-degree',
+               'input', '-input'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
-        intersected. If None, the order they appear in the data input is
+        intersected. If 'input', the order they appear in the data input is
         used.
+        Prefix with '-' to reverse the ordering.
 
         Note this affects ``subset_sizes`` but not ``data``.
-    sort_categories_by : {'cardinality', None}
+    sort_categories_by : {'cardinality', '-cardinality', 'input', '-input'}
         Whether to sort the categories by total cardinality, or leave them
-        in the provided order.
+        in the input data's provided order (order of index levels).
+        Prefix with '-' to reverse the ordering.
     subset_size : {'auto', 'count', 'sum'}
         Configures how to calculate the size of a subset. Choices are:
 
@@ -328,21 +331,31 @@ def query(data, present=None, absent=None,
                                 present=present, absent=absent)
 
     # sort:
-    if sort_categories_by == 'cardinality':
-        totals.sort_values(ascending=False, inplace=True)
-    elif sort_categories_by is not None:
+    if sort_categories_by in ('cardinality', '-cardinality'):
+        totals.sort_values(ascending=sort_categories_by[:1] == '-',
+                           inplace=True)
+    elif sort_categories_by == '-input':
+        totals = totals[::-1]
+    elif sort_categories_by in (None, 'input'):
+        pass
+    else:
         raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
     data = data.reorder_levels(totals.index.values)
     agg = agg.reorder_levels(totals.index.values)
 
-    if sort_by == 'cardinality':
-        agg = agg.sort_values(ascending=False)
-    elif sort_by == 'degree':
+    if sort_by in ('cardinality', '-cardinality'):
+        agg = agg.sort_values(ascending=sort_by[:1] == '-')
+    elif sort_by in ('degree', '-degree'):
         index_tuples = sorted(agg.index,
-                              key=lambda x: (sum(x),) + tuple(reversed(x)))
+                              key=lambda x: (sum(x),) + tuple(reversed(x)),
+                              reverse=sort_by[:1] == '-')
         agg = agg.reindex(pd.MultiIndex.from_tuples(index_tuples,
                                                     names=agg.index.names))
-    elif sort_by is None:
+    elif sort_by == '-input':
+        print("<", agg)
+        agg = agg[::-1]
+        print(">", agg)
+    elif sort_by in (None, 'input'):
         pass
     else:
         raise ValueError('Unknown sort_by: %r' % sort_by)
