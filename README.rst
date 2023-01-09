@@ -74,11 +74,11 @@ Distributions
 
 Providing a DataFrame rather than a Series as input allows us to expressively
 `plot the distribution of variables
-<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html>`__
+<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_diabetes.html>`__
 in each subset.
 
-.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_boston_001.png
-   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html
+.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_diabetes_001.png
+   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_diabetes.html
 
 Loading datasets
 ................
