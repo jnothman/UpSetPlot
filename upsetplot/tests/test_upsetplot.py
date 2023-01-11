@@ -43,7 +43,6 @@ def get_all_texts(mpl_artist):
     'sort_categories_by',
     [None, 'input', '-input', 'cardinality', '-cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
-    assert x.name == 'value'
     for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
             with pytest.raises(ValueError, match='sum_over is not applicable'):

@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-def generate_samples(seed=0, n_samples=10000, n_categories=3):
+def generate_samples(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     """Generate artificial samples assigned to set intersections
 
     Parameters
@@ -19,12 +19,16 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
         Number of samples to generate
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
+    extra_columns : int
+        If a vector is required,this would indicated the number of additional
+        columns (named "value", "value1", "value2", ... )
 
     Returns
     -------
     DataFrame
         Field 'value' is a weight or score for each element.
         Field 'index' is a unique id for each element.
+        Field(s) 'value{i}' additional values for multiple-feature samples
         Index includes a boolean indicator mask for each category.
 
         Note: Further fields may be added in future versions.
@@ -34,19 +38,25 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
     generate_counts : Generates the counts for each subset of categories
         corresponding to these samples.
     """
+    assert extra_columns >= 0, 'extra_columns parameter should be possitive'
     rng = np.random.RandomState(seed)
-    df = pd.DataFrame({'value': np.zeros(n_samples)})
+    len_samples = 1 + extra_columns
+    df = pd.DataFrame(np.zeros((n_samples, len_samples)))
+    valuename_lst = [f'value{i}' if i > 0 else 'value' for i in
+                     range(len_samples)]
+    df.columns = valuename_lst
+
     for i in range(n_categories):
-        r = rng.rand(n_samples)
-        df['cat%d' % i] = r > rng.rand()
-        df['value'] += r
+        r = rng.rand(n_samples, len_samples)
+        df[f'cat{i}'] = r[:, 0] > rng.rand()
+        df[valuename_lst] += r
 
     df.reset_index(inplace=True)
-    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
+    df.set_index([f'cat{i}' for i in range(n_categories)], inplace=True)
     return df
 
 
-def generate_counts(seed=0, n_samples=10000, n_categories=3):
+def generate_counts(seed=0, n_samples=10000, n_categories=3, extra_columns=0):
     """Generate artificial counts corresponding to set intersections
 
     Parameters
@@ -57,20 +67,30 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3):
         Number of samples to generate statistics over
     n_categories : int
         Number of categories (named "cat0", "cat1", ...) to generate
+    extra_columns: int
+        Number of additional features to be use to generate each
+        sample (value, value1, value2, ...)
 
     Returns
     -------
-    Series
-        Counts indexed by boolean indicator mask for each category.
+    Series or DataFrame
+        A Series of counts indexed by boolean indicator mask for each category,
+        when ``extra_columns`` is 0. Otherwise a DataFrame with column ``value``
+        equivalent to the value produced when ``extra_columns`` is 0, as well as
+        further random variables ``value1``, ``value2``, for extra columns.
 
     See Also
     --------
     generate_samples : Generates a DataFrame of samples that these counts are
         derived from.
     """
+    assert extra_columns >= 0, 'extra_columns parameter should be possitive'
     df = generate_samples(seed=seed, n_samples=n_samples,
-                          n_categories=n_categories)
-    return df.value.groupby(level=list(range(n_categories))).count()
+                          n_categories=n_categories,
+                          extra_columns=extra_columns)
+    df.drop('index', axis=1, inplace=True)
+    df = df if extra_columns > 0 else df.value
+    return df.groupby(level=list(range(n_categories))).count()
 
 
 def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
