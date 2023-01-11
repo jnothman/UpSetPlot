@@ -35,8 +35,13 @@ def get_all_texts(mpl_artist):
     generate_counts(),
     generate_counts().iloc[1:-2],
 ])
-@pytest.mark.parametrize('sort_by', ['cardinality', 'degree', None])
-@pytest.mark.parametrize('sort_categories_by', [None, 'cardinality'])
+@pytest.mark.parametrize(
+    'sort_by',
+    ['cardinality', 'degree', '-cardinality', '-degree', None,
+     'input', '-input'])
+@pytest.mark.parametrize(
+    'sort_categories_by',
+    [None, 'input', '-input', 'cardinality', '-cardinality'])
 def test_process_data_series(x, sort_by, sort_categories_by):
     for subset_size in ['auto', 'sum', 'count']:
         for sum_over in ['abc', False]:
@@ -55,8 +60,9 @@ def test_process_data_series(x, sort_by, sort_categories_by):
     assert total == x.sum()
 
     assert intersections.name == 'value'
-    x_reordered = (x
-                   .reorder_levels(intersections.index.names)
+    x_reordered_levels = (x
+                          .reorder_levels(intersections.index.names))
+    x_reordered = (x_reordered_levels
                    .reindex(index=intersections.index))
     assert len(x) == len(x_reordered)
     assert x_reordered.index.is_unique
@@ -65,18 +71,28 @@ def test_process_data_series(x, sort_by, sort_categories_by):
 
     if sort_by == 'cardinality':
         assert is_ascending(intersections.values[::-1])
+    elif sort_by == '-cardinality':
+        assert is_ascending(intersections.values)
     elif sort_by == 'degree':
         # check degree order
         assert is_ascending(intersections.index.to_frame().sum(axis=1))
         # TODO: within a same-degree group, the tuple of active names should
         #       be in sort-order
+    elif sort_by == '-degree':
+        # check degree order
+        assert is_ascending(intersections.index.to_frame().sum(axis=1)[::-1])
     else:
-        find_first_in_orig = x_reordered.index.tolist().index
-        orig_order = list(map(find_first_in_orig,
-                              intersections.index.tolist()))
-        assert orig_order == sorted(orig_order)
-    if sort_categories_by:
+        find_first_in_orig = x_reordered_levels.index.tolist().index
+        orig_order = [find_first_in_orig(key)
+                      for key in intersections.index.tolist()]
+        assert orig_order == sorted(
+            orig_order,
+            reverse=sort_by is not None and sort_by.startswith('-'))
+
+    if sort_categories_by == 'cardinality':
         assert is_ascending(totals.values[::-1])
+    elif sort_categories_by == '-cardinality':
+        assert is_ascending(totals.values)
 
     assert np.all(totals.index.values == intersections.index.names)
 
@@ -263,6 +279,21 @@ def test_not_unique(sort_by, sort_categories_by):
     assert df2['_bin'].nunique() == len(intersections2)
 
 
+def test_include_empty_subsets():
+    X = generate_counts(n_samples=2, n_categories=3)
+
+    no_empty_upset = UpSet(X, include_empty_subsets=False)
+    assert len(no_empty_upset.intersections) <= 2
+
+    include_empty_upset = UpSet(X, include_empty_subsets=True)
+    assert len(include_empty_upset.intersections) == 2 ** 3
+    common_intersections = include_empty_upset.intersections.loc[
+        no_empty_upset.intersections.index]
+    assert_series_equal(no_empty_upset.intersections,
+                        common_intersections)
+    include_empty_upset.plot()  # smoke test
+
+
 @pytest.mark.parametrize('kw', [{'sort_by': 'blah'},
                                 {'sort_by': True},
                                 {'sort_categories_by': 'blah'},
@@ -393,10 +424,22 @@ def test_show_counts(orientation):
     assert '2.8e+02' in get_all_texts(fig)
 
     fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_counts='{:0.2g}')
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '9.5e+03' in get_all_texts(fig)
+    assert '2.8e+02' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_percentages=True)
     assert n_artists_yes_sizes == _count_descendants(fig)
     assert '95.5%' in get_all_texts(fig)
     assert '2.8%' in get_all_texts(fig)
+
+    fig = matplotlib.figure.Figure()
+    plot(X, fig, orientation=orientation, show_percentages='!{:0.2f}!')
+    assert n_artists_yes_sizes == _count_descendants(fig)
+    assert '!0.95!' in get_all_texts(fig)
+    assert '!0.03!' in get_all_texts(fig)
 
     fig = matplotlib.figure.Figure()
     plot(X, fig, orientation=orientation, show_counts=True,
@@ -902,3 +945,15 @@ def test_style_subsets_artists(orientation):
 
     # TODO: check lines between dots
     # matrix_line_collection = upset_axes["matrix"].collections[1]
+
+
+def test_many_categories():
+    # Tests regressions against GH#193
+    n_cats = 250
+    index1 = [True, False] + [False] * (n_cats - 2)
+    index2 = [False, True] + [False] * (n_cats - 2)
+    columns = [chr(i + 33) for i in range(n_cats)]
+    data = pd.DataFrame([index1, index2], columns=columns)
+    data["value"] = 1
+    data = data.set_index(columns)["value"]
+    UpSet(data)
