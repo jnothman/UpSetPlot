@@ -241,9 +241,19 @@ class UpSet:
         This may be applied with or without show_counts.
 
         .. versionadded:: 0.4
+    rotation_totals : int, default=0
+        Angle of rotation to be used for text (both counts and percentage)
+        indicating total set size. Note, '0' is set as default and would
+        produce horizontal text.
+    rotation_bars : int, default=0
+        Angle of rotation to be used for text (both counts and percentage)
+        indicating intersection size.
+        Note, '0' is set as default and would
+        produce horizontal text.
     include_empty_subsets : bool (default=False)
         If True, all possible category combinations will be shown as subsets,
         even when some are not present in data.
+
     """
     _default_figsize = (10, 6)
 
@@ -256,6 +266,7 @@ class UpSet:
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts='', show_percentages=False,
+                 rotation_totals=0, rotation_bars=0,
                  include_empty_subsets=False):
 
         self._horizontal = orientation == 'horizontal'
@@ -282,6 +293,8 @@ class UpSet:
             self._subset_plots.pop()
         self._show_counts = show_counts
         self._show_percentages = show_percentages
+        self._rotation_totals = rotation_totals
+        self._rotation_bars = rotation_bars
 
         (self.total, self._df, self.intersections,
          self.totals) = _process_data(
@@ -398,7 +411,7 @@ class UpSet:
             cum_y = y if cum_y is None else cum_y + y
             all_rects.extend(rects)
 
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right', _rotation_bars)
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right', self._rotation_bars)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -790,7 +803,7 @@ class UpSet:
         ax = self._reorient(ax)
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                         .5, color=self._facecolor, align='center')
-        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top', _rotation_totals)
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top', self._rotation_totals)
 
         max_total = self.totals.max()
         if self._horizontal:
