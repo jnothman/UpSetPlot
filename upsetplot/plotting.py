@@ -734,6 +734,8 @@ class UpSet:
             styles, labels = zip(*self.subset_legend)
             styles = [patches.Patch(**patch_style) for patch_style in styles]
             ax.legend(styles, labels)
+        
+        ax.yaxis.offsetText.set(ha="right") 
 
     def _label_sizes(self, ax, rects, where, rotation=0):
         if not self._show_counts and not self._show_percentages:
