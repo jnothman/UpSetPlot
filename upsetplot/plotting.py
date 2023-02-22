@@ -398,7 +398,7 @@ class UpSet:
             cum_y = y if cum_y is None else cum_y + y
             all_rects.extend(rects)
 
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right', _rotation_bars)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -722,7 +722,7 @@ class UpSet:
             styles = [patches.Patch(**patch_style) for patch_style in styles]
             ax.legend(styles, labels)
 
-    def _label_sizes(self, ax, rects, where):
+    def _label_sizes(self, ax, rects, where, rotation=0):
         if not self._show_counts and not self._show_percentages:
             return
         if self._show_counts is True:
@@ -763,7 +763,7 @@ class UpSet:
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt.format(*make_args(width)),
-                        ha='left', va='center')
+                        ha='left', va='center', rotation=rotation)
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
@@ -771,7 +771,7 @@ class UpSet:
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt.format(*make_args(width)),
-                        ha='right', va='center')
+                        ha='right', va='center', rotation=rotation)
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
@@ -779,7 +779,7 @@ class UpSet:
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         height + margin,
                         fmt.format(*make_args(height)),
-                        ha='center', va='bottom')
+                        ha='center', va='bottom', rotation=rotation)
         else:
             raise NotImplementedError('unhandled where: %r' % where)
 
@@ -790,7 +790,7 @@ class UpSet:
         ax = self._reorient(ax)
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                         .5, color=self._facecolor, align='center')
-        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top', _rotation_totals)
 
         max_total = self.totals.max()
         if self._horizontal:
