@@ -704,11 +704,11 @@ class UpSet:
         ax.set_xlim(-.5, x[-1] + .5, auto=False)
         ax.grid(False)
 
-    def plot_intersections(self, ax):
+    def plot_intersections(self, ax, y_label='Intersection size'):
         """Plot bars indicating intersection size
         """
         rects = self._plot_bars(ax, self.intersections,
-                                title='Intersection size',
+                                title=y_label,
                                 colors=self._facecolor)
         for style, rect in zip(self.subset_styles, rects):
             style = style.copy()
@@ -825,11 +825,13 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None):
+    def plot(self, y_label='Intersection size', fig=None):
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
         ----------
+        y_label : labels for the y-axis, optional
+            Defaults to 'Intersection size'
         fig : matplotlib.figure.Figure, optional
             Defaults to a new figure.
 
@@ -857,7 +859,7 @@ class UpSet:
             ax = self._reorient(fig.add_subplot)(specs[plot['id']],
                                                  sharex=matrix_ax)
             if plot['type'] == 'default':
-                self.plot_intersections(ax)
+                self.plot_intersections(ax, y_label)
             elif plot['type'] in self.PLOT_TYPES:
                 kw = plot.copy()
                 del kw['type']
