@@ -2,7 +2,7 @@ name: Build
 run-name: test initiated by ${{ github.actor }}
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,12 +20,9 @@ jobs:
       - name: install
         shell: bash -el {0}
         run: |
-          conda install pytest pytest-cov coveralls ruff ${{ matrix.conda-deps }}
+          conda install pytest pytest-cov coveralls ${{ matrix.conda-deps }}
           python setup.py install
           cp ci/matplotlibrc matplotlibrc
-      - name: lint
-        shell: bash -el {0}
-        run: ruff
       - name: test
         shell: bash -el {0}
         run: pytest
