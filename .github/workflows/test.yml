@@ -17,14 +17,12 @@ jobs:
       - name: conda debug info
         shell: bash -el {0}
         run: conda info -a
-      - name: conda install
+      - name: install
         shell: bash -el {0}
-        run: conda install pytest pytest-cov coveralls ${{ matrix.conda-deps }}
-      - name: package install
-        shell: bash -el {0}
-        run:
-          - python setup.py install
-          - cp ci/matplotlibrc matplotlibrc
+        run: |
+          conda install pytest pytest-cov coveralls ${{ matrix.conda-deps }}
+          python setup.py install
+          cp ci/matplotlibrc matplotlibrc
       - name: test
         shell: bash -el {0}
         run: pytest
