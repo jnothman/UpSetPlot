@@ -1,5 +1,4 @@
-name: Build
-run-name: test initiated by ${{ github.actor }}
+name: Lint
 on: [push]
 jobs:
   lint:
