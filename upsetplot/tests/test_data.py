@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from distutils.version import LooseVersion
-from pandas.util.testing import (assert_series_equal, assert_frame_equal,
+from pandas.testing import (assert_series_equal, assert_frame_equal,
                                  assert_index_equal)
 from upsetplot import (from_memberships, from_contents, from_indicators,
                        generate_data)

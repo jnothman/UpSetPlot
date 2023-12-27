@@ -20,6 +20,7 @@
 .ipynb_checkpoints
 .tags
 .cache/
+.direnv/
 
 # Compiled source #
 ###################
@@ -84,3 +85,4 @@ Thumbs.db
 *.cpp
 
 .pytest_cache
+.envrc

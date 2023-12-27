@@ -1,0 +1,29 @@
+name: Build
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        conda-deps:
+          - python=3.6 pandas=1.0 matplotlib=2.1.2 numpy=1.17
+          - pandas matplotlib numpy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+      - name: conda debug info
+        shell: bash -el {0}
+        run: conda info -a
+      - name: install
+        shell: bash -el {0}
+        run: |
+          conda install pytest pytest-cov coveralls ${{ matrix.conda-deps }}
+          python setup.py install
+          cp ci/matplotlibrc matplotlibrc
+      - name: test
+        shell: bash -el {0}
+        run: pytest
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
