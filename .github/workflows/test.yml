@@ -1,0 +1,32 @@
+name: Build
+run-name: test initiated by ${{ github.actor }}
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        conda-deps:
+          - python=3.6 pandas=1.0 matplotlib=2.1.2 numpy=1.17
+          - pandas matplotlib numpy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+      - name: conda debug info
+        shell: bash -el {0}
+        run: conda info -a
+      - name: conda install
+        shell: bash -el {0}
+        run: conda install pytest pytest-cov coveralls ${{ matrix.conda-deps }}
+      - name: package install
+        shell: bash -el {0}
+        run:
+          - python setup.py install
+          - cp ci/matplotlibrc matplotlibrc
+      - name: test
+        shell: bash -el {0}
+        run: pytest
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
