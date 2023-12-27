@@ -164,10 +164,10 @@ References
     :alt: Latest version on PyPi
     :target: https://badge.fury.io/py/UpSetPlot
 
-.. |build| image:: https://travis-ci.org/jnothman/UpSetPlot.svg?branch=master
-    :alt: Travis CI build status
+.. |build| image:: https://github.com/jnothman/upsetplot/actions/workflows/test.yml/badge.svg
+    :alt: Github Workflows CI build status
     :scale: 100%
-    :target: https://travis-ci.org/jnothman/UpSetPlot
+    :target: https://github.com/jnothman/UpSetPlot/actions/workflows/test.yml
 
 .. |issues| image:: https://img.shields.io/github/issues/jnothman/UpSetPlot.svg
     :alt: Issue tracker
