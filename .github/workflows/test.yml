@@ -1,5 +1,4 @@
 name: Build
-run-name: test initiated by ${{ github.actor }}
 on: [push]
 jobs:
   test:
