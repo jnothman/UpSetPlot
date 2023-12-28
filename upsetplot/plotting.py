@@ -21,11 +21,6 @@ except ImportError:
     RENDERER_IMPORTED = False
 
 
-PlotReturnType = typing.Dict[
-    typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes
-]
-
-
 def _process_data(
     df,
     *,
@@ -954,7 +949,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None) -> PlotReturnType:
+    def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -976,7 +971,11 @@ class UpSet:
         self.plot_matrix(matrix_ax)
         totals_ax = self._reorient(fig.add_subplot)(specs["totals"], sharey=matrix_ax)
         self.plot_totals(totals_ax)
-        out = {"matrix": matrix_ax, "shading": shading_ax, "totals": totals_ax}
+        out = {
+            "matrix": matrix_ax,
+            "shading": shading_ax,
+            "totals": totals_ax,
+        }
 
         for plot in self._subset_plots:
             ax = self._reorient(fig.add_subplot)(specs[plot["id"]], sharex=matrix_ax)
@@ -1004,7 +1003,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs) -> PlotReturnType:
+def plot(data, fig=None, **kwargs):
     """Make an UpSet plot of data on fig
 
     Parameters
