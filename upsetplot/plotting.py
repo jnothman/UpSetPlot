@@ -23,6 +23,8 @@ try:
 except ImportError:
     RENDERER_IMPORTED = False
 
+PlotReturnType = dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]
+
 
 def _process_data(
     df,
@@ -950,7 +952,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None):
+    def plot(self, fig=None) -> PlotReturnType:
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -1000,7 +1002,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs):
+def plot(data, fig=None, **kwargs) -> PlotReturnType:
     """Make an UpSet plot of data on fig
 
     Parameters
