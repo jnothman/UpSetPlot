@@ -658,7 +658,8 @@ class UpSet:
                          "hatch": "hatch"}
         styles = (pd.DataFrame(styles)
                   .reindex(columns=style_columns.keys())
-                  .astype(['o', 'o', int, 'o', 'o']))
+                  .astype({"facecolor": 'O',
+                           "edgecolor": 'O', "linewidth": float, "linestyle": 'O', "hatch": 'O'}))
         styles["linewidth"].fillna(1, inplace=True)
         styles["facecolor"].fillna(self._facecolor, inplace=True)
         styles["edgecolor"].fillna(styles["facecolor"], inplace=True)
