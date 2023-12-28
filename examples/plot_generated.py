@@ -6,6 +6,7 @@ Plotting with generated data
 This example illustrates basic plotting functionality using generated data.
 """
 
+import matplotlib
 from matplotlib import pyplot as plt
 
 from upsetplot import generate_counts, plot
@@ -41,4 +42,11 @@ plt.show()
 
 plot(example, show_percentages="{:.2%}")
 plt.suptitle("With fraction shown in custom format")
+plt.show()
+
+##########################################################################
+
+matplotlib.rcParams["font.size"] = 6
+plot(example, show_percentages="{:.2%}")
+plt.suptitle("With a smaller font size")
 plt.show()
