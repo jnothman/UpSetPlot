@@ -1,4 +1,4 @@
-name: Lintbb
+name: Lint
 on: [push]
 jobs:
   lint:
@@ -17,4 +17,5 @@ jobs:
           run: |
             pip install ruff
             ruff --output-format=github .
-          continue-on-error: true
+        - name: Check format with ruff
+          run: ruff format --check
