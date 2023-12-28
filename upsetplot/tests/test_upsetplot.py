@@ -822,6 +822,7 @@ def test_filter_subsets(filter_params, expected, sort_by):
     )
     # category totals should not be affected
     assert_series_equal(upset_full.totals, upset_filtered.totals)
+    assert upset_full.total == pytest.approx(upset_filtered.total)
 
 
 @pytest.mark.parametrize(

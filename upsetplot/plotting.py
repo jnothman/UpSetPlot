@@ -50,8 +50,6 @@ def _process_data(
 
     df = results.data
     agg = results.subset_sizes
-    totals = results.category_totals
-    total = agg.sum()
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -75,7 +73,7 @@ def _process_data(
     if reverse:
         agg = agg[::-1]
 
-    return total, df, agg, totals
+    return results.total, df, agg, results.category_totals
 
 
 def _multiply_alpha(c, mult):
@@ -673,8 +671,6 @@ class UpSet:
             fig.set_figheight((colw * (n_cats + sizes.sum())) / render_ratio)
 
         text_nelems = int(np.ceil(figw / colw - non_text_nelems))
-        # print('textw', textw, 'figw', figw, 'colw', colw,
-        #       'ncols', figw/colw, 'text_nelems', text_nelems)
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
         gridspec = GS(

@@ -162,17 +162,20 @@ class QueryResult:
         for `data`.
     category_totals : Series
         Total size of each category, regardless of selection.
+    total : number
+        Total number of samples / sum of value
     """
 
-    def __init__(self, data, subset_sizes, category_totals):
+    def __init__(self, data, subset_sizes, category_totals, total):
         self.data = data
         self.subset_sizes = subset_sizes
         self.category_totals = category_totals
+        self.total = total
 
     def __repr__(self):
         return (
             "QueryResult(data={data}, subset_sizes={subset_sizes}, "
-            "category_totals={category_totals}".format(**vars(self))
+            "category_totals={category_totals}, total={total}".format(**vars(self))
         )
 
     @property
@@ -267,7 +270,7 @@ def query(
     -------
     QueryResult
         Including filtered ``data``, filtered and sorted ``subset_sizes`` and
-        overall ``category_totals``.
+        overall ``category_totals`` and ``total``.
 
     Examples
     --------
@@ -322,11 +325,12 @@ def query(
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
     data = _check_index(data)
-    totals = [
+    grand_total = agg.sum()
+    category_totals = [
         agg[agg.index.get_level_values(name).values.astype(bool)].sum()
         for name in agg.index.names
     ]
-    totals = pd.Series(totals, index=agg.index.names)
+    category_totals = pd.Series(category_totals, index=agg.index.names)
 
     if include_empty_subsets:
         nlevels = len(agg.index.levels)
@@ -358,15 +362,17 @@ def query(
 
     # sort:
     if sort_categories_by in ("cardinality", "-cardinality"):
-        totals.sort_values(ascending=sort_categories_by[:1] == "-", inplace=True)
+        category_totals.sort_values(
+            ascending=sort_categories_by[:1] == "-", inplace=True
+        )
     elif sort_categories_by == "-input":
-        totals = totals[::-1]
+        category_totals = category_totals[::-1]
     elif sort_categories_by in (None, "input"):
         pass
     else:
         raise ValueError("Unknown sort_categories_by: %r" % sort_categories_by)
-    data = data.reorder_levels(totals.index.values)
-    agg = agg.reorder_levels(totals.index.values)
+    data = data.reorder_levels(category_totals.index.values)
+    agg = agg.reorder_levels(category_totals.index.values)
 
     if sort_by in ("cardinality", "-cardinality"):
         agg = agg.sort_values(ascending=sort_by[:1] == "-")
@@ -380,12 +386,12 @@ def query(
             pd.MultiIndex.from_tuples(index_tuples, names=agg.index.names)
         )
     elif sort_by == "-input":
-        print("<", agg)
         agg = agg[::-1]
-        print(">", agg)
     elif sort_by in (None, "input"):
         pass
     else:
         raise ValueError("Unknown sort_by: %r" % sort_by)
 
-    return QueryResult(data=data, subset_sizes=agg, category_totals=totals)
+    return QueryResult(
+        data=data, subset_sizes=agg, category_totals=category_totals, total=grand_total
+    )
