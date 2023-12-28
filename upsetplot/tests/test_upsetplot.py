@@ -361,6 +361,7 @@ def test_param_validation(kw):
         {"intersection_plot_elements": 0},
         {"facecolor": "red"},
         {"shading_color": "lightgrey", "other_dots_color": "pink"},
+        {"totals_plot_elements": 0},
     ],
 )
 def test_plot_smoke_test(kw):
@@ -821,6 +822,7 @@ def test_filter_subsets(filter_params, expected, sort_by):
     )
     # category totals should not be affected
     assert_series_equal(upset_full.totals, upset_filtered.totals)
+    assert upset_full.total == pytest.approx(upset_filtered.total)
 
 
 @pytest.mark.parametrize(
