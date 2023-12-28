@@ -2,7 +2,7 @@ import io
 import itertools
 
 import pytest
-from pandas.util.testing import (
+from pandas.testing import (
     assert_series_equal, assert_frame_equal, assert_index_equal)
 from numpy.testing import assert_array_equal
 import pandas as pd
