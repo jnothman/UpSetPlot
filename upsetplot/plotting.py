@@ -1,9 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
 
 import numpy as np
 import pandas as pd
@@ -22,6 +19,11 @@ try:
     RENDERER_IMPORTED = True
 except ImportError:
     RENDERER_IMPORTED = False
+
+
+PlotReturnType = typing.Dict[
+    typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes
+]
 
 
 def _process_data(
@@ -805,7 +807,7 @@ class UpSet:
         tick_axis.set_ticklabels(
             data.index.names, rotation=0 if self._horizontal else -90
         )
-        ax.xaxis.set_visible(False)
+        ax.xaxis.set_ticks([])
         ax.tick_params(axis="both", which="both", length=0)
         if not self._horizontal:
             ax.yaxis.set_ticks_position("top")
@@ -917,7 +919,9 @@ class UpSet:
             orig_ax.set_xlim(max_total, 0)
         for x in ["top", "left", "right"]:
             ax.spines[self._reorient(x)].set_visible(False)
-        ax.yaxis.set_visible(False)
+        ax.yaxis.set_visible(True)
+        ax.yaxis.set_ticklabels([])
+        ax.yaxis.set_ticks([])
         ax.xaxis.grid(True)
         ax.yaxis.grid(False)
         ax.patch.set_visible(False)
@@ -950,7 +954,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None):
+    def plot(self, fig=None) -> PlotReturnType:
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -1000,7 +1004,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs):
+def plot(data, fig=None, **kwargs) -> PlotReturnType:
     """Make an UpSet plot of data on fig
 
     Parameters
