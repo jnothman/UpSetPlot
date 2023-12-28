@@ -35,14 +35,14 @@ def generate_samples(seed=0, n_samples=10000, n_categories=3):
         corresponding to these samples.
     """
     rng = np.random.RandomState(seed)
-    df = pd.DataFrame({'value': np.zeros(n_samples)})
+    df = pd.DataFrame({"value": np.zeros(n_samples)})
     for i in range(n_categories):
         r = rng.rand(n_samples)
-        df['cat%d' % i] = r > rng.rand()
-        df['value'] += r
+        df["cat%d" % i] = r > rng.rand()
+        df["value"] += r
 
     df.reset_index(inplace=True)
-    df.set_index(['cat%d' % i for i in range(n_categories)], inplace=True)
+    df.set_index(["cat%d" % i for i in range(n_categories)], inplace=True)
     return df
 
 
@@ -68,21 +68,22 @@ def generate_counts(seed=0, n_samples=10000, n_categories=3):
     generate_samples : Generates a DataFrame of samples that these counts are
         derived from.
     """
-    df = generate_samples(seed=seed, n_samples=n_samples,
-                          n_categories=n_categories)
+    df = generate_samples(seed=seed, n_samples=n_samples, n_categories=n_categories)
     return df.value.groupby(level=list(range(n_categories))).count()
 
 
 def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
-    warnings.warn('generate_data was replaced by generate_counts in version '
-                  '0.3 and will be removed in version 0.4.',
-                  DeprecationWarning)
+    warnings.warn(
+        "generate_data was replaced by generate_counts in version "
+        "0.3 and will be removed in version 0.4.",
+        DeprecationWarning,
+    )
     if aggregated:
-        return generate_counts(seed=seed, n_samples=n_samples,
-                               n_categories=n_sets)
+        return generate_counts(seed=seed, n_samples=n_samples, n_categories=n_sets)
     else:
-        return generate_samples(seed=seed, n_samples=n_samples,
-                                n_categories=n_sets)['value']
+        return generate_samples(seed=seed, n_samples=n_samples, n_categories=n_sets)[
+            "value"
+        ]
 
 
 def from_indicators(indicators, data=None):
@@ -179,8 +180,7 @@ def from_indicators(indicators, data=None):
 
     if callable(indicators):
         if data is None:
-            raise ValueError("data must be provided when indicators is "
-                             "callable")
+            raise ValueError("data must be provided when indicators is " "callable")
         indicators = indicators(data)
 
     try:
@@ -190,8 +190,10 @@ def from_indicators(indicators, data=None):
     else:
         if isinstance(indicators[0], (str, int)):
             if data is None:
-                raise ValueError("data must be provided when indicators are "
-                                 "specified as a list of columns")
+                raise ValueError(
+                    "data must be provided when indicators are "
+                    "specified as a list of columns"
+                )
             if isinstance(indicators, tuple):
                 raise ValueError("indicators as tuple is not supported")
             # column array
@@ -201,18 +203,22 @@ def from_indicators(indicators, data=None):
     # drop all-False (should we be dropping all-True also? making an option?)
     indicators = indicators.loc[:, indicators.any(axis=0)]
 
-    if not all(dtype.kind == 'b' for dtype in indicators.dtypes):
-        raise ValueError('The indicators must all be boolean')
+    if not all(dtype.kind == "b" for dtype in indicators.dtypes):
+        raise ValueError("The indicators must all be boolean")
 
     if data is not None:
-        if not (isinstance(indicators.index, pd.RangeIndex)
-                and indicators.index[0] == 0
-                and indicators.index[-1] == len(data) - 1):
+        if not (
+            isinstance(indicators.index, pd.RangeIndex)
+            and indicators.index[0] == 0
+            and indicators.index[-1] == len(data) - 1
+        ):
             # index is specified on indicators. Need to align it to data
             if not indicators.index.isin(data.index).all():
-                raise ValueError("If indicators.index is not the default, "
-                                 "all its values must be present in "
-                                 "data.index")
+                raise ValueError(
+                    "If indicators.index is not the default, "
+                    "all its values must be present in "
+                    "data.index"
+                )
             indicators = indicators.reindex(index=data.index, fill_value=False)
     else:
         data = pd.Series(np.ones(len(indicators)), name="ones")
@@ -225,7 +231,7 @@ def from_indicators(indicators, data=None):
 
 def _convert_to_pandas(data, copy=True):
     is_series = False
-    if hasattr(data, 'loc'):
+    if hasattr(data, "loc"):
         if copy:
             data = data.copy(deep=False)
         is_series = data.ndim == 1
@@ -293,30 +299,31 @@ def from_memberships(memberships, data=None):
     True  False False  6   7   8
     False False False  9  10  11
     """
-    df = pd.DataFrame([{name: True for name in names}
-                       for names in memberships])
+    df = pd.DataFrame([{name: True for name in names} for names in memberships])
     for set_name in df.columns:
-        if not hasattr(set_name, 'lower'):
-            raise ValueError('Category names should be strings')
+        if not hasattr(set_name, "lower"):
+            raise ValueError("Category names should be strings")
     if df.shape[1] == 0:
-        raise ValueError('Require at least one category. None were found.')
+        raise ValueError("Require at least one category. None were found.")
     df.sort_index(axis=1, inplace=True)
     df.fillna(False, inplace=True)
     df = df.astype(bool)
     df.set_index(list(df.columns), inplace=True)
     if data is None:
-        return df.assign(ones=1)['ones']
+        return df.assign(ones=1)["ones"]
 
     data = _convert_to_pandas(data)
     if len(data) != len(df):
-        raise ValueError('memberships and data must have the same length. '
-                         'Got len(memberships) == %d, len(data) == %d'
-                         % (len(memberships), len(data)))
+        raise ValueError(
+            "memberships and data must have the same length. "
+            "Got len(memberships) == %d, len(data) == %d"
+            % (len(memberships), len(data))
+        )
     data.index = df.index
     return data
 
 
-def from_contents(contents, data=None, id_column='id'):
+def from_contents(contents, data=None, id_column="id"):
     """Build data from category listings
 
     Parameters
@@ -371,32 +378,35 @@ def from_contents(contents, data=None, id_column='id'):
     False True  False   3    yellow
           False True    4      blue
     """
-    cat_series = [pd.Series(True, index=list(elements), name=name)
-                  for name, elements in contents.items()]
+    cat_series = [
+        pd.Series(True, index=list(elements), name=name)
+        for name, elements in contents.items()
+    ]
     if not all(s.index.is_unique for s in cat_series):
-        raise ValueError('Got duplicate ids in a category')
+        raise ValueError("Got duplicate ids in a category")
 
     concat = pd.concat
-    if LooseVersion(pd.__version__) >= '0.23.0':
+    if LooseVersion(pd.__version__) >= "0.23.0":
         # silence the warning
         concat = functools.partial(concat, sort=False)
 
     df = concat(cat_series, axis=1)
     if id_column in df.columns:
-        raise ValueError('A category cannot be named %r' % id_column)
+        raise ValueError("A category cannot be named %r" % id_column)
     df.fillna(False, inplace=True)
     cat_names = list(df.columns)
 
     if data is not None:
         if set(df.columns).intersection(data.columns):
-            raise ValueError('Data columns overlap with category names')
+            raise ValueError("Data columns overlap with category names")
         if id_column in data.columns:
-            raise ValueError('data cannot contain a column named %r' %
-                             id_column)
-        not_in_data = df.drop(data.index, axis=0, errors='ignore')
+            raise ValueError("data cannot contain a column named %r" % id_column)
+        not_in_data = df.drop(data.index, axis=0, errors="ignore")
         if len(not_in_data):
-            raise ValueError('Found identifiers in contents that are not in '
-                             'data: %r' % not_in_data.index.values)
+            raise ValueError(
+                "Found identifiers in contents that are not in "
+                "data: %r" % not_in_data.index.values
+            )
         df = df.reindex(index=data.index).fillna(False)
         df = concat([data, df], axis=1)
     df.index.name = id_column

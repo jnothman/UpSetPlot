@@ -18,52 +18,58 @@ def _aggregate_data(df, subset_size, sum_over):
     aggregated : Series
         aggregates
     """
-    _SUBSET_SIZE_VALUES = ['auto', 'count', 'sum']
+    _SUBSET_SIZE_VALUES = ["auto", "count", "sum"]
     if subset_size not in _SUBSET_SIZE_VALUES:
-        raise ValueError('subset_size should be one of %s. Got %r'
-                         % (_SUBSET_SIZE_VALUES, subset_size))
+        raise ValueError(
+            "subset_size should be one of %s. Got %r"
+            % (_SUBSET_SIZE_VALUES, subset_size)
+        )
     if df.ndim == 1:
         # Series
         input_name = df.name
-        df = pd.DataFrame({'_value': df})
+        df = pd.DataFrame({"_value": df})
 
-        if subset_size == 'auto' and not df.index.is_unique:
-            raise ValueError('subset_size="auto" cannot be used for a '
-                             'Series with non-unique groups.')
+        if subset_size == "auto" and not df.index.is_unique:
+            raise ValueError(
+                'subset_size="auto" cannot be used for a '
+                "Series with non-unique groups."
+            )
         if sum_over is not None:
-            raise ValueError('sum_over is not applicable when the input is a '
-                             'Series')
-        if subset_size == 'count':
+            raise ValueError("sum_over is not applicable when the input is a " "Series")
+        if subset_size == "count":
             sum_over = False
         else:
-            sum_over = '_value'
+            sum_over = "_value"
     else:
         # DataFrame
         if sum_over is False:
-            raise ValueError('Unsupported value for sum_over: False')
-        elif subset_size == 'auto' and sum_over is None:
+            raise ValueError("Unsupported value for sum_over: False")
+        elif subset_size == "auto" and sum_over is None:
             sum_over = False
-        elif subset_size == 'count':
+        elif subset_size == "count":
             if sum_over is not None:
-                raise ValueError('sum_over cannot be set if subset_size=%r' %
-                                 subset_size)
+                raise ValueError(
+                    "sum_over cannot be set if subset_size=%r" % subset_size
+                )
             sum_over = False
-        elif subset_size == 'sum':
+        elif subset_size == "sum":
             if sum_over is None:
-                raise ValueError('sum_over should be a field name if '
-                                 'subset_size="sum" and a DataFrame is '
-                                 'provided.')
+                raise ValueError(
+                    "sum_over should be a field name if "
+                    'subset_size="sum" and a DataFrame is '
+                    "provided."
+                )
 
     gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
     if sum_over is False:
         aggregated = gb.size()
-        aggregated.name = 'size'
-    elif hasattr(sum_over, 'lower'):
+        aggregated.name = "size"
+    elif hasattr(sum_over, "lower"):
         aggregated = gb[sum_over].sum()
     else:
-        raise ValueError('Unsupported value for sum_over: %r' % sum_over)
+        raise ValueError("Unsupported value for sum_over: %r" % sum_over)
 
-    if aggregated.name == '_value':
+    if aggregated.name == "_value":
         aggregated.name = input_name
 
     return df, aggregated
@@ -71,20 +77,21 @@ def _aggregate_data(df, subset_size, sum_over):
 
 def _check_index(df):
     # check all indices are boolean
-    if not all(set([True, False]) >= set(level)
-               for level in df.index.levels):
-        raise ValueError('The DataFrame has values in its index that are not '
-                         'boolean')
+    if not all(set([True, False]) >= set(level) for level in df.index.levels):
+        raise ValueError(
+            "The DataFrame has values in its index that are not " "boolean"
+        )
     df = df.copy(deep=False)
     # XXX: this may break if input is not MultiIndex
-    kw = {'levels': [x.astype(bool) for x in df.index.levels],
-          'names': df.index.names,
-          }
-    if hasattr(df.index, 'codes'):
+    kw = {
+        "levels": [x.astype(bool) for x in df.index.levels],
+        "names": df.index.names,
+    }
+    if hasattr(df.index, "codes"):
         # compat for pandas <= 0.20
-        kw['codes'] = df.index.codes
+        kw["codes"] = df.index.codes
     else:
-        kw['labels'] = df.index.labels
+        kw["labels"] = df.index.labels
     df.index = pd.MultiIndex(**kw)
     return df
 
@@ -95,9 +102,9 @@ def _scalar_to_list(val):
     return val
 
 
-def _get_subset_mask(agg, min_subset_size, max_subset_size,
-                     min_degree, max_degree,
-                     present, absent):
+def _get_subset_mask(
+    agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+):
     """Get a mask over subsets based on size, degree or category presence"""
     subset_mask = True
     if min_subset_size is not None:
@@ -113,26 +120,27 @@ def _get_subset_mask(agg, min_subset_size, max_subset_size,
     if present is not None:
         for col in _scalar_to_list(present):
             subset_mask = np.logical_and(
-                subset_mask,
-                agg.index.get_level_values(col).values)
+                subset_mask, agg.index.get_level_values(col).values
+            )
     if absent is not None:
         for col in _scalar_to_list(absent):
-            exclude_mask = np.logical_not(
-                agg.index.get_level_values(col).values)
+            exclude_mask = np.logical_not(agg.index.get_level_values(col).values)
             subset_mask = np.logical_and(subset_mask, exclude_mask)
     return subset_mask
 
 
-def _filter_subsets(df, agg,
-                    min_subset_size, max_subset_size,
-                    min_degree, max_degree,
-                    present, absent):
-    subset_mask = _get_subset_mask(agg,
-                                   min_subset_size=min_subset_size,
-                                   max_subset_size=max_subset_size,
-                                   min_degree=min_degree,
-                                   max_degree=max_degree,
-                                   present=present, absent=absent)
+def _filter_subsets(
+    df, agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+):
+    subset_mask = _get_subset_mask(
+        agg,
+        min_subset_size=min_subset_size,
+        max_subset_size=max_subset_size,
+        min_degree=min_degree,
+        max_degree=max_degree,
+        present=present,
+        absent=absent,
+    )
 
     if subset_mask is True:
         return df, agg
@@ -158,31 +166,43 @@ class QueryResult:
     category_totals : Series
         Total size of each category, regardless of selection.
     """
+
     def __init__(self, data, subset_sizes, category_totals):
         self.data = data
         self.subset_sizes = subset_sizes
         self.category_totals = category_totals
 
     def __repr__(self):
-        return ("QueryResult(data={data}, subset_sizes={subset_sizes}, "
-                "category_totals={category_totals}".format(**vars(self)))
+        return (
+            "QueryResult(data={data}, subset_sizes={subset_sizes}, "
+            "category_totals={category_totals}".format(**vars(self))
+        )
 
     @property
     def subsets(self):
         categories = np.asarray(self.data.index.names)
         return {
             frozenset(categories.take(mask)): subset_data
-            for mask, subset_data
-            in self.data.groupby(level=list(range(len(categories))),
-                                 sort=False)
+            for mask, subset_data in self.data.groupby(
+                level=list(range(len(categories))), sort=False
+            )
         }
 
 
-def query(data, present=None, absent=None,
-          min_subset_size=None, max_subset_size=None,
-          min_degree=None, max_degree=None,
-          sort_by='degree', sort_categories_by='cardinality',
-          subset_size='auto', sum_over=None, include_empty_subsets=False):
+def query(
+    data,
+    present=None,
+    absent=None,
+    min_subset_size=None,
+    max_subset_size=None,
+    min_degree=None,
+    max_degree=None,
+    sort_by="degree",
+    sort_categories_by="cardinality",
+    subset_size="auto",
+    sum_over=None,
+    include_empty_subsets=False,
+):
     """Transform and filter a categorised dataset
 
     Retrieve the set of items and totals corresponding to subsets of interest.
@@ -305,59 +325,70 @@ def query(data, present=None, absent=None,
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
     data = _check_index(data)
-    totals = [agg[agg.index.get_level_values(name).values.astype(bool)].sum()
-              for name in agg.index.names]
+    totals = [
+        agg[agg.index.get_level_values(name).values.astype(bool)].sum()
+        for name in agg.index.names
+    ]
     totals = pd.Series(totals, index=agg.index.names)
 
     if include_empty_subsets:
         nlevels = len(agg.index.levels)
         if nlevels > 10:
             raise ValueError(
-                "include_empty_subsets is supported for at most 10 categories")
-        new_agg = pd.Series(0,
-                            index=pd.MultiIndex.from_product(
-                                [[False, True]] * nlevels,
-                                names=agg.index.names),
-                            dtype=agg.dtype,
-                            name=agg.name)
+                "include_empty_subsets is supported for at most 10 categories"
+            )
+        new_agg = pd.Series(
+            0,
+            index=pd.MultiIndex.from_product(
+                [[False, True]] * nlevels, names=agg.index.names
+            ),
+            dtype=agg.dtype,
+            name=agg.name,
+        )
         new_agg.update(agg)
         agg = new_agg
 
-    data, agg = _filter_subsets(data, agg,
-                                min_subset_size=min_subset_size,
-                                max_subset_size=max_subset_size,
-                                min_degree=min_degree,
-                                max_degree=max_degree,
-                                present=present, absent=absent)
+    data, agg = _filter_subsets(
+        data,
+        agg,
+        min_subset_size=min_subset_size,
+        max_subset_size=max_subset_size,
+        min_degree=min_degree,
+        max_degree=max_degree,
+        present=present,
+        absent=absent,
+    )
 
     # sort:
-    if sort_categories_by in ('cardinality', '-cardinality'):
-        totals.sort_values(ascending=sort_categories_by[:1] == '-',
-                           inplace=True)
-    elif sort_categories_by == '-input':
+    if sort_categories_by in ("cardinality", "-cardinality"):
+        totals.sort_values(ascending=sort_categories_by[:1] == "-", inplace=True)
+    elif sort_categories_by == "-input":
         totals = totals[::-1]
-    elif sort_categories_by in (None, 'input'):
+    elif sort_categories_by in (None, "input"):
         pass
     else:
-        raise ValueError('Unknown sort_categories_by: %r' % sort_categories_by)
+        raise ValueError("Unknown sort_categories_by: %r" % sort_categories_by)
     data = data.reorder_levels(totals.index.values)
     agg = agg.reorder_levels(totals.index.values)
 
-    if sort_by in ('cardinality', '-cardinality'):
-        agg = agg.sort_values(ascending=sort_by[:1] == '-')
-    elif sort_by in ('degree', '-degree'):
-        index_tuples = sorted(agg.index,
-                              key=lambda x: (sum(x),) + tuple(reversed(x)),
-                              reverse=sort_by[:1] == '-')
-        agg = agg.reindex(pd.MultiIndex.from_tuples(index_tuples,
-                                                    names=agg.index.names))
-    elif sort_by == '-input':
+    if sort_by in ("cardinality", "-cardinality"):
+        agg = agg.sort_values(ascending=sort_by[:1] == "-")
+    elif sort_by in ("degree", "-degree"):
+        index_tuples = sorted(
+            agg.index,
+            key=lambda x: (sum(x),) + tuple(reversed(x)),
+            reverse=sort_by[:1] == "-",
+        )
+        agg = agg.reindex(
+            pd.MultiIndex.from_tuples(index_tuples, names=agg.index.names)
+        )
+    elif sort_by == "-input":
         print("<", agg)
         agg = agg[::-1]
         print(">", agg)
-    elif sort_by in (None, 'input'):
+    elif sort_by in (None, "input"):
         pass
     else:
-        raise ValueError('Unknown sort_by: %r' % sort_by)
+        raise ValueError("Unknown sort_by: %r" % sort_by)
 
     return QueryResult(data=data, subset_sizes=agg, category_totals=totals)
