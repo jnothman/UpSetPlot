@@ -1,9 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
 
 import numpy as np
 import pandas as pd
@@ -153,20 +150,24 @@ def _filter_subsets(
 class QueryResult:
     """Container for reformatted data and aggregates
 
-    Attributes
-    ----------
-    data : DataFrame
-        Selected samples. The index is a MultiIndex with one boolean level for
-        each category.
-    subsets : dict[frozenset, DataFrame]
-        Dataframes for each intersection of categories.
-    subset_sizes : Series
-        Total size of each selected subset as a series. The index is as
-        for `data`.
-    category_totals : Series
-        Total size of each category, regardless of selection.
-    total : number
-        Total number of samples, or sum of sum_over value.
+        Attributes
+        ----------
+        data : DataFrame
+            Selected samples. The index is a MultiIndex with one boolean level for
+            each category.
+        subsets : dict[frozenset, DataFrame]
+            Dataframes for each intersection of categories.
+        subset_sizes : Series
+            Total size of each selected subset as a series. The index is as
+            for `data`.
+        category_totals : Series
+            Total size of each category, regardless of selection.
+        total : number
+    <<<<<<< HEAD
+            Total number of samples, or sum of sum_over value.
+    =======
+            Total number of samples / sum of value
+    >>>>>>> origin/master
     """
 
     def __init__(self, data, subset_sizes, category_totals, total):

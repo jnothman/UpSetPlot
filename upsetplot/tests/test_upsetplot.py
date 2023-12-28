@@ -361,6 +361,7 @@ def test_param_validation(kw):
         {"intersection_plot_elements": 0},
         {"facecolor": "red"},
         {"shading_color": "lightgrey", "other_dots_color": "pink"},
+        {"totals_plot_elements": 0},
     ],
 )
 def test_plot_smoke_test(kw):
