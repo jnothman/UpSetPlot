@@ -8,6 +8,7 @@ to customize aspects of the plot, such as axis labels.
 """
 
 from matplotlib import pyplot as plt
+
 from upsetplot import generate_counts, plot
 
 example = generate_counts()

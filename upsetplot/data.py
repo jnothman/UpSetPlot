@@ -1,9 +1,8 @@
-from __future__ import print_function, division, absolute_import
-from numbers import Number
 import warnings
+from numbers import Number
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def generate_samples(seed=0, n_samples=10000, n_categories=3):
@@ -75,6 +74,7 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
         "generate_data was replaced by generate_counts in version "
         "0.3 and will be removed in version 0.4.",
         DeprecationWarning,
+        stacklevel=2,
     )
     if aggregated:
         return generate_counts(seed=seed, n_samples=n_samples, n_categories=n_sets)
@@ -238,11 +238,7 @@ def _convert_to_pandas(data, copy=True):
             is_series = isinstance(data[0], Number)
         except KeyError:
             is_series = False
-    if is_series:
-        data = pd.Series(data)
-    else:
-        data = pd.DataFrame(data)
-    return data
+    return pd.Series(data) if is_series else pd.DataFrame(data)
 
 
 def from_memberships(memberships, data=None):

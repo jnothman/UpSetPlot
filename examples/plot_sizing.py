@@ -7,6 +7,7 @@ This example illustrates controlling sizing within an UpSet plot.
 """
 
 from matplotlib import pyplot as plt
+
 from upsetplot import generate_counts, plot
 
 example = generate_counts()

@@ -1,9 +1,8 @@
-import pytest
 import pandas as pd
-from pandas.testing import assert_series_equal, assert_frame_equal
+import pytest
+from pandas.testing import assert_frame_equal, assert_series_equal
 
-from upsetplot import generate_counts, generate_samples
-from upsetplot import query
+from upsetplot import generate_counts, generate_samples, query
 
 # `query` is mostly tested through plotting tests, especially tests of
 # `_process_data` which cover sort_by, sort_categories_by, subset_size

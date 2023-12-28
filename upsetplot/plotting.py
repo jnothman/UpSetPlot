@@ -1,17 +1,14 @@
-from __future__ import print_function, division, absolute_import
-
 import typing
 import warnings
 
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+from matplotlib import colors, patches
 from matplotlib import pyplot as plt
-from matplotlib import colors
-from matplotlib import patches
 
-from .reformat import query, _get_subset_mask
 from . import util
+from .reformat import _get_subset_mask, query
 
 # prevents ImportError on matplotlib versions >3.5.2
 try:
@@ -59,7 +56,7 @@ def _process_data(
         # use objects if arbitrary precision integers are needed
         dtype = np.object_ if X.shape[1] > 62 else np.uint64
         out = pd.Series(0, index=X.index, dtype=dtype)
-        for i, (_, col) in enumerate(X.items()):
+        for _, col in X.items():
             out *= 2
             out += col
         return out
@@ -764,7 +761,7 @@ class UpSet:
         y = np.tile(np.arange(n_cats), len(data))
 
         # Plot dots
-        if self._element_size is not None:
+        if self._element_size is not None:  # noqa
             s = (self._element_size * 0.35) ** 2
         else:
             # TODO: make s relative to colw
@@ -841,16 +838,13 @@ class UpSet:
             if "{" not in count_fmt:
                 count_fmt = util.to_new_pos_format(count_fmt)
 
-        if self._show_percentages is True:
-            pct_fmt = "{:.1%}"
-        else:
-            pct_fmt = self._show_percentages
+        pct_fmt = "{:.1%}" if self._show_percentages is True else self._show_percentages
 
         if count_fmt and pct_fmt:
             if where == "top":
-                fmt = "%s\n(%s)" % (count_fmt, pct_fmt)
+                fmt = f"{count_fmt}\n({pct_fmt})"
             else:
-                fmt = "%s (%s)" % (count_fmt, pct_fmt)
+                fmt = f"{count_fmt} ({pct_fmt})"
 
             def make_args(val):
                 return val, val / self.total

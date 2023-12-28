@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # project-template documentation build configuration file, created by
 # sphinx-quickstart on Mon Jan 18 14:44:12 2016.
 #
@@ -12,9 +10,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
 import re
+import sys
 import warnings
 
 # project root

@@ -1,20 +1,18 @@
 import io
 import itertools
 
-import pytest
-from pandas.testing import assert_series_equal, assert_frame_equal, assert_index_equal
-from numpy.testing import assert_array_equal
-import pandas as pd
-import numpy as np
 import matplotlib.figure
 import matplotlib.pyplot as plt
-from matplotlib.text import Text
-from matplotlib.colors import to_hex
+import numpy as np
+import pandas as pd
+import pytest
 from matplotlib import cm
+from matplotlib.colors import to_hex
+from matplotlib.text import Text
+from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal, assert_index_equal, assert_series_equal
 
-from upsetplot import plot
-from upsetplot import UpSet
-from upsetplot import generate_counts, generate_samples
+from upsetplot import UpSet, generate_counts, generate_samples, plot
 from upsetplot.plotting import _process_data
 
 # TODO: warnings should raise errors
@@ -451,8 +449,7 @@ def _walk_artists(el):
     children = el.get_children()
     yield el, children
     for ch in children:
-        for x in _walk_artists(ch):
-            yield x
+        yield from _walk_artists(ch)
 
 
 def _count_descendants(el):
@@ -507,8 +504,8 @@ def test_show_counts(orientation):
         assert "9547 (95.5%)" in get_all_texts(fig)
         assert "283\n(2.8%)" in get_all_texts(fig)
 
+    fig = matplotlib.figure.Figure()
     with pytest.raises(ValueError):
-        fig = matplotlib.figure.Figure()
         plot(X, fig, orientation=orientation, show_counts="%0.2h")
 
 
@@ -651,7 +648,7 @@ def test_add_stacked_bars(orientation, show_counts):
 
 
 @pytest.mark.parametrize(
-    "colors, expected",
+    ("colors", "expected"),
     [
         (["blue", "red", "green"], ["blue", "red", "green"]),
         ({"bar": "blue", "baz": "red", "foo": "green"}, ["blue", "red", "green"]),
@@ -745,7 +742,7 @@ def test_index_must_be_bool(x):
 
 
 @pytest.mark.parametrize(
-    "filter_params, expected",
+    ("filter_params", "expected"),
     [
         (
             {"min_subset_size": 623},
@@ -874,7 +871,7 @@ CAT_NOT1_2_RED_STYLES = _make_facecolor_list(
 
 
 @pytest.mark.parametrize(
-    "kwarg_list,expected_subset_styles,expected_legend",
+    ("kwarg_list", "expected_subset_styles", "expected_legend"),
     [
         # Different forms of including two categories
         ([{"present": ["cat1", "cat2"], "facecolor": "red"}], CAT1_2_RED_STYLES, []),

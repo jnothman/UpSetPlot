@@ -22,8 +22,9 @@ to illustrate the :meth:`UpSet.add_catplot` feature.
 """
 
 import pandas as pd
-from sklearn.datasets import load_diabetes
 from matplotlib import pyplot as plt
+from sklearn.datasets import load_diabetes
+
 from upsetplot import UpSet
 
 # Load the dataset into a DataFrame
