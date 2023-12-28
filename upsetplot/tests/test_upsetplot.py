@@ -754,6 +754,14 @@ def test_index_must_be_bool(x):
             },
         ),
         (
+            {"max_subset_rank": 3},
+            {
+                (True, False, False): 884,
+                (True, True, False): 1547,
+                (True, True, True): 990,
+            },
+        ),
+        (
             {"min_subset_size": 800, "max_subset_size": 990},
             {
                 (True, False, False): 884,
@@ -820,6 +828,29 @@ def test_filter_subsets(filter_params, expected, sort_by):
     # category totals should not be affected
     assert_series_equal(upset_full.totals, upset_filtered.totals)
     assert upset_full.total == pytest.approx(upset_filtered.total)
+
+
+def test_filter_subsets_max_subset_rank_tie():
+    data = generate_samples(seed=0, n_samples=5, n_categories=3)
+    tested_non_tie = False
+    tested_tie = True
+    full = UpSet(data, subset_size="count").intersections
+    prev = None
+    for max_rank in range(1, 5):
+        cur = UpSet(data, subset_size="count", max_subset_rank=max_rank).intersections
+        if prev is not None:
+            if cur.shape[0] > prev.shape[0]:
+                # check we add rows only when they are new
+                assert cur.min() < prev.min()
+                tested_non_tie = True
+            elif cur.shape[0] != full.shape[0]:
+                assert (cur == cur.min()).sum() > 1
+                tested_tie = True
+
+        prev = cur
+    assert tested_non_tie
+    assert tested_tie
+    assert cur.shape[0] == full.shape[0]
 
 
 @pytest.mark.parametrize(

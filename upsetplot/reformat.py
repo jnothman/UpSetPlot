@@ -94,7 +94,14 @@ def _scalar_to_list(val):
 
 
 def _get_subset_mask(
-    agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+    agg,
+    min_subset_size,
+    max_subset_size,
+    max_subset_rank,
+    min_degree,
+    max_degree,
+    present,
+    absent,
 ):
     """Get a mask over subsets based on size, degree or category presence"""
     subset_mask = True
@@ -102,6 +109,10 @@ def _get_subset_mask(
         subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
     if max_subset_size is not None:
         subset_mask = np.logical_and(subset_mask, agg <= max_subset_size)
+    if max_subset_rank is not None:
+        subset_mask = np.logical_and(
+            subset_mask, agg.rank(method="min", ascending=False) <= max_subset_rank
+        )
     if (min_degree is not None and min_degree >= 0) or max_degree is not None:
         degree = agg.index.to_frame().sum(axis=1)
         if min_degree is not None:
@@ -121,12 +132,21 @@ def _get_subset_mask(
 
 
 def _filter_subsets(
-    df, agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+    df,
+    agg,
+    min_subset_size,
+    max_subset_size,
+    max_subset_rank,
+    min_degree,
+    max_degree,
+    present,
+    absent,
 ):
     subset_mask = _get_subset_mask(
         agg,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         present=present,
@@ -189,6 +209,7 @@ def query(
     absent=None,
     min_subset_size=None,
     max_subset_size=None,
+    max_subset_rank=None,
     min_degree=None,
     max_degree=None,
     sort_by="degree",
@@ -221,6 +242,11 @@ def query(
         Size may be a sum of values, see `subset_size`.
     max_subset_size : int, optional
         Maximum size of a subset to be reported.
+    max_subset_rank : int, optional
+        Limit to the top N ranked subsets in descending order of size.
+        All tied subsets are included.
+
+        .. versionadded:: 0.9
     min_degree : int, optional
         Minimum degree of a subset to be reported.
     max_degree : int, optional
@@ -348,6 +374,7 @@ def query(
         agg,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         present=present,

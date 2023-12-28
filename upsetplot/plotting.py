@@ -28,6 +28,7 @@ def _process_data(
     sum_over,
     min_subset_size=None,
     max_subset_size=None,
+    max_subset_rank=None,
     min_degree=None,
     max_degree=None,
     reverse=False,
@@ -41,6 +42,7 @@ def _process_data(
         sum_over=sum_over,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         include_empty_subsets=include_empty_subsets,
@@ -200,6 +202,11 @@ class UpSet:
         a size greater than this threshold will be omitted from plotting.
 
         .. versionadded:: 0.5
+    max_subset_rank : int, optional
+        Limit to the top N ranked subsets in descending order of size.
+        All tied subsets are included.
+
+        .. versionadded:: 0.9
     min_degree : int, optional
         Minimum degree of a subset to be shown in the plot.
 
@@ -270,6 +277,7 @@ class UpSet:
         sum_over=None,
         min_subset_size=None,
         max_subset_size=None,
+        max_subset_rank=None,
         min_degree=None,
         max_degree=None,
         facecolor="auto",
@@ -324,6 +332,7 @@ class UpSet:
             sum_over=sum_over,
             min_subset_size=min_subset_size,
             max_subset_size=max_subset_size,
+            max_subset_rank=max_subset_rank,
             min_degree=min_degree,
             max_degree=max_degree,
             reverse=not self._horizontal,
@@ -345,6 +354,7 @@ class UpSet:
         absent=None,
         min_subset_size=None,
         max_subset_size=None,
+        max_subset_rank=None,
         min_degree=None,
         max_degree=None,
         facecolor=None,
@@ -371,6 +381,11 @@ class UpSet:
             Minimum size of a subset to be styled.
         max_subset_size : int, optional
             Maximum size of a subset to be styled.
+        max_subset_rank : int, optional
+            Limit to the top N ranked subsets in descending order of size.
+            All tied subsets are included.
+
+            .. versionadded:: 0.9
         min_degree : int, optional
             Minimum degree of a subset to be styled.
         max_degree : int, optional
@@ -405,6 +420,7 @@ class UpSet:
             absent=absent,
             min_subset_size=min_subset_size,
             max_subset_size=max_subset_size,
+            max_subset_rank=max_subset_rank,
             min_degree=min_degree,
             max_degree=max_degree,
         )
