@@ -23,8 +23,6 @@ try:
 except ImportError:
     RENDERER_IMPORTED = False
 
-PlotReturnType = dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]
-
 
 def _process_data(
     df,
@@ -807,7 +805,7 @@ class UpSet:
         tick_axis.set_ticklabels(
             data.index.names, rotation=0 if self._horizontal else -90
         )
-        ax.xaxis.set_visible(False)
+        ax.xaxis.set_ticks([])
         ax.tick_params(axis="both", which="both", length=0)
         if not self._horizontal:
             ax.yaxis.set_ticks_position("top")
@@ -919,7 +917,9 @@ class UpSet:
             orig_ax.set_xlim(max_total, 0)
         for x in ["top", "left", "right"]:
             ax.spines[self._reorient(x)].set_visible(False)
-        ax.yaxis.set_visible(False)
+        ax.yaxis.set_visible(True)
+        ax.yaxis.set_ticklabels([])
+        ax.yaxis.set_ticks([])
         ax.xaxis.grid(True)
         ax.yaxis.grid(False)
         ax.patch.set_visible(False)
@@ -952,7 +952,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None) -> PlotReturnType:
+    def plot(self, fig=None) ->dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]:
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -1002,7 +1002,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs) -> PlotReturnType:
+def plot(data, fig=None, **kwargs) -> dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]:
     """Make an UpSet plot of data on fig
 
     Parameters
