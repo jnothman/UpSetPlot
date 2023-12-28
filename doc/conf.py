@@ -15,6 +15,7 @@
 import sys
 import os
 import re
+import warnings
 
 # project root
 sys.path.insert(0, os.path.abspath(".."))
@@ -22,6 +23,13 @@ sys.path.insert(0, os.path.abspath(".."))
 import matplotlib  # noqa
 
 matplotlib.use("agg")
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message="Matplotlib is currently using agg, which is a"
+    " non-GUI backend, so cannot show the figure."
+    "|(\n|.)*is non-interactive, and thus cannot be shown",
+)
 
 import sphinx_rtd_theme  # noqa
 from upsetplot import __version__ as release  # noqa
