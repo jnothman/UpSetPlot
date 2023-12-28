@@ -163,7 +163,7 @@ class QueryResult:
     category_totals : Series
         Total size of each category, regardless of selection.
     total : number
-        Total number of samples / sum of value
+        Total number of samples, or sum of sum_over value.
     """
 
     def __init__(self, data, subset_sizes, category_totals, total):
