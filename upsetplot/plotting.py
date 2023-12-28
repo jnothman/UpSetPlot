@@ -241,9 +241,19 @@ class UpSet:
         This may be applied with or without show_counts.
 
         .. versionadded:: 0.4
+    rotation_totals : int, default=0
+        Angle of rotation to be used for text (both counts and percentage)
+        indicating total set size. Note, '0' is set as default and would
+        produce horizontal text.
+    rotation_bars : int, default=0
+        Angle of rotation to be used for text (both counts and percentage)
+        indicating intersection size.
+        Note, '0' is set as default and would
+        produce horizontal text.
     include_empty_subsets : bool (default=False)
         If True, all possible category combinations will be shown as subsets,
         even when some are not present in data.
+
     """
     _default_figsize = (10, 6)
 
@@ -256,6 +266,7 @@ class UpSet:
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
                  show_counts='', show_percentages=False,
+                 rotation_totals=0, rotation_bars=0,
                  include_empty_subsets=False):
 
         self._horizontal = orientation == 'horizontal'
@@ -282,6 +293,8 @@ class UpSet:
             self._subset_plots.pop()
         self._show_counts = show_counts
         self._show_percentages = show_percentages
+        self._rotation_totals = rotation_totals
+        self._rotation_bars = rotation_bars
 
         (self.total, self._df, self.intersections,
          self.totals) = _process_data(
@@ -398,7 +411,7 @@ class UpSet:
             cum_y = y if cum_y is None else cum_y + y
             all_rects.extend(rects)
 
-        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right')
+        self._label_sizes(ax, rects, 'top' if self._horizontal else 'right', self._rotation_bars)
 
         ax.xaxis.set_visible(False)
         for x in ['top', 'bottom', 'right']:
@@ -724,8 +737,10 @@ class UpSet:
             styles, labels = zip(*self.subset_legend)
             styles = [patches.Patch(**patch_style) for patch_style in styles]
             ax.legend(styles, labels)
+        
+        ax.yaxis.offsetText.set(ha="right") 
 
-    def _label_sizes(self, ax, rects, where):
+    def _label_sizes(self, ax, rects, where, rotation=0):
         if not self._show_counts and not self._show_percentages:
             return
         if self._show_counts is True:
@@ -766,7 +781,7 @@ class UpSet:
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt.format(*make_args(width)),
-                        ha='left', va='center')
+                        ha='left', va='center', rotation=rotation)
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
             for rect in rects:
@@ -774,7 +789,7 @@ class UpSet:
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
                         fmt.format(*make_args(width)),
-                        ha='right', va='center')
+                        ha='right', va='center', rotation=rotation)
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
             for rect in rects:
@@ -782,7 +797,7 @@ class UpSet:
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         height + margin,
                         fmt.format(*make_args(height)),
-                        ha='center', va='bottom')
+                        ha='center', va='bottom', rotation=rotation)
         else:
             raise NotImplementedError('unhandled where: %r' % where)
 
@@ -793,7 +808,7 @@ class UpSet:
         ax = self._reorient(ax)
         rects = ax.barh(np.arange(len(self.totals.index.values)), self.totals,
                         .5, color=self._facecolor, align='center')
-        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top')
+        self._label_sizes(ax, rects, 'left' if self._horizontal else 'top', self._rotation_totals)
 
         max_total = self.totals.max()
         if self._horizontal:
