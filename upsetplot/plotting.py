@@ -656,7 +656,8 @@ class UpSet:
         )
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            with warnings.catch_warnings(DeprecationWarning):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
                 window_extent_args["renderer"] = get_renderer(fig)
         textw = t.get_window_extent(**window_extent_args).width
         t.remove()
