@@ -13,7 +13,9 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from upsetplot import plot, from_indicators
 
-TITANIC_URL = 'https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv'  # noqa
+TITANIC_URL = (
+    "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"  # noqa
+)
 data = pd.read_csv(TITANIC_URL)
 
 plot(from_indicators(indicators=pd.isna, data=data), show_counts=True)
