@@ -27,8 +27,8 @@ plt.show()
 
 ##########################################################################
 
-plot(example, show_counts="{:d}")
-plt.suptitle("With counts shown")
+plot(example, show_counts="{:,}")
+plt.suptitle("With counts shown, using a thousands separator")
 plt.show()
 
 ##########################################################################
