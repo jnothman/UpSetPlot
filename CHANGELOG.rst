@@ -10,6 +10,8 @@ What's new in version 0.8
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
 - Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
 
+Patch release 0.8.1 handles deprecations in dependencies.
+
 What's new in version 0.7
 -------------------------
 
