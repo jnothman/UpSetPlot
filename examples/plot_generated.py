@@ -7,6 +7,7 @@ This example illustrates basic plotting functionality using generated data.
 """
 
 from matplotlib import pyplot as plt
+
 from upsetplot import generate_counts, plot
 
 example = generate_counts()

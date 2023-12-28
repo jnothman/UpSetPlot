@@ -1,9 +1,11 @@
 from collections import OrderedDict
-import pytest
-import pandas as pd
+
 import numpy as np
-from pandas.testing import assert_series_equal, assert_frame_equal, assert_index_equal
-from upsetplot import from_memberships, from_contents, from_indicators, generate_data
+import pandas as pd
+import pytest
+from pandas.testing import assert_frame_equal, assert_index_equal, assert_series_equal
+
+from upsetplot import from_contents, from_indicators, from_memberships, generate_data
 
 
 @pytest.mark.parametrize("typ", [set, list, tuple, iter])
@@ -48,7 +50,7 @@ def test_from_memberships_no_data(typ):
 
 
 @pytest.mark.parametrize(
-    "data,ndim",
+    ("data", "ndim"),
     [
         ([1, 2, 3, 4], 1),
         (np.array([1, 2, 3, 4]), 1),
@@ -188,7 +190,7 @@ def test_from_contents_invalid(id_column):
 
 
 @pytest.mark.parametrize(
-    "indicators,data,exc_type,match",
+    ("indicators", "data", "exc_type", "match"),
     [
         (["a", "b"], None, ValueError, "data must be provided"),
         (lambda df: [True, False, True], None, ValueError, "data must be provided"),

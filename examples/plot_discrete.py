@@ -7,9 +7,10 @@ Currently, a somewhat contrived example of `add_stacked_bars`.
 """
 
 import pandas as pd
-from upsetplot import UpSet
-from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib import pyplot as plt
+
+from upsetplot import UpSet
 
 TITANIC_URL = (
     "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"  # noqa

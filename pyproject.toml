@@ -1,2 +1,24 @@
 [tool.ruff]
 extend-include = ["*.ipynb"]
+target-version = "py38"
+
+[tool.ruff.lint]
+# see https://docs.astral.sh/ruff/rules/
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E",
+    "UP",
+    "W",
+    # isort
+    "I",
+    "B",  # bugbear
+    "C4",  # comprehensions
+    "PT",  # pytest
+    "SIM",  # simplify
+]
+ignore = [
+    "B007",  # breaks for pandas.query
+    "PT011",
+]

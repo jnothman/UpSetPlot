@@ -2,16 +2,16 @@ __version__ = "0.9.dev1"
 
 import os
 
-if os.environ.get("__in-setup", None) != "1":
-    from .plotting import UpSet, plot
+if os.environ.get("__IN-SETUP", None) != "1":
     from .data import (
+        from_contents,
+        from_indicators,
+        from_memberships,
         generate_counts,
         generate_data,
         generate_samples,
-        from_memberships,
-        from_contents,
-        from_indicators,
     )
+    from .plotting import UpSet, plot
     from .reformat import query
 
     __all__ = [

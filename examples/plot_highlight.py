@@ -9,7 +9,8 @@ different.
 """
 
 from matplotlib import pyplot as plt
-from upsetplot import generate_counts, UpSet
+
+from upsetplot import UpSet, generate_counts
 
 example = generate_counts()
 

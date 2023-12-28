@@ -2,6 +2,7 @@
 
 import os
 import sys
+
 from setuptools import setup
 
 
@@ -12,7 +13,7 @@ def setup_package():
     sys.path.insert(0, src_path)
 
     try:
-        os.environ["__in-setup"] = "1"  # ensures only version is imported
+        os.environ["__IN-SETUP"] = "1"  # ensures only version is imported
         from upsetplot import __version__ as version
 
         # See also setup.cfg

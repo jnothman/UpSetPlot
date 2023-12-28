@@ -1,5 +1,3 @@
-from __future__ import print_function, division, absolute_import
-
 import typing
 
 import numpy as np
@@ -18,8 +16,8 @@ def _aggregate_data(df, subset_size, sum_over):
     _SUBSET_SIZE_VALUES = ["auto", "count", "sum"]
     if subset_size not in _SUBSET_SIZE_VALUES:
         raise ValueError(
-            "subset_size should be one of %s. Got %r"
-            % (_SUBSET_SIZE_VALUES, subset_size)
+            f"subset_size should be one of {_SUBSET_SIZE_VALUES}."
+            f" Got {repr(subset_size)}"
         )
     if df.ndim == 1:
         # Series
@@ -33,10 +31,7 @@ def _aggregate_data(df, subset_size, sum_over):
             )
         if sum_over is not None:
             raise ValueError("sum_over is not applicable when the input is a " "Series")
-        if subset_size == "count":
-            sum_over = False
-        else:
-            sum_over = "_value"
+        sum_over = False if subset_size == "count" else "_value"
     else:
         # DataFrame
         if sum_over is False:
@@ -49,13 +44,12 @@ def _aggregate_data(df, subset_size, sum_over):
                     "sum_over cannot be set if subset_size=%r" % subset_size
                 )
             sum_over = False
-        elif subset_size == "sum":
-            if sum_over is None:
-                raise ValueError(
-                    "sum_over should be a field name if "
-                    'subset_size="sum" and a DataFrame is '
-                    "provided."
-                )
+        elif subset_size == "sum" and sum_over is None:
+            raise ValueError(
+                "sum_over should be a field name if "
+                'subset_size="sum" and a DataFrame is '
+                "provided."
+            )
 
     gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
     if sum_over is False:
@@ -74,7 +68,7 @@ def _aggregate_data(df, subset_size, sum_over):
 
 def _check_index(df):
     # check all indices are boolean
-    if not all(set([True, False]) >= set(level) for level in df.index.levels):
+    if not all({True, False} >= set(level) for level in df.index.levels):
         raise ValueError(
             "The DataFrame has values in its index that are not " "boolean"
         )
