@@ -21,11 +21,6 @@ except ImportError:
     RENDERER_IMPORTED = False
 
 
-PlotReturnType = typing.Dict[
-    typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes
-]
-
-
 def _process_data(
     df,
     *,
@@ -244,7 +239,7 @@ class UpSet:
             Setting to 0 is handled.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
-        elements.
+        elements. Use totals_plot_elements=0 to disable the totals plot.
     show_counts : bool or str, default=False
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
@@ -689,7 +684,9 @@ class UpSet:
             out = {
                 "matrix": gridspec[-n_cats:, -n_inters:],
                 "shading": gridspec[-n_cats:, :],
-                "totals": gridspec[-n_cats:, : self._totals_plot_elements],
+                "totals": None
+                if self._totals_plot_elements == 0
+                else gridspec[-n_cats:, : self._totals_plot_elements],
                 "gs": gridspec,
             }
             cumsizes = np.cumsum(sizes[::-1])
@@ -701,7 +698,9 @@ class UpSet:
             out = {
                 "matrix": gridspec[-n_inters:, :n_cats],
                 "shading": gridspec[:, :n_cats],
-                "totals": gridspec[: self._totals_plot_elements, :n_cats],
+                "totals": None
+                if self._totals_plot_elements == 0
+                else gridspec[: self._totals_plot_elements, :n_cats],
                 "gs": gridspec,
             }
             cumsizes = np.cumsum(sizes)
@@ -950,7 +949,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None) -> PlotReturnType:
+    def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -970,8 +969,13 @@ class UpSet:
         self.plot_shading(shading_ax)
         matrix_ax = self._reorient(fig.add_subplot)(specs["matrix"], sharey=shading_ax)
         self.plot_matrix(matrix_ax)
-        totals_ax = self._reorient(fig.add_subplot)(specs["totals"], sharey=matrix_ax)
-        self.plot_totals(totals_ax)
+        if specs["totals"] is None:
+            totals_ax = None
+        else:
+            totals_ax = self._reorient(fig.add_subplot)(
+                specs["totals"], sharey=matrix_ax
+            )
+            self.plot_totals(totals_ax)
         out = {"matrix": matrix_ax, "shading": shading_ax, "totals": totals_ax}
 
         for plot in self._subset_plots:
@@ -1000,7 +1004,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs) -> PlotReturnType:
+def plot(data, fig=None, **kwargs):
     """Make an UpSet plot of data on fig
 
     Parameters

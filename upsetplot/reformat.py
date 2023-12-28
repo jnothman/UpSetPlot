@@ -1,9 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
 
 import numpy as np
 import pandas as pd
