@@ -17,7 +17,5 @@ jobs:
           run: |
             pip install ruff
             ruff --output-format=github .
-          continue-on-error: true
         - name: Check format with ruff
           run: ruff format --check
-          continue-on-error: true
