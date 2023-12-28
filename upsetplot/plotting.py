@@ -1,9 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
 
 import numpy as np
 import pandas as pd
@@ -22,6 +19,11 @@ try:
     RENDERER_IMPORTED = True
 except ImportError:
     RENDERER_IMPORTED = False
+
+
+PlotReturnType = typing.Dict[
+    typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes
+]
 
 
 def _process_data(
@@ -952,7 +954,7 @@ class UpSet:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    def plot(self, fig=None) ->dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]:
+    def plot(self, fig=None) -> PlotReturnType:
         """Draw all parts of the plot onto fig or a new figure
 
         Parameters
@@ -1002,7 +1004,7 @@ class UpSet:
         return fig._repr_html_()
 
 
-def plot(data, fig=None, **kwargs) -> dict[typing.Literal["matrix", "intersections", "totals", "shading"], matplotlib.axes.Axes]:
+def plot(data, fig=None, **kwargs) -> PlotReturnType:
     """Make an UpSet plot of data on fig
 
     Parameters
