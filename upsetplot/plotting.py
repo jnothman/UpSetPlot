@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import typing
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -8,7 +9,6 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import patches
-import warnings
 
 from .reformat import query, _get_subset_mask
 from . import util
