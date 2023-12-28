@@ -1,3 +1,7 @@
+What's new in version 0.9
+-------------------------
+- Ability to disable totals plot with `totals_plot_elements=0`.
+
 What's new in version 0.8
 -------------------------
 
