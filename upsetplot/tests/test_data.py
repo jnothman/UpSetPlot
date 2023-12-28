@@ -2,7 +2,6 @@ from collections import OrderedDict
 import pytest
 import pandas as pd
 import numpy as np
-from distutils.version import LooseVersion
 from pandas.testing import assert_series_equal, assert_frame_equal, assert_index_equal
 from upsetplot import from_memberships, from_contents, from_indicators, generate_data
 
@@ -71,8 +70,7 @@ def test_from_memberships_with_data(data, ndim):
     assert out is not data  # make sure frame is copied
     if hasattr(data, "loc") and np.asarray(data).dtype.kind in "ifb":
         # but not deepcopied when possible
-        if LooseVersion(pd.__version__) > LooseVersion("0.35"):
-            assert out.values.base is np.asarray(data).base
+        assert out.values.base is np.asarray(data).base
     if ndim == 1:
         assert isinstance(out, pd.Series)
     else:

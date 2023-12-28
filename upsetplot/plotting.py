@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import typing
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -648,13 +649,17 @@ class UpSet:
         )
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args["renderer"] = get_renderer(fig)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                window_extent_args["renderer"] = get_renderer(fig)
         textw = t.get_window_extent(**window_extent_args).width
         t.remove()
 
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args["renderer"] = get_renderer(fig)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                window_extent_args["renderer"] = get_renderer(fig)
         figw = self._reorient(fig.get_window_extent(**window_extent_args)).width
 
         sizes = np.asarray([p["elements"] for p in self._subset_plots])

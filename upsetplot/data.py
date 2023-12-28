@@ -1,7 +1,5 @@
 from __future__ import print_function, division, absolute_import
 from numbers import Number
-import functools
-from distutils.version import LooseVersion
 import warnings
 
 import pandas as pd
@@ -385,12 +383,7 @@ def from_contents(contents, data=None, id_column="id"):
     if not all(s.index.is_unique for s in cat_series):
         raise ValueError("Got duplicate ids in a category")
 
-    concat = pd.concat
-    if LooseVersion(pd.__version__) >= "0.23.0":
-        # silence the warning
-        concat = functools.partial(concat, sort=False)
-
-    df = concat(cat_series, axis=1)
+    df = pd.concat(cat_series, axis=1, sort=False)
     if id_column in df.columns:
         raise ValueError("A category cannot be named %r" % id_column)
     df.fillna(False, inplace=True)
@@ -408,6 +401,6 @@ def from_contents(contents, data=None, id_column="id"):
                 "data: %r" % not_in_data.index.values
             )
         df = df.reindex(index=data.index).fillna(False)
-        df = concat([data, df], axis=1)
+        df = pd.concat([data, df], axis=1, sort=False)
     df.index.name = id_column
     return df.reset_index().set_index(cat_names)
