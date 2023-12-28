@@ -21,3 +21,11 @@ plot_result["intersections"].set_ylabel("Subset size")
 plot_result["totals"].set_ylabel("Category size")
 plot_result["matrix"].set_xlabel("Subsets between categories")
 plt.show()
+
+
+##########################################################################
+# Or we can place the totals label on the x axis
+
+plot_result = plot(example)
+plot_result["totals"].set_xlabel("Category size")
+plt.show()
