@@ -13,7 +13,7 @@ example = generate_counts()
 print(example)
 
 plot(example)
-plt.suptitle('Defaults')
+plt.suptitle("Defaults")
 plt.show()
 
 ##########################################################################
@@ -21,7 +21,7 @@ plt.show()
 # size of these elements affects all components of the plot.
 
 plot(example, element_size=40)
-plt.suptitle('Increased element_size')
+plt.suptitle("Increased element_size")
 plt.show()
 
 ##########################################################################
@@ -30,7 +30,7 @@ plt.show()
 
 fig = plt.figure(figsize=(10, 3))
 plot(example, fig=fig, element_size=None)
-plt.suptitle('Setting figsize explicitly')
+plt.suptitle("Setting figsize explicitly")
 plt.show()
 
 ##########################################################################
@@ -38,11 +38,11 @@ plt.show()
 # they should equate to.
 
 plot(example, intersection_plot_elements=3)
-plt.suptitle('Decreased intersection_plot_elements')
+plt.suptitle("Decreased intersection_plot_elements")
 plt.show()
 
 ##########################################################################
 
 plot(example, totals_plot_elements=5)
-plt.suptitle('Increased totals_plot_elements')
+plt.suptitle("Increased totals_plot_elements")
 plt.show()
