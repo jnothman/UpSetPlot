@@ -1177,6 +1177,51 @@ def test_style_subsets_artists(orientation):
     # matrix_line_collection = upset_axes["matrix"].collections[1]
 
 
+@pytest.mark.parametrize(
+    (
+        "kwarg_list",
+        "expected_category_styles",
+    ),
+    [
+        # Different forms of including two categories
+        (
+            [{"categories": ["cat1", "cat2"], "shading_facecolor": "red"}],
+            {
+                "cat1": {"shading_facecolor": "red"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+        (
+            [
+                {"categories": ["cat1", "cat2"], "shading_facecolor": "red"},
+                {"categories": "cat1", "shading_facecolor": "green"},
+            ],
+            {
+                "cat1": {"shading_facecolor": "green"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+        (
+            [
+                {"categories": ["cat1", "cat2"], "shading_facecolor": "red"},
+                {"categories": "cat1", "shading_edgecolor": "green"},
+            ],
+            {
+                "cat1": {"shading_facecolor": "red", "shading_edgecolor": "green"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+    ],
+)
+def test_categories(kwarg_list, expected_category_styles):
+    data = generate_counts()
+    upset = UpSet(data, facecolor="blue")
+    for kw in kwarg_list:
+        upset.style_categories(**kw)
+    actual_category_styles = upset.category_styles
+    assert actual_category_styles == expected_category_styles
+
+
 def test_many_categories():
     # Tests regressions against GH#193
     n_cats = 250
