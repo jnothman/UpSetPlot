@@ -377,10 +377,16 @@ class UpSet:
         absent : str or list of str, optional
             Category or categories that must not be present in subsets for
             styling.
-        min_subset_size : int, optional
+        min_subset_size : int or "number%", optional
             Minimum size of a subset to be styled.
-        max_subset_size : int, optional
+
+            .. versionchanged:: 0.9
+                Support percentages
+        max_subset_size : int or "number%", optional
             Maximum size of a subset to be styled.
+
+            .. versionchanged:: 0.9
+                Support percentages
         max_subset_rank : int, optional
             Limit to the top N ranked subsets in descending order of size.
             All tied subsets are included.
