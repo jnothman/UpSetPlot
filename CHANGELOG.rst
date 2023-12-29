@@ -8,7 +8,10 @@ What's new in version 0.9
   shading of rows in the intersection matrix, and bars in the totals plot.
   (:issue:`261` with thanks to :user:`Marcel Albus <maralbus>`).
 - Ability to disable totals plot with `totals_plot_elements=0`. (:issue:`246`)
+- Ability to set totals y axis label (:issue:`243`)
 - Added ``max_subset_rank`` to get only n most populous subsets. (:issue:`253`)
+- Added support for ``min_subset_size`` and ``max_subset_size`` specified as
+  percentage. (:issue:`264`)
 
 What's new in version 0.8
 -------------------------

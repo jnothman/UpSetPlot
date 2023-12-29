@@ -93,6 +93,19 @@ def _scalar_to_list(val):
     return val
 
 
+def _check_percent(value, agg):
+    if not isinstance(value, str):
+        return value
+    try:
+        if value.endswith("%") and 0 <= float(value[:-1]) <= 100:
+            return float(value[:-1]) / 100 * agg.sum()
+    except ValueError:
+        pass
+    raise ValueError(
+        f"String value must be formatted as percentage between 0 and 100. Got {value}"
+    )
+
+
 def _get_subset_mask(
     agg,
     min_subset_size,
@@ -104,6 +117,8 @@ def _get_subset_mask(
     absent,
 ):
     """Get a mask over subsets based on size, degree or category presence"""
+    min_subset_size = _check_percent(min_subset_size, agg)
+    max_subset_size = _check_percent(max_subset_size, agg)
     subset_mask = True
     if min_subset_size is not None:
         subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
@@ -235,13 +250,20 @@ def query(
     absent : str or list of str, optional
         Category or categories that must not be present in subsets for
         styling.
-    min_subset_size : int, optional
+    min_subset_size : int or "number%", optional
         Minimum size of a subset to be reported. All subsets with
         a size smaller than this threshold will be omitted from
-        category_totals and data.
+        category_totals and data.  This may be specified as a percentage
+        using a string, like "50%".
         Size may be a sum of values, see `subset_size`.
-    max_subset_size : int, optional
+
+        .. versionchanged:: 0.9
+            Support percentages
+    max_subset_size : int or "number%", optional
         Maximum size of a subset to be reported.
+
+        .. versionchanged:: 0.9
+            Support percentages
     max_subset_rank : int, optional
         Limit to the top N ranked subsets in descending order of size.
         All tied subsets are included.
