@@ -11,20 +11,29 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import patches
-from matplotlib.tight_layout import get_renderer
 
 from .reformat import query, _get_subset_mask
+from . import util
+
+# prevents ImportError on matplotlib versions >3.5.2
+try:
+    from matplotlib.tight_layout import get_renderer
+
+    RENDERER_IMPORTED = True
+except ImportError:
+    RENDERER_IMPORTED = False
 
 
-def _process_data(df, sort_by, sort_categories_by, subset_size,
+def _process_data(df, *, sort_by, sort_categories_by, subset_size,
                   sum_over, min_subset_size=None, max_subset_size=None,
-                  min_degree=None, max_degree=None, reverse=False):
-
+                  min_degree=None, max_degree=None, reverse=False,
+                  include_empty_subsets=False):
     results = query(df, sort_by=sort_by, sort_categories_by=sort_categories_by,
                     subset_size=subset_size, sum_over=sum_over,
                     min_subset_size=min_subset_size,
                     max_subset_size=max_subset_size,
-                    min_degree=min_degree, max_degree=max_degree)
+                    min_degree=min_degree, max_degree=max_degree,
+                    include_empty_subsets=include_empty_subsets)
 
     df = results.data
     agg = results.subset_sizes
@@ -35,7 +44,9 @@ def _process_data(df, sort_by, sort_categories_by, subset_size,
     # XXX: ugly!
     def _pack_binary(X):
         X = pd.DataFrame(X)
-        out = 0
+        # use objects if arbitrary precision integers are needed
+        dtype = np.object_ if X.shape[1] > 62 else np.uint64
+        out = pd.Series(0, index=X.index, dtype=dtype)
         for i, (_, col) in enumerate(X.items()):
             out *= 2
             out += col
@@ -135,19 +146,19 @@ class UpSet:
         If a DataFrame, `sum_over` must be a string or False.
     orientation : {'horizontal' (default), 'vertical'}
         If horizontal, intersections are listed from left to right.
-    sort_by : {'cardinality', 'degree', None}
+    sort_by : {'cardinality', 'degree', '-cardinality', '-degree',
+               'input', '-input'}
         If 'cardinality', subset are listed from largest to smallest.
         If 'degree', they are listed in order of the number of categories
-        intersected. If None, the order they appear in the data input is
+        intersected. If 'input', the order they appear in the data input is
         used.
+        Prefix with '-' to reverse the ordering.
 
-        .. versionchanged:: 0.5
-            Setting None was added.
-    sort_categories_by : {'cardinality', None}
+        Note this affects ``subset_sizes`` but not ``data``.
+    sort_categories_by : {'cardinality', '-cardinality', 'input', '-input'}
         Whether to sort the categories by total cardinality, or leave them
-        in the provided order.
-
-        .. versionadded:: 0.3
+        in the input data's provided order (order of index levels).
+        Prefix with '-' to reverse the ordering.
     subset_size : {'auto', 'count', 'sum'}
         Configures how to calculate the size of a subset. Choices are:
 
@@ -218,13 +229,21 @@ class UpSet:
     show_counts : bool or str, default=False
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
-        For example, '%d' is equivalent to True.
-    show_percentages : bool, default=False
+        For example, '{:d}' is equivalent to True.
+        Note that, for legacy reasons, if the string does not contain '{',
+        it will be interpreted as a C-style format string, such as '%d'.
+    show_percentages : bool or str, default=False
         Whether to label the intersection size bars with the percentage
         of the intersection relative to the total dataset.
+        When a string, this formats the number representing a fraction of
+        samples.
+        For example, '{:.1%}' is the default, formatting .123 as 12.3%.
         This may be applied with or without show_counts.
 
         .. versionadded:: 0.4
+    include_empty_subsets : bool (default=False)
+        If True, all possible category combinations will be shown as subsets,
+        even when some are not present in data.
     """
     _default_figsize = (10, 6)
     DPI = 100  # standard matplotlib value
@@ -237,7 +256,8 @@ class UpSet:
                  facecolor='auto', other_dots_color=.18, shading_color=.05,
                  with_lines=True, element_size=32,
                  intersection_plot_elements=6, totals_plot_elements=2,
-                 show_counts='', show_percentages=False):
+                 show_counts='', show_percentages=False,
+                 include_empty_subsets=False):
 
         self._horizontal = orientation == 'horizontal'
         self._reorient = _identity if self._horizontal else _transpose
@@ -265,16 +285,18 @@ class UpSet:
         self._show_percentages = show_percentages
 
         (self.total, self._df, self.intersections,
-         self.totals) = _process_data(data,
-                                      sort_by=sort_by,
-                                      sort_categories_by=sort_categories_by,
-                                      subset_size=subset_size,
-                                      sum_over=sum_over,
-                                      min_subset_size=min_subset_size,
-                                      max_subset_size=max_subset_size,
-                                      min_degree=min_degree,
-                                      max_degree=max_degree,
-                                      reverse=not self._horizontal)
+         self.totals) = _process_data(
+            data,
+            sort_by=sort_by,
+            sort_categories_by=sort_categories_by,
+            subset_size=subset_size,
+            sum_over=sum_over,
+            min_subset_size=min_subset_size,
+            max_subset_size=max_subset_size,
+            min_degree=min_degree,
+            max_degree=max_degree,
+            reverse=not self._horizontal,
+            include_empty_subsets=include_empty_subsets)
         self.category_styles = {k: {"facecolor": self._shading_color}
                                 for k in self.totals.index}
         self.subset_styles = [{"facecolor": facecolor}
@@ -551,16 +573,22 @@ class UpSet:
             fig = plt.gcf()
 
         # Determine text size to determine figure size / spacing
-        r = get_renderer(fig)
         text_kw = {"size": matplotlib.rcParams['xtick.labelsize']}
         # adding "x" ensures a margin
         t = fig.text(0, 0, '\n'.join(str(label) + "x"
                                      for label in self.totals.index.values),
                      **text_kw)
-        textw = t.get_window_extent(renderer=r).width
+        window_extent_args = {}
+        if RENDERER_IMPORTED:
+            window_extent_args["renderer"] = get_renderer(fig)
+        textw = t.get_window_extent(**window_extent_args).width
         t.remove()
 
-        figw = self._reorient(fig.get_window_extent(renderer=r)).width
+        window_extent_args = {}
+        if RENDERER_IMPORTED:
+            window_extent_args["renderer"] = get_renderer(fig)
+        figw = self._reorient(
+            fig.get_window_extent(**window_extent_args)).width
 
         sizes = np.asarray([p['elements'] for p in self._subset_plots])
         fig = self._reorient(fig)
@@ -631,7 +659,10 @@ class UpSet:
                          "linewidth": "linewidths",
                          "linestyle": "linestyles",
                          "hatch": "hatch"}
-        styles = pd.DataFrame(styles).reindex(columns=style_columns.keys())
+        styles = (pd.DataFrame(styles)
+                  .reindex(columns=style_columns.keys())
+                  .astype({"facecolor": 'O',
+                           "edgecolor": 'O', "linewidth": float, "linestyle": 'O', "hatch": 'O'}))
         styles["linewidth"].fillna(1, inplace=True)
         styles["facecolor"].fillna(self._facecolor, inplace=True)
         styles["edgecolor"].fillna(styles["facecolor"], inplace=True)
@@ -701,11 +732,14 @@ class UpSet:
         if not self._show_counts and not self._show_percentages:
             return
         if self._show_counts is True:
-            count_fmt = "%d"
+            count_fmt = "{:.0f}"
         else:
             count_fmt = self._show_counts
+            if '{' not in count_fmt:
+                count_fmt = util.to_new_pos_format(count_fmt)
+
         if self._show_percentages is True:
-            pct_fmt = "%.1f%%"
+            pct_fmt = "{:.1%}"
         else:
             pct_fmt = self._show_percentages
 
@@ -716,7 +750,7 @@ class UpSet:
                 fmt = '%s (%s)' % (count_fmt, pct_fmt)
 
             def make_args(val):
-                return val, 100 * val / self.total
+                return val, val / self.total
         elif count_fmt:
             fmt = count_fmt
 
@@ -726,7 +760,7 @@ class UpSet:
             fmt = pct_fmt
 
             def make_args(val):
-                return 100 * val / self.total,
+                return val / self.total,
 
         if where == 'right':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -734,7 +768,7 @@ class UpSet:
                 width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % make_args(width),
+                        fmt.format(*make_args(width)),
                         ha='left', va='center')
         elif where == 'left':
             margin = 0.01 * abs(np.diff(ax.get_xlim()))
@@ -742,7 +776,7 @@ class UpSet:
                 width = rect.get_width() + rect.get_x()
                 ax.text(width + margin,
                         rect.get_y() + rect.get_height() * .5,
-                        fmt % make_args(width),
+                        fmt.format(*make_args(width)),
                         ha='right', va='center')
         elif where == 'top':
             margin = 0.01 * abs(np.diff(ax.get_ylim()))
@@ -750,7 +784,7 @@ class UpSet:
                 height = rect.get_height() + rect.get_y()
                 ax.text(rect.get_x() + rect.get_width() * .5,
                         height + margin,
-                        fmt % make_args(height),
+                        fmt.format(*make_args(height)),
                         ha='center', va='bottom')
         else:
             raise NotImplementedError('unhandled where: %r' % where)

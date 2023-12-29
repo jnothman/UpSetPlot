@@ -1,7 +1,22 @@
-What's new in version 0.6
+What's new in version 0.8
 -------------------------
 
-[In Development]
+- Allowed ``show_percentages`` to be provided with a custom formatting string,
+  for example to show more decimal places. (:issue:`194`)
+- Added `include_empty_subsets` to `UpSet` and `query` to allow the display of
+  all possible subsets. (:issue:`185`)
+- `sort_by` and `sort_categories_by` now accept '-' prefix to their values
+  to sort in reverse. 'input' and '-input' are also supported. (:issue:`180`)
+- Added `subsets` attribute to QueryResult. (:issue:`198`)
+- Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
+
+Patch release 0.8.1 handles deprecations in dependencies.
+
+What's new in version 0.7
+-------------------------
+
+- Added `query` function to support analysing set-based data.
+- Fixed support for matplotlib >3.5.2 (:issue:`191`. Thanks :user:`GuyTeichman`)
 
 What's new in version 0.6
 -------------------------

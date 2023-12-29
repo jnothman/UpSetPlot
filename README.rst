@@ -47,6 +47,11 @@ makes:
 .. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_generated_001.png
    :target: ../auto_examples/plot_generated.html
 
+And you can save the image in various formats::
+
+    >>> pyplot.savefig("/path/to/myplot.pdf")  # doctest: +SKIP
+    >>> pyplot.savefig("/path/to/myplot.png")  # doctest: +SKIP
+
 This plot shows the cardinality of every category combination seen in our data.
 The leftmost column counts items absent from any category. The next three
 columns count items only in ``cat1``, ``cat2`` and ``cat3`` respectively, with
@@ -69,11 +74,11 @@ Distributions
 
 Providing a DataFrame rather than a Series as input allows us to expressively
 `plot the distribution of variables
-<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html>`__
+<http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_diabetes.html>`__
 in each subset.
 
-.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_boston_001.png
-   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_boston.html
+.. image:: http://upsetplot.readthedocs.io/en/latest/_images/sphx_glr_plot_diabetes_001.png
+   :target: http://upsetplot.readthedocs.io/en/latest/auto_examples/plot_diabetes.html
 
 Loading datasets
 ................
@@ -159,10 +164,10 @@ References
     :alt: Latest version on PyPi
     :target: https://badge.fury.io/py/UpSetPlot
 
-.. |build| image:: https://travis-ci.org/jnothman/UpSetPlot.svg?branch=master
-    :alt: Travis CI build status
+.. |build| image:: https://github.com/jnothman/upsetplot/actions/workflows/test.yml/badge.svg
+    :alt: Github Workflows CI build status
     :scale: 100%
-    :target: https://travis-ci.org/jnothman/UpSetPlot
+    :target: https://github.com/jnothman/UpSetPlot/actions/workflows/test.yml
 
 .. |issues| image:: https://img.shields.io/github/issues/jnothman/UpSetPlot.svg
     :alt: Issue tracker

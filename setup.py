@@ -19,8 +19,7 @@ def setup_package():
               version=version,
               packages=["upsetplot"],
               license='BSD-3-Clause',
-              setup_requires=['pytest-runner'],
-              tests_require=['pytest>=2.7', 'pytest-cov<2.6'],
+              extras_require={'testing': ['pytest>=2.7', 'pytest-cov<2.6']},
               # TODO: check versions
               install_requires=['pandas>=0.23', 'matplotlib>=2.0'])
     finally:
