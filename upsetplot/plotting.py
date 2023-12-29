@@ -1,7 +1,5 @@
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
+import warnings
 
 import matplotlib
 import numpy as np
@@ -30,6 +28,7 @@ def _process_data(
     sum_over,
     min_subset_size=None,
     max_subset_size=None,
+    max_subset_rank=None,
     min_degree=None,
     max_degree=None,
     reverse=False,
@@ -43,6 +42,7 @@ def _process_data(
         sum_over=sum_over,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         include_empty_subsets=include_empty_subsets,
@@ -50,8 +50,6 @@ def _process_data(
 
     df = results.data
     agg = results.subset_sizes
-    totals = results.category_totals
-    total = agg.sum()
 
     # add '_bin' to df indicating index in agg
     # XXX: ugly!
@@ -60,7 +58,7 @@ def _process_data(
         # use objects if arbitrary precision integers are needed
         dtype = np.object_ if X.shape[1] > 62 else np.uint64
         out = pd.Series(0, index=X.index, dtype=dtype)
-        for i, (_, col) in enumerate(X.items()):
+        for _, col in X.items():
             out *= 2
             out += col
         return out
@@ -75,7 +73,7 @@ def _process_data(
     if reverse:
         agg = agg[::-1]
 
-    return total, df, agg, totals
+    return results.total, df, agg, results.category_totals
 
 
 def _multiply_alpha(c, mult):
@@ -204,6 +202,11 @@ class UpSet:
         a size greater than this threshold will be omitted from plotting.
 
         .. versionadded:: 0.5
+    max_subset_rank : int, optional
+        Limit to the top N ranked subsets in descending order of size.
+        All tied subsets are included.
+
+        .. versionadded:: 0.9
     min_degree : int, optional
         Minimum degree of a subset to be shown in the plot.
 
@@ -241,7 +244,7 @@ class UpSet:
             Setting to 0 is handled.
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
-        elements.
+        elements. Use totals_plot_elements=0 to disable the totals plot.
     show_counts : bool or str, default=False
         Whether to label the intersection size bars with the cardinality
         of the intersection. When a string, this formats the number.
@@ -275,6 +278,7 @@ class UpSet:
         sum_over=None,
         min_subset_size=None,
         max_subset_size=None,
+        max_subset_rank=None,
         min_degree=None,
         max_degree=None,
         facecolor="auto",
@@ -329,6 +333,7 @@ class UpSet:
             sum_over=sum_over,
             min_subset_size=min_subset_size,
             max_subset_size=max_subset_size,
+            max_subset_rank=max_subset_rank,
             min_degree=min_degree,
             max_degree=max_degree,
             reverse=not self._horizontal,
@@ -353,6 +358,7 @@ class UpSet:
         absent=None,
         min_subset_size=None,
         max_subset_size=None,
+        max_subset_rank=None,
         min_degree=None,
         max_degree=None,
         facecolor=None,
@@ -379,6 +385,11 @@ class UpSet:
             Minimum size of a subset to be styled.
         max_subset_size : int, optional
             Maximum size of a subset to be styled.
+        max_subset_rank : int, optional
+            Limit to the top N ranked subsets in descending order of size.
+            All tied subsets are included.
+
+            .. versionadded:: 0.9
         min_degree : int, optional
             Minimum degree of a subset to be styled.
         max_degree : int, optional
@@ -413,6 +424,7 @@ class UpSet:
             absent=absent,
             min_subset_size=min_subset_size,
             max_subset_size=max_subset_size,
+            max_subset_rank=max_subset_rank,
             min_degree=min_degree,
             max_degree=max_degree,
         )
@@ -654,13 +666,17 @@ class UpSet:
         )
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args["renderer"] = get_renderer(fig)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                window_extent_args["renderer"] = get_renderer(fig)
         textw = t.get_window_extent(**window_extent_args).width
         t.remove()
 
         window_extent_args = {}
         if RENDERER_IMPORTED:
-            window_extent_args["renderer"] = get_renderer(fig)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                window_extent_args["renderer"] = get_renderer(fig)
         figw = self._reorient(fig.get_window_extent(**window_extent_args)).width
 
         sizes = np.asarray([p["elements"] for p in self._subset_plots])
@@ -677,8 +693,6 @@ class UpSet:
             fig.set_figheight((colw * (n_cats + sizes.sum())) / render_ratio)
 
         text_nelems = int(np.ceil(figw / colw - non_text_nelems))
-        # print('textw', textw, 'figw', figw, 'colw', colw,
-        #       'ncols', figw/colw, 'text_nelems', text_nelems)
 
         GS = self._reorient(matplotlib.gridspec.GridSpec)
         gridspec = GS(
@@ -692,7 +706,9 @@ class UpSet:
             out = {
                 "matrix": gridspec[-n_cats:, -n_inters:],
                 "shading": gridspec[-n_cats:, :],
-                "totals": gridspec[-n_cats:, : self._totals_plot_elements],
+                "totals": None
+                if self._totals_plot_elements == 0
+                else gridspec[-n_cats:, : self._totals_plot_elements],
                 "gs": gridspec,
             }
             cumsizes = np.cumsum(sizes[::-1])
@@ -704,7 +720,9 @@ class UpSet:
             out = {
                 "matrix": gridspec[-n_inters:, :n_cats],
                 "shading": gridspec[:, :n_cats],
-                "totals": gridspec[: self._totals_plot_elements, :n_cats],
+                "totals": None
+                if self._totals_plot_elements == 0
+                else gridspec[: self._totals_plot_elements, :n_cats],
                 "gs": gridspec,
             }
             cumsizes = np.cumsum(sizes)
@@ -763,7 +781,7 @@ class UpSet:
         y = np.tile(np.arange(n_cats), len(data))
 
         # Plot dots
-        if self._element_size is not None:
+        if self._element_size is not None:  # noqa
             s = (self._element_size * 0.35) ** 2
         else:
             # TODO: make s relative to colw
@@ -840,16 +858,13 @@ class UpSet:
             if "{" not in count_fmt:
                 count_fmt = util.to_new_pos_format(count_fmt)
 
-        if self._show_percentages is True:
-            pct_fmt = "{:.1%}"
-        else:
-            pct_fmt = self._show_percentages
+        pct_fmt = "{:.1%}" if self._show_percentages is True else self._show_percentages
 
         if count_fmt and pct_fmt:
             if where == "top":
-                fmt = "%s\n(%s)" % (count_fmt, pct_fmt)
+                fmt = f"{count_fmt}\n({pct_fmt})"
             else:
-                fmt = "%s (%s)" % (count_fmt, pct_fmt)
+                fmt = f"{count_fmt} ({pct_fmt})"
 
             def make_args(val):
                 return val, val / self.total
@@ -918,7 +933,9 @@ class UpSet:
             orig_ax.set_xlim(max_total, 0)
         for x in ["top", "left", "right"]:
             ax.spines[self._reorient(x)].set_visible(False)
-        ax.yaxis.set_visible(False)
+        ax.yaxis.set_visible(True)
+        ax.yaxis.set_ticklabels([])
+        ax.yaxis.set_ticks([])
         ax.xaxis.grid(True)
         ax.yaxis.grid(False)
         ax.patch.set_visible(False)
@@ -1033,8 +1050,13 @@ class UpSet:
         self.plot_shading(shading_ax)
         matrix_ax = self._reorient(fig.add_subplot)(specs["matrix"], sharey=shading_ax)
         self.plot_matrix(matrix_ax)
-        totals_ax = self._reorient(fig.add_subplot)(specs["totals"], sharey=matrix_ax)
-        self.plot_totals(totals_ax)
+        if specs["totals"] is None:
+            totals_ax = None
+        else:
+            totals_ax = self._reorient(fig.add_subplot)(
+                specs["totals"], sharey=matrix_ax
+            )
+            self.plot_totals(totals_ax)
         out = {"matrix": matrix_ax, "shading": shading_ax, "totals": totals_ax}
 
         for plot in self._subset_plots:

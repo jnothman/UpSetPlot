@@ -1,7 +1,4 @@
-try:
-    import typing
-except ImportError:
-    import collections as typing
+import typing
 
 import numpy as np
 import pandas as pd
@@ -19,8 +16,8 @@ def _aggregate_data(df, subset_size, sum_over):
     _SUBSET_SIZE_VALUES = ["auto", "count", "sum"]
     if subset_size not in _SUBSET_SIZE_VALUES:
         raise ValueError(
-            "subset_size should be one of %s. Got %r"
-            % (_SUBSET_SIZE_VALUES, subset_size)
+            f"subset_size should be one of {_SUBSET_SIZE_VALUES}."
+            f" Got {repr(subset_size)}"
         )
     if df.ndim == 1:
         # Series
@@ -34,10 +31,7 @@ def _aggregate_data(df, subset_size, sum_over):
             )
         if sum_over is not None:
             raise ValueError("sum_over is not applicable when the input is a " "Series")
-        if subset_size == "count":
-            sum_over = False
-        else:
-            sum_over = "_value"
+        sum_over = False if subset_size == "count" else "_value"
     else:
         # DataFrame
         if sum_over is False:
@@ -50,13 +44,12 @@ def _aggregate_data(df, subset_size, sum_over):
                     "sum_over cannot be set if subset_size=%r" % subset_size
                 )
             sum_over = False
-        elif subset_size == "sum":
-            if sum_over is None:
-                raise ValueError(
-                    "sum_over should be a field name if "
-                    'subset_size="sum" and a DataFrame is '
-                    "provided."
-                )
+        elif subset_size == "sum" and sum_over is None:
+            raise ValueError(
+                "sum_over should be a field name if "
+                'subset_size="sum" and a DataFrame is '
+                "provided."
+            )
 
     gb = df.groupby(level=list(range(df.index.nlevels)), sort=False)
     if sum_over is False:
@@ -75,7 +68,7 @@ def _aggregate_data(df, subset_size, sum_over):
 
 def _check_index(df):
     # check all indices are boolean
-    if not all(set([True, False]) >= set(level) for level in df.index.levels):
+    if not all({True, False} >= set(level) for level in df.index.levels):
         raise ValueError(
             "The DataFrame has values in its index that are not " "boolean"
         )
@@ -101,7 +94,14 @@ def _scalar_to_list(val):
 
 
 def _get_subset_mask(
-    agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+    agg,
+    min_subset_size,
+    max_subset_size,
+    max_subset_rank,
+    min_degree,
+    max_degree,
+    present,
+    absent,
 ):
     """Get a mask over subsets based on size, degree or category presence"""
     subset_mask = True
@@ -109,6 +109,10 @@ def _get_subset_mask(
         subset_mask = np.logical_and(subset_mask, agg >= min_subset_size)
     if max_subset_size is not None:
         subset_mask = np.logical_and(subset_mask, agg <= max_subset_size)
+    if max_subset_rank is not None:
+        subset_mask = np.logical_and(
+            subset_mask, agg.rank(method="min", ascending=False) <= max_subset_rank
+        )
     if (min_degree is not None and min_degree >= 0) or max_degree is not None:
         degree = agg.index.to_frame().sum(axis=1)
         if min_degree is not None:
@@ -128,12 +132,21 @@ def _get_subset_mask(
 
 
 def _filter_subsets(
-    df, agg, min_subset_size, max_subset_size, min_degree, max_degree, present, absent
+    df,
+    agg,
+    min_subset_size,
+    max_subset_size,
+    max_subset_rank,
+    min_degree,
+    max_degree,
+    present,
+    absent,
 ):
     subset_mask = _get_subset_mask(
         agg,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         present=present,
@@ -163,17 +176,20 @@ class QueryResult:
         for `data`.
     category_totals : Series
         Total size of each category, regardless of selection.
+    total : number
+        Total number of samples, or sum of sum_over value.
     """
 
-    def __init__(self, data, subset_sizes, category_totals):
+    def __init__(self, data, subset_sizes, category_totals, total):
         self.data = data
         self.subset_sizes = subset_sizes
         self.category_totals = category_totals
+        self.total = total
 
     def __repr__(self):
         return (
             "QueryResult(data={data}, subset_sizes={subset_sizes}, "
-            "category_totals={category_totals}".format(**vars(self))
+            "category_totals={category_totals}, total={total}".format(**vars(self))
         )
 
     @property
@@ -193,6 +209,7 @@ def query(
     absent=None,
     min_subset_size=None,
     max_subset_size=None,
+    max_subset_rank=None,
     min_degree=None,
     max_degree=None,
     sort_by="degree",
@@ -225,6 +242,11 @@ def query(
         Size may be a sum of values, see `subset_size`.
     max_subset_size : int, optional
         Maximum size of a subset to be reported.
+    max_subset_rank : int, optional
+        Limit to the top N ranked subsets in descending order of size.
+        All tied subsets are included.
+
+        .. versionadded:: 0.9
     min_degree : int, optional
         Minimum degree of a subset to be reported.
     max_degree : int, optional
@@ -268,7 +290,7 @@ def query(
     -------
     QueryResult
         Including filtered ``data``, filtered and sorted ``subset_sizes`` and
-        overall ``category_totals``.
+        overall ``category_totals`` and ``total``.
 
     Examples
     --------
@@ -323,11 +345,12 @@ def query(
 
     data, agg = _aggregate_data(data, subset_size, sum_over)
     data = _check_index(data)
-    totals = [
+    grand_total = agg.sum()
+    category_totals = [
         agg[agg.index.get_level_values(name).values.astype(bool)].sum()
         for name in agg.index.names
     ]
-    totals = pd.Series(totals, index=agg.index.names)
+    category_totals = pd.Series(category_totals, index=agg.index.names)
 
     if include_empty_subsets:
         nlevels = len(agg.index.levels)
@@ -351,6 +374,7 @@ def query(
         agg,
         min_subset_size=min_subset_size,
         max_subset_size=max_subset_size,
+        max_subset_rank=max_subset_rank,
         min_degree=min_degree,
         max_degree=max_degree,
         present=present,
@@ -359,15 +383,17 @@ def query(
 
     # sort:
     if sort_categories_by in ("cardinality", "-cardinality"):
-        totals.sort_values(ascending=sort_categories_by[:1] == "-", inplace=True)
+        category_totals.sort_values(
+            ascending=sort_categories_by[:1] == "-", inplace=True
+        )
     elif sort_categories_by == "-input":
-        totals = totals[::-1]
+        category_totals = category_totals[::-1]
     elif sort_categories_by in (None, "input"):
         pass
     else:
         raise ValueError("Unknown sort_categories_by: %r" % sort_categories_by)
-    data = data.reorder_levels(totals.index.values)
-    agg = agg.reorder_levels(totals.index.values)
+    data = data.reorder_levels(category_totals.index.values)
+    agg = agg.reorder_levels(category_totals.index.values)
 
     if sort_by in ("cardinality", "-cardinality"):
         agg = agg.sort_values(ascending=sort_by[:1] == "-")
@@ -381,12 +407,12 @@ def query(
             pd.MultiIndex.from_tuples(index_tuples, names=agg.index.names)
         )
     elif sort_by == "-input":
-        print("<", agg)
         agg = agg[::-1]
-        print(">", agg)
     elif sort_by in (None, "input"):
         pass
     else:
         raise ValueError("Unknown sort_by: %r" % sort_by)
 
-    return QueryResult(data=data, subset_sizes=agg, category_totals=totals)
+    return QueryResult(
+        data=data, subset_sizes=agg, category_totals=category_totals, total=grand_total
+    )

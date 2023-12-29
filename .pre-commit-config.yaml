@@ -1,0 +1,20 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+    -   id: ruff
+        args: ["--fix", "--show-source"]
+    -   id: ruff-format
+        types_or: [ python, pyi, jupyter ]
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
+    hooks:
+     -  id: mypy
+        files: upsetplot/
+        additional_dependencies: [pytest==6.2.4]

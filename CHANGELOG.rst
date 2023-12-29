@@ -1,3 +1,13 @@
+What's new in version 0.9
+-------------------------
+
+- Fixes a bug where ``show_percentages`` used the incorrect denominator if
+  filtering (e.g. ``min_subset_size``) was applied. This bug was a regression
+  introduced in version 0.7. (:issue:`248`)
+- Ability to disable totals plot with `totals_plot_elements=0`. (:issue:`246`)
+- Ability to set totals y axis label (:issue:`243`)
+- Added ``max_subset_rank`` to get only n most populous subsets.
+
 What's new in version 0.8
 -------------------------
 
@@ -10,7 +20,7 @@ What's new in version 0.8
 - Added `subsets` attribute to QueryResult. (:issue:`198`)
 - Fixed a bug where more than 64 categories could result in an error. (:issue:`193`)
 
-Patch release 0.8.1 handles deprecations in dependencies.
+Patch release 0.8.2 handles deprecations in dependencies.
 
 What's new in version 0.7
 -------------------------

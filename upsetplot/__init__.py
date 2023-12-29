@@ -2,7 +2,7 @@ __version__ = "0.9.dev1"
 
 import os
 
-if os.environ.get("__in-setup", None) != "1":
+if os.environ.get("__IN-SETUP", None) != "1":
     from .data import (
         from_contents,
         from_indicators,

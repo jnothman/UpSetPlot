@@ -34,7 +34,7 @@ plt.suptitle("Border for subsets including cat2 but not cat1")
 plt.show()
 
 ##########################################################################
-# ... or their size or degree.
+# ... or their size.
 
 upset = UpSet(example)
 upset.style_subsets(
@@ -42,6 +42,17 @@ upset.style_subsets(
 )
 upset.plot()
 plt.suptitle("Hatch subsets with size >1000")
+plt.show()
+
+##########################################################################
+# ... or degree.
+
+upset = UpSet(example)
+upset.style_subsets(min_degree=1, facecolor="blue")
+upset.style_subsets(min_degree=2, facecolor="purple")
+upset.style_subsets(min_degree=3, facecolor="red")
+upset.plot()
+plt.suptitle("Coloring by degree")
 plt.show()
 
 ##########################################################################

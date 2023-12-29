@@ -359,6 +359,7 @@ def test_param_validation(kw):
         {"intersection_plot_elements": 0},
         {"facecolor": "red"},
         {"shading_color": "lightgrey", "other_dots_color": "pink"},
+        {"totals_plot_elements": 0},
     ],
 )
 def test_plot_smoke_test(kw):
@@ -448,8 +449,7 @@ def _walk_artists(el):
     children = el.get_children()
     yield el, children
     for ch in children:
-        for x in _walk_artists(ch):
-            yield x
+        yield from _walk_artists(ch)
 
 
 def _count_descendants(el):
@@ -504,8 +504,8 @@ def test_show_counts(orientation):
         assert "9547 (95.5%)" in get_all_texts(fig)
         assert "283\n(2.8%)" in get_all_texts(fig)
 
+    fig = matplotlib.figure.Figure()
     with pytest.raises(ValueError):
-        fig = matplotlib.figure.Figure()
         plot(X, fig, orientation=orientation, show_counts="%0.2h")
 
 
@@ -648,7 +648,7 @@ def test_add_stacked_bars(orientation, show_counts):
 
 
 @pytest.mark.parametrize(
-    "colors, expected",
+    ("colors", "expected"),
     [
         (["blue", "red", "green"], ["blue", "red", "green"]),
         ({"bar": "blue", "baz": "red", "foo": "green"}, ["blue", "red", "green"]),
@@ -742,7 +742,7 @@ def test_index_must_be_bool(x):
 
 
 @pytest.mark.parametrize(
-    "filter_params, expected",
+    ("filter_params", "expected"),
     [
         (
             {"min_subset_size": 623},
@@ -750,6 +750,14 @@ def test_index_must_be_bool(x):
                 (True, False, False): 884,
                 (True, True, False): 1547,
                 (True, False, True): 623,
+                (True, True, True): 990,
+            },
+        ),
+        (
+            {"max_subset_rank": 3},
+            {
+                (True, False, False): 884,
+                (True, True, False): 1547,
                 (True, True, True): 990,
             },
         ),
@@ -819,6 +827,30 @@ def test_filter_subsets(filter_params, expected, sort_by):
     )
     # category totals should not be affected
     assert_series_equal(upset_full.totals, upset_filtered.totals)
+    assert upset_full.total == pytest.approx(upset_filtered.total)
+
+
+def test_filter_subsets_max_subset_rank_tie():
+    data = generate_samples(seed=0, n_samples=5, n_categories=3)
+    tested_non_tie = False
+    tested_tie = True
+    full = UpSet(data, subset_size="count").intersections
+    prev = None
+    for max_rank in range(1, 5):
+        cur = UpSet(data, subset_size="count", max_subset_rank=max_rank).intersections
+        if prev is not None:
+            if cur.shape[0] > prev.shape[0]:
+                # check we add rows only when they are new
+                assert cur.min() < prev.min()
+                tested_non_tie = True
+            elif cur.shape[0] != full.shape[0]:
+                assert (cur == cur.min()).sum() > 1
+                tested_tie = True
+
+        prev = cur
+    assert tested_non_tie
+    assert tested_tie
+    assert cur.shape[0] == full.shape[0]
 
 
 @pytest.mark.parametrize(
@@ -870,7 +902,7 @@ CAT_NOT1_2_RED_STYLES = _make_facecolor_list(
 
 
 @pytest.mark.parametrize(
-    "kwarg_list,expected_subset_styles,expected_legend",
+    ("kwarg_list", "expected_subset_styles", "expected_legend"),
     [
         # Different forms of including two categories
         ([{"present": ["cat1", "cat2"], "facecolor": "red"}], CAT1_2_RED_STYLES, []),

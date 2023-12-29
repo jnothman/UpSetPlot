@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -51,7 +50,7 @@ def test_from_memberships_no_data(typ):
 
 
 @pytest.mark.parametrize(
-    "data,ndim",
+    ("data", "ndim"),
     [
         ([1, 2, 3, 4], 1),
         (np.array([1, 2, 3, 4]), 1),
@@ -73,8 +72,7 @@ def test_from_memberships_with_data(data, ndim):
     assert out is not data  # make sure frame is copied
     if hasattr(data, "loc") and np.asarray(data).dtype.kind in "ifb":
         # but not deepcopied when possible
-        if LooseVersion(pd.__version__) > LooseVersion("0.35"):
-            assert out.values.base is np.asarray(data).base
+        assert out.values.base is np.asarray(data).base
     if ndim == 1:
         assert isinstance(out, pd.Series)
     else:
@@ -192,7 +190,7 @@ def test_from_contents_invalid(id_column):
 
 
 @pytest.mark.parametrize(
-    "indicators,data,exc_type,match",
+    ("indicators", "data", "exc_type", "match"),
     [
         (["a", "b"], None, ValueError, "data must be provided"),
         (lambda df: [True, False, True], None, ValueError, "data must be provided"),

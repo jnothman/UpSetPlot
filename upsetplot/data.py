@@ -1,6 +1,4 @@
-import functools
 import warnings
-from distutils.version import LooseVersion
 from numbers import Number
 
 import numpy as np
@@ -76,6 +74,7 @@ def generate_data(seed=0, n_samples=10000, n_sets=3, aggregated=False):
         "generate_data was replaced by generate_counts in version "
         "0.3 and will be removed in version 0.4.",
         DeprecationWarning,
+        stacklevel=2,
     )
     if aggregated:
         return generate_counts(seed=seed, n_samples=n_samples, n_categories=n_sets)
@@ -239,11 +238,7 @@ def _convert_to_pandas(data, copy=True):
             is_series = isinstance(data[0], Number)
         except KeyError:
             is_series = False
-    if is_series:
-        data = pd.Series(data)
-    else:
-        data = pd.DataFrame(data)
-    return data
+    return pd.Series(data) if is_series else pd.DataFrame(data)
 
 
 def from_memberships(memberships, data=None):
@@ -384,12 +379,7 @@ def from_contents(contents, data=None, id_column="id"):
     if not all(s.index.is_unique for s in cat_series):
         raise ValueError("Got duplicate ids in a category")
 
-    concat = pd.concat
-    if LooseVersion(pd.__version__) >= "0.23.0":
-        # silence the warning
-        concat = functools.partial(concat, sort=False)
-
-    df = concat(cat_series, axis=1)
+    df = pd.concat(cat_series, axis=1, sort=False)
     if id_column in df.columns:
         raise ValueError("A category cannot be named %r" % id_column)
     df.fillna(False, inplace=True)
@@ -407,6 +397,6 @@ def from_contents(contents, data=None, id_column="id"):
                 "data: %r" % not_in_data.index.values
             )
         df = df.reindex(index=data.index).fillna(False)
-        df = concat([data, df], axis=1)
+        df = pd.concat([data, df], axis=1, sort=False)
     df.index.name = id_column
     return df.reset_index().set_index(cat_names)
