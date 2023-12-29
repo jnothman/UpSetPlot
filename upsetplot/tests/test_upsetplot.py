@@ -873,7 +873,7 @@ def test_filter_subsets_max_subset_rank_tie():
 def test_bad_percentages(value):
     data = generate_samples(seed=0, n_samples=5, n_categories=3)
     with pytest.raises(ValueError, match="percentage"):
-        UpSet(data, subset_size="count")
+        UpSet(data, min_subset_size=value)
 
 
 @pytest.mark.parametrize(
