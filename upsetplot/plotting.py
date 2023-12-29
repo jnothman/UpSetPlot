@@ -191,17 +191,27 @@ class UpSet:
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
-    min_subset_size : int, optional
+    min_subset_size : int or "number%", optional
         Minimum size of a subset to be shown in the plot. All subsets with
         a size smaller than this threshold will be omitted from plotting.
+        This may be specified as a percentage
+        using a string, like "50%".
         Size may be a sum of values, see `subset_size`.
 
         .. versionadded:: 0.5
-    max_subset_size : int, optional
+
+        .. versionchanged:: 0.9
+            Support percentages
+    max_subset_size : int or "number%", optional
         Maximum size of a subset to be shown in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
+        This may be specified as a percentage
+        using a string, like "50%".
 
         .. versionadded:: 0.5
+
+        .. versionchanged:: 0.9
+            Support percentages
     max_subset_rank : int, optional
         Limit to the top N ranked subsets in descending order of size.
         All tied subsets are included.
@@ -379,11 +389,13 @@ class UpSet:
             styling.
         min_subset_size : int or "number%", optional
             Minimum size of a subset to be styled.
+            This may be specified as a percentage using a string, like "50%".
 
             .. versionchanged:: 0.9
                 Support percentages
         max_subset_size : int or "number%", optional
             Maximum size of a subset to be styled.
+            This may be specified as a percentage using a string, like "50%".
 
             .. versionchanged:: 0.9
                 Support percentages
