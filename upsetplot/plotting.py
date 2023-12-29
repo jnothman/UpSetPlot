@@ -1011,6 +1011,8 @@ class UpSet:
 
         Select a category by name, and style either its total bar or its shading.
 
+        .. versionadded:: 0.9
+
         Parameters
         ----------
         categories : str or list[str]
