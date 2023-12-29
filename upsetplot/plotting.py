@@ -339,9 +339,7 @@ class UpSet:
             reverse=not self._horizontal,
             include_empty_subsets=include_empty_subsets,
         )
-        self.category_styles = {
-            k: {"facecolor": self._shading_color} for k in self.totals.index
-        }
+        self.category_styles = {}
         self.subset_styles = [
             {"facecolor": facecolor} for i in range(len(self.intersections))
         ]
@@ -928,6 +926,16 @@ class UpSet:
         )
         self._label_sizes(ax, rects, "left" if self._horizontal else "top")
 
+        for category, rect in zip(self.totals.index.values, rects):
+            style = {
+                k[len("bar_") :]: v
+                for k, v in self.category_styles.get(category, {}).items()
+                if k.startswith("bar_")
+            }
+            style.setdefault("edgecolor", style.get("facecolor", self._facecolor))
+            for attr, val in style.items():
+                getattr(rect, "set_" + attr)(val)
+
         max_total = self.totals.max()
         if self._horizontal:
             orig_ax.set_xlim(max_total, 0)
@@ -942,35 +950,31 @@ class UpSet:
 
     def plot_shading(self, ax):
         # shade all rows, set every second row to zero visibility
-        for i, name in enumerate(self.totals.index):
-            start = 0
-            end = 1
-            shading_color = self._shading_color
-            edgecolor = None
-            visible = i % 2 == 0
-            ls = "-"
-            lw = 0
-            if name in self.category_styles:
-                shading_color = self.category_styles[name].get(
-                    "facecolor", self._shading_color
-                )
-                ls = self.category_styles[name].get("linestyle", "-")
-                lw = self.category_styles[name].get("linewidth", 0)
-                if lw:
-                    start += lw / (self._default_figsize[0] * self.DPI)
-                    # 2 is not enough, 3 is visually more appealing.
-                    end -= (lw / (self._default_figsize[0] * self.DPI)) * 3
-                edgecolor = self.category_styles[name].get("edgecolor", None)
-                visible = 1
+        for i, category in enumerate(self.totals.index):
+            default_shading = (
+                self._shading_color if i % 2 == 0 else (0.0, 0.0, 0.0, 0.0)
+            )
+            shading_style = {
+                k[len("shading_") :]: v
+                for k, v in self.category_styles.get(category, {}).items()
+                if k.startswith("shading_")
+            }
+
+            lw = shading_style.get(
+                "linewidth", 1 if shading_style.get("edgecolor") else 0
+            )
+            lw_padding = lw / (self._default_figsize[0] * self.DPI)
+            start_x = lw_padding
+            end_x = 1 - lw_padding * 3
+
             rect = plt.Rectangle(
-                self._swapaxes(start, i - 0.4),
-                *self._swapaxes(*(end, 0.8)),
-                facecolor=shading_color,
-                edgecolor=edgecolor,
-                ls=ls,
+                self._swapaxes(start_x, i - 0.4),
+                *self._swapaxes(end_x, 0.8),
+                facecolor=shading_style.get("facecolor", default_shading),
+                edgecolor=shading_style.get("edgecolor", None),
+                ls=shading_style.get("linestyle", "-"),
                 lw=lw,
                 zorder=0,
-                visible=visible,
             )
 
             ax.add_patch(rect)
@@ -994,41 +998,60 @@ class UpSet:
     def style_categories(
         self,
         category_names,
-        facecolor=None,
-        edgecolor=None,
-        linewidth=None,
-        linestyle=None,
+        *,
+        bar_facecolor=None,
+        bar_hatch=None,
+        bar_edgecolor=None,
+        bar_linewidth=None,
+        bar_linestyle=None,
+        shading_facecolor=None,
+        shading_edgecolor=None,
+        shading_linewidth=None,
+        shading_linestyle=None,
     ):
         """Updates the style of the categories.
 
-        Parameters are either used to select them by name, or to style them
-        with attributes of :class:`matplotlib.patches.Patch`.
+        Select a category by name, and style either its total bar or its shading.
 
         Parameters
         ----------
-        category_names : list[str] category names.
+        category_names : str or list[str] category names.
             Axes names where the changed style is applied.
-        facecolor : str or RGBA matplotlib color tuple, optional.
-            RGBA (red, green, blue, alpha) tuple of float values
-            in [0, 1] (e.g., (0.1, 0.2, 0.5, 0.3)).
-            Override the default UpSet facecolor for selected subsets.
-        edgecolor : str or matplotlib color, optional
+        bar_facecolor : str or RGBA matplotlib color tuple, optional.
+            Override the default facecolor in the totals plot.
+        bar_hatch : str, optional
+            Set a hatch for the totals plot.
+        bar_edgecolor : str or matplotlib color, optional
+            Set the edgecolor for total bars.
+        bar_linewidth : int, optional
+            Line width in points for total bar edges.
+        bar_linestyle : str, optional
+            Line style for edges.
+        shading_facecolor : str or RGBA matplotlib color tuple, optional.
+            Override the default alternating shading for specified categories.
+        shading_edgecolor : str or matplotlib color, optional
             Set the edgecolor for bars, dots, and the line between dots.
-        linewidth : int, optional
+        shading_linewidth : int, optional
             Line width in points for edges.
-        linestyle : str, optional
+        shading_linestyle : str, optional
             Line style for edges.
         """
+        if isinstance(category_names, str):
+            category_names = [category_names]
         style = {
-            "facecolor": facecolor,
-            "edgecolor": edgecolor,
-            "linewidth": linewidth,
-            "linestyle": linestyle,
+            "bar_facecolor": bar_facecolor,
+            "bar_hatch": bar_hatch,
+            "bar_edgecolor": bar_edgecolor,
+            "bar_linewidth": bar_linewidth,
+            "bar_linestyle": bar_linestyle,
+            "shading_facecolor": shading_facecolor,
+            "shading_edgecolor": shading_edgecolor,
+            "shading_linewidth": shading_linewidth,
+            "shading_linestyle": shading_linestyle,
         }
         style = {k: v for k, v in style.items() if v is not None}
-        self.category_styles.update(
-            {category_name: style for category_name in category_names}
-        )
+        for category_name in category_names:
+            self.category_styles.setdefault(category_name, {}).update(style)
 
     def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure

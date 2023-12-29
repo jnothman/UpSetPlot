@@ -3,8 +3,8 @@
 Highlighting selected subsets
 =============================
 
-Demonstrates use of the `style_subsets` and `style_axes` method
-to mark some subsets or style axes differently.
+Demonstrates use of the `style_subsets` method to mark some subsets as
+different.
 
 """
 
@@ -62,7 +62,9 @@ plt.show()
 
 upset = UpSet(example, facecolor="gray")
 upset.style_subsets(present="cat0", label="Contains cat0", facecolor="blue")
-upset.style_subsets(present="cat1", label="Contains cat1", hatch="xx")
+upset.style_subsets(
+    present="cat1", label="Contains cat1", hatch="xx", edgecolor="black"
+)
 upset.style_subsets(present="cat2", label="Contains cat2", edgecolor="red")
 
 # reduce legend size:
@@ -70,61 +72,4 @@ params = {"legend.fontsize": 8}
 with plt.rc_context(params):
     upset.plot()
 plt.suptitle("Styles for every category!")
-plt.show()
-
-
-##########################################################################
-# Axes can be styled similar to subplots, by name.
-# ... with fill color
-
-upset = UpSet(example)
-upset.style_categories(category_names=["cat2"], facecolor=(0, 0, 1, 0.3))
-upset.plot()
-plt.suptitle("Style categories with fill color")
-plt.show()
-
-##########################################################################
-# ... or edgecolor.
-
-upset = UpSet(example)
-upset.style_categories(
-    category_names=["cat0"],
-    facecolor=(0, 1, 0, 0.3),
-    edgecolor="red",
-    linestyle="-",
-    linewidth=2,
-)
-upset.style_categories(
-    category_names=["cat1"],
-    facecolor=(1, 0, 0, 0.3),
-    edgecolor="green",
-    linestyle="--",
-    linewidth=1,
-)
-upset.plot()
-plt.suptitle("Border styles for categories")
-plt.show()
-
-##########################################################################
-# Multiple stylings can be applied with different criteria in the same
-# plot.
-
-upset = UpSet(example)
-upset.style_categories(category_names=["cat2"], facecolor=(0, 0, 1, 0.3))
-upset.style_categories(
-    category_names=["cat0"],
-    facecolor=(0, 1, 0, 0.3),
-    edgecolor="red",
-    linestyle="-",
-    linewidth=2,
-)
-upset.style_categories(
-    category_names=["cat1"],
-    facecolor=(1, 0, 0, 0.3),
-    edgecolor="green",
-    linestyle="--",
-    linewidth=1,
-)
-upset.plot()
-plt.suptitle("Combine all the stylings!")
 plt.show()
