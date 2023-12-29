@@ -941,9 +941,7 @@ class UpSet:
             orig_ax.set_xlim(max_total, 0)
         for x in ["top", "left", "right"]:
             ax.spines[self._reorient(x)].set_visible(False)
-        ax.yaxis.set_visible(True)
-        ax.yaxis.set_ticklabels([])
-        ax.yaxis.set_ticks([])
+        ax.yaxis.set_visible(False)
         ax.xaxis.grid(True)
         ax.yaxis.grid(False)
         ax.patch.set_visible(False)
