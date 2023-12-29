@@ -62,7 +62,9 @@ plt.show()
 
 upset = UpSet(example, facecolor="gray")
 upset.style_subsets(present="cat0", label="Contains cat0", facecolor="blue")
-upset.style_subsets(present="cat1", label="Contains cat1", hatch="xx")
+upset.style_subsets(
+    present="cat1", label="Contains cat1", hatch="xx", edgecolor="black"
+)
 upset.style_subsets(present="cat2", label="Contains cat2", edgecolor="red")
 
 # reduce legend size:
