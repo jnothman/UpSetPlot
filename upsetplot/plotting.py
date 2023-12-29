@@ -995,7 +995,7 @@ class UpSet:
 
     def style_categories(
         self,
-        category_names,
+        categories,
         *,
         bar_facecolor=None,
         bar_hatch=None,
@@ -1013,8 +1013,8 @@ class UpSet:
 
         Parameters
         ----------
-        category_names : str or list[str] category names.
-            Axes names where the changed style is applied.
+        categories : str or list[str]
+            Category names where the changed style applies.
         bar_facecolor : str or RGBA matplotlib color tuple, optional.
             Override the default facecolor in the totals plot.
         bar_hatch : str, optional
@@ -1034,8 +1034,8 @@ class UpSet:
         shading_linestyle : str, optional
             Line style for edges.
         """
-        if isinstance(category_names, str):
-            category_names = [category_names]
+        if isinstance(categories, str):
+            categories = [categories]
         style = {
             "bar_facecolor": bar_facecolor,
             "bar_hatch": bar_hatch,
@@ -1048,7 +1048,7 @@ class UpSet:
             "shading_linestyle": shading_linestyle,
         }
         style = {k: v for k, v in style.items() if v is not None}
-        for category_name in category_names:
+        for category_name in categories:
             self.category_styles.setdefault(category_name, {}).update(style)
 
     def plot(self, fig=None):
