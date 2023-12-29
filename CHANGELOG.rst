@@ -7,6 +7,8 @@ What's new in version 0.9
 - Ability to disable totals plot with `totals_plot_elements=0`. (:issue:`246`)
 - Ability to set totals y axis label (:issue:`243`)
 - Added ``max_subset_rank`` to get only n most populous subsets.
+- Added support for ``min_subset_size`` and ``max_subset_size`` specified as
+  percentage. (:issue:`264`)
 
 What's new in version 0.8
 -------------------------
