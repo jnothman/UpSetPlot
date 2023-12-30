@@ -245,7 +245,7 @@ class UpSet:
     totals_plot_elements : int
         The totals plot should be large enough to fit this many matrix
         elements. Set to 0 to disable the totals plot.
-    
+
         .. versionchanged:: 0.9
             Setting to 0 is handled.
     show_counts : bool or str, default=False
