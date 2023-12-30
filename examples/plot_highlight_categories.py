@@ -1,7 +1,7 @@
 """
-================================
-Highlighting selected categories
-================================
+==========================================
+Data Vis: Highlighting selected categories
+==========================================
 
 Demonstrates use of the `style_categories` method to mark some
 categories differently.
