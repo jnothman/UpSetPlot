@@ -1,7 +1,7 @@
 """
-============================
-Plotting with generated data
-============================
+===================================
+Basic: Plotting with generated data
+===================================
 
 This example illustrates basic plotting functionality using generated data.
 """

@@ -1,7 +1,7 @@
 """
-====================
-Vertical orientation
-====================
+===========================
+Basic: Vertical orientation
+===========================
 
 This illustrates the effect of orientation='vertical'.
 """

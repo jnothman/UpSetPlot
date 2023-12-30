@@ -1,7 +1,7 @@
 """
-======================================
-Hiding subsets based on size or degree
-======================================
+=============================================
+Basic: Hiding subsets based on size or degree
+=============================================
 
 This illustrates the use of ``min_subset_size``, ``max_subset_size``,
 ``min_degree`` or ``max_degree``.

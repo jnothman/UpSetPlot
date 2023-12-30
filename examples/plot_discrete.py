@@ -1,7 +1,7 @@
 """
-=================================================
-Plotting discrete variables as stacked bar charts
-=================================================
+===========================================================
+Data Vis: Plotting discrete variables as stacked bar charts
+===========================================================
 
 Currently, a somewhat contrived example of `add_stacked_bars`.
 """
