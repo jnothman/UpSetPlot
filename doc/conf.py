@@ -30,6 +30,7 @@ warnings.filterwarnings(
 )
 
 import sphinx_rtd_theme  # noqa
+from sphinx_gallery.sorting import ExampleTitleSortKey  # noqa
 from upsetplot import __version__ as release  # noqa
 
 
@@ -284,4 +285,5 @@ sphinx_gallery_conf = {
     # path where to save gallery generated examples
     "gallery_dirs": "auto_examples",
     "backreferences_dir": "_modules",
+    "within_subsection_order": ExampleTitleSortKey,
 }

@@ -191,17 +191,27 @@ class UpSet:
         If `subset_size='sum'` or `'auto'`, then the intersection size is the
         sum of the specified field in the `data` DataFrame. If a Series, only
         None is supported and its value is summed.
-    min_subset_size : int, optional
+    min_subset_size : int or "number%", optional
         Minimum size of a subset to be shown in the plot. All subsets with
         a size smaller than this threshold will be omitted from plotting.
+        This may be specified as a percentage
+        using a string, like "50%".
         Size may be a sum of values, see `subset_size`.
 
         .. versionadded:: 0.5
-    max_subset_size : int, optional
+
+        .. versionchanged:: 0.9
+            Support percentages
+    max_subset_size : int or "number%", optional
         Maximum size of a subset to be shown in the plot. All subsets with
         a size greater than this threshold will be omitted from plotting.
+        This may be specified as a percentage
+        using a string, like "50%".
 
         .. versionadded:: 0.5
+
+        .. versionchanged:: 0.9
+            Support percentages
     max_subset_rank : int, optional
         Limit to the top N ranked subsets in descending order of size.
         All tied subsets are included.
@@ -269,6 +279,7 @@ class UpSet:
     """
 
     _default_figsize = (10, 6)
+    DPI = 100  # standard matplotlib value
 
     def __init__(
         self,
@@ -341,6 +352,7 @@ class UpSet:
             reverse=not self._horizontal,
             include_empty_subsets=include_empty_subsets,
         )
+        self.category_styles = {}
         self.subset_styles = [
             {"facecolor": facecolor} for i in range(len(self.intersections))
         ]
@@ -380,10 +392,18 @@ class UpSet:
         absent : str or list of str, optional
             Category or categories that must not be present in subsets for
             styling.
-        min_subset_size : int, optional
+        min_subset_size : int or "number%", optional
             Minimum size of a subset to be styled.
-        max_subset_size : int, optional
+            This may be specified as a percentage using a string, like "50%".
+
+            .. versionchanged:: 0.9
+                Support percentages
+        max_subset_size : int or "number%", optional
             Maximum size of a subset to be styled.
+            This may be specified as a percentage using a string, like "50%".
+
+            .. versionchanged:: 0.9
+                Support percentages
         max_subset_rank : int, optional
             Limit to the top N ranked subsets in descending order of size.
             All tied subsets are included.
@@ -927,6 +947,16 @@ class UpSet:
         )
         self._label_sizes(ax, rects, "left" if self._horizontal else "top")
 
+        for category, rect in zip(self.totals.index.values, rects):
+            style = {
+                k[len("bar_") :]: v
+                for k, v in self.category_styles.get(category, {}).items()
+                if k.startswith("bar_")
+            }
+            style.setdefault("edgecolor", style.get("facecolor", self._facecolor))
+            for attr, val in style.items():
+                getattr(rect, "set_" + attr)(val)
+
         max_total = self.totals.max()
         if self._horizontal:
             orig_ax.set_xlim(max_total, 0)
@@ -938,15 +968,34 @@ class UpSet:
         ax.patch.set_visible(False)
 
     def plot_shading(self, ax):
-        # alternating row shading (XXX: use add_patch(Rectangle)?)
-        for i in range(0, len(self.totals), 2):
+        # shade all rows, set every second row to zero visibility
+        for i, category in enumerate(self.totals.index):
+            default_shading = (
+                self._shading_color if i % 2 == 0 else (0.0, 0.0, 0.0, 0.0)
+            )
+            shading_style = {
+                k[len("shading_") :]: v
+                for k, v in self.category_styles.get(category, {}).items()
+                if k.startswith("shading_")
+            }
+
+            lw = shading_style.get(
+                "linewidth", 1 if shading_style.get("edgecolor") else 0
+            )
+            lw_padding = lw / (self._default_figsize[0] * self.DPI)
+            start_x = lw_padding
+            end_x = 1 - lw_padding * 3
+
             rect = plt.Rectangle(
-                self._swapaxes(0, i - 0.4),
-                *self._swapaxes(*(1, 0.8)),
-                facecolor=self._shading_color,
-                lw=0,
+                self._swapaxes(start_x, i - 0.4),
+                *self._swapaxes(end_x, 0.8),
+                facecolor=shading_style.get("facecolor", default_shading),
+                edgecolor=shading_style.get("edgecolor", None),
+                ls=shading_style.get("linestyle", "-"),
+                lw=lw,
                 zorder=0,
             )
+
             ax.add_patch(rect)
         ax.set_frame_on(False)
         ax.tick_params(
@@ -964,6 +1013,66 @@ class UpSet:
         ax.set_yticks([])
         ax.set_xticklabels([])
         ax.set_yticklabels([])
+
+    def style_categories(
+        self,
+        categories,
+        *,
+        bar_facecolor=None,
+        bar_hatch=None,
+        bar_edgecolor=None,
+        bar_linewidth=None,
+        bar_linestyle=None,
+        shading_facecolor=None,
+        shading_edgecolor=None,
+        shading_linewidth=None,
+        shading_linestyle=None,
+    ):
+        """Updates the style of the categories.
+
+        Select a category by name, and style either its total bar or its shading.
+
+        .. versionadded:: 0.9
+
+        Parameters
+        ----------
+        categories : str or list[str]
+            Category names where the changed style applies.
+        bar_facecolor : str or RGBA matplotlib color tuple, optional.
+            Override the default facecolor in the totals plot.
+        bar_hatch : str, optional
+            Set a hatch for the totals plot.
+        bar_edgecolor : str or matplotlib color, optional
+            Set the edgecolor for total bars.
+        bar_linewidth : int, optional
+            Line width in points for total bar edges.
+        bar_linestyle : str, optional
+            Line style for edges.
+        shading_facecolor : str or RGBA matplotlib color tuple, optional.
+            Override the default alternating shading for specified categories.
+        shading_edgecolor : str or matplotlib color, optional
+            Set the edgecolor for bars, dots, and the line between dots.
+        shading_linewidth : int, optional
+            Line width in points for edges.
+        shading_linestyle : str, optional
+            Line style for edges.
+        """
+        if isinstance(categories, str):
+            categories = [categories]
+        style = {
+            "bar_facecolor": bar_facecolor,
+            "bar_hatch": bar_hatch,
+            "bar_edgecolor": bar_edgecolor,
+            "bar_linewidth": bar_linewidth,
+            "bar_linestyle": bar_linestyle,
+            "shading_facecolor": shading_facecolor,
+            "shading_edgecolor": shading_edgecolor,
+            "shading_linewidth": shading_linewidth,
+            "shading_linestyle": shading_linestyle,
+        }
+        style = {k: v for k, v in style.items() if v is not None}
+        for category_name in categories:
+            self.category_styles.setdefault(category_name, {}).update(style)
 
     def plot(self, fig=None):
         """Draw all parts of the plot onto fig or a new figure

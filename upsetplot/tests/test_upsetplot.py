@@ -769,6 +769,13 @@ def test_index_must_be_bool(x):
             },
         ),
         (
+            {"min_subset_size": "15%", "max_subset_size": "30.1%"},
+            {
+                (True, False, False): 884,
+                (True, True, True): 990,
+            },
+        ),
+        (
             {"min_degree": 2},
             {
                 (True, True, False): 1547,
@@ -851,6 +858,22 @@ def test_filter_subsets_max_subset_rank_tie():
     assert tested_non_tie
     assert tested_tie
     assert cur.shape[0] == full.shape[0]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "1",
+        "-1%",
+        "1%%",
+        "%1",
+        "hello",
+    ],
+)
+def test_bad_percentages(value):
+    data = generate_samples(seed=0, n_samples=5, n_categories=3)
+    with pytest.raises(ValueError, match="percentage"):
+        UpSet(data, min_subset_size=value)
 
 
 @pytest.mark.parametrize(
@@ -1152,6 +1175,51 @@ def test_style_subsets_artists(orientation):
 
     # TODO: check lines between dots
     # matrix_line_collection = upset_axes["matrix"].collections[1]
+
+
+@pytest.mark.parametrize(
+    (
+        "kwarg_list",
+        "expected_category_styles",
+    ),
+    [
+        # Different forms of including two categories
+        (
+            [{"categories": ["cat1", "cat2"], "shading_facecolor": "red"}],
+            {
+                "cat1": {"shading_facecolor": "red"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+        (
+            [
+                {"categories": ["cat1", "cat2"], "shading_facecolor": "red"},
+                {"categories": "cat1", "shading_facecolor": "green"},
+            ],
+            {
+                "cat1": {"shading_facecolor": "green"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+        (
+            [
+                {"categories": ["cat1", "cat2"], "shading_facecolor": "red"},
+                {"categories": "cat1", "shading_edgecolor": "green"},
+            ],
+            {
+                "cat1": {"shading_facecolor": "red", "shading_edgecolor": "green"},
+                "cat2": {"shading_facecolor": "red"},
+            },
+        ),
+    ],
+)
+def test_categories(kwarg_list, expected_category_styles):
+    data = generate_counts()
+    upset = UpSet(data, facecolor="blue")
+    for kw in kwarg_list:
+        upset.style_categories(**kw)
+    actual_category_styles = upset.category_styles
+    assert actual_category_styles == expected_category_styles
 
 
 def test_many_categories():
