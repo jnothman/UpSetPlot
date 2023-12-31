@@ -74,7 +74,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "upsetplot"
-copyright = "2018-2023, Joel Nothman"
+copyright = "2018-2024, Joel Nothman"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
