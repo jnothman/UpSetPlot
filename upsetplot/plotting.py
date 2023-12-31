@@ -104,34 +104,36 @@ class _Transposed:
         )
 
     _NAME_TRANSPOSE = {
-        "width": "height",
-        "height": "width",
-        "hspace": "wspace",
-        "wspace": "hspace",
-        "hlines": "vlines",
-        "vlines": "hlines",
+        "align_xlabels": "align_ylabels",
+        "align_ylabels": "align_xlabels",
         "bar": "barh",
         "barh": "bar",
-        "xaxis": "yaxis",
-        "yaxis": "xaxis",
-        "left": "bottom",
-        "right": "top",
-        "top": "right",
         "bottom": "left",
-        "sharex": "sharey",
-        "sharey": "sharex",
-        "get_figwidth": "get_figheight",
         "get_figheight": "get_figwidth",
-        "set_figwidth": "set_figheight",
-        "set_figheight": "set_figwidth",
-        "set_xlabel": "set_ylabel",
-        "set_ylabel": "set_xlabel",
-        "set_xlim": "set_ylim",
-        "set_ylim": "set_xlim",
+        "get_figwidth": "get_figheight",
         "get_xlim": "get_ylim",
         "get_ylim": "get_xlim",
+        "height": "width",
+        "hlines": "vlines",
+        "hspace": "wspace",
+        "left": "bottom",
+        "right": "top",
         "set_autoscalex_on": "set_autoscaley_on",
         "set_autoscaley_on": "set_autoscalex_on",
+        "set_figheight": "set_figwidth",
+        "set_figwidth": "set_figheight",
+        "set_xlabel": "set_ylabel",
+        "set_xlim": "set_ylim",
+        "set_ylabel": "set_xlabel",
+        "set_ylim": "set_xlim",
+        "sharex": "sharey",
+        "sharey": "sharex",
+        "top": "right",
+        "vlines": "hlines",
+        "width": "height",
+        "wspace": "hspace",
+        "xaxis": "yaxis",
+        "yaxis": "xaxis",
     }
 
 
@@ -1116,6 +1118,10 @@ class UpSet:
             else:
                 raise ValueError("Unknown subset plot type: %r" % plot["type"])
             out[plot["id"]] = ax
+
+        self._reorient(fig).align_ylabels(
+            [out[plot["id"]] for plot in self._subset_plots]
+        )
         return out
 
     PLOT_TYPES = {

@@ -4,6 +4,7 @@ What's new in version 0.9
 - Fixes a bug where ``show_percentages`` used the incorrect denominator if
   filtering (e.g. ``min_subset_size``) was applied. This bug was a regression
   introduced in version 0.7. (:issue:`248`)
+- Align ylabels of subplots added using ``add_catplot``. (:issue:`266`)
 - Add a ``style_categories`` method to customize category plot styles, including
   shading of rows in the intersection matrix, and bars in the totals plot.
   (:issue:`261` with thanks to :user:`Marcel Albus <maralbus>`).
