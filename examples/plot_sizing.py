@@ -1,6 +1,6 @@
 """
 ================================================
-Design: Customising element size and figure size
+Design: Customizing element size and figure size
 ================================================
 
 This example illustrates controlling sizing within an UpSet plot.

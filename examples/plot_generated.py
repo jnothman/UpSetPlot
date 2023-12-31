@@ -1,6 +1,6 @@
 """
 ===================================
-Basic: Plotting with generated data
+Basic: Examples with generated data
 ===================================
 
 This example illustrates basic plotting functionality using generated data.
