@@ -1,3 +1,8 @@
+What's new in version 1.0
+-------------------------
+
+In development
+
 What's new in version 0.9
 -------------------------
 
