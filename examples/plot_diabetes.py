@@ -1,7 +1,7 @@
 """
-==================================
-Above-average features in Diabetes
-==================================
+==========================================
+Data Vis: Feature distribution in Diabetes
+==========================================
 
 Explore above-average attributes in the Diabetes dataset (Efron et al, 2004).
 
@@ -73,5 +73,5 @@ upset = UpSet(
 upset.add_catplot(value="progression", kind="strip", color="blue")
 upset.add_catplot(value="bmi", kind="strip", color="black")
 upset.plot()
-plt.title("UpSet with catplots, for orientation='vertical'")
+plt.suptitle("UpSet with catplots, for orientation='vertical'")
 plt.show()

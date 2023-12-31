@@ -1,7 +1,7 @@
 """
-=======================
-Customizing axis labels
-=======================
+===============================
+Design: Customizing axis labels
+===============================
 
 This example illustrates how the return value of the plot method can be used
 to customize aspects of the plot, such as axis labels, legend position, etc.

@@ -1,7 +1,7 @@
 """
-====================
-Changing Plot Colors
-====================
+============================
+Design: Changing Plot Colors
+============================
 
 This example illustrates use of matplotlib and upsetplot color settings, aside
 from matplotlib style sheets, which can control colors as well as grid lines,
