@@ -1,7 +1,7 @@
 """
-==============================================
-Basic: Plot the distribution of missing values
-==============================================
+==================================================
+Basic: Plotting the distribution of missing values
+==================================================
 
 UpSet plots are often used to show which variables are missing together.
 
